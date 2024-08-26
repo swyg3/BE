@@ -1,0 +1,19 @@
+# 의존성 디렉토리 (Docker 빌드 시 다시 설치됨)
+node_modules
+
+# 환경 설정 파일 (보안상 이유로 제외)
+.env
+.env.*
+
+# 빌드 출력 디렉토리 (Docker 빌드 시 다시 생성됨)
+dist
+
+# 버전 관리 시스템
+.git
+
+# 로그 파일
+*.log
+
+# OS 생성 파일
+.DS_Store
+Thumbs.db
