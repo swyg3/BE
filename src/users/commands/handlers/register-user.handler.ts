@@ -1,5 +1,5 @@
-import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { BadRequestException } from '@nestjs/common';
+import { CommandHandler, EventBus, ICommandHandler } from '@nestjs/cqrs';
+import { BadRequestException, Inject, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
@@ -8,13 +8,17 @@ import { UserAggregate } from '../../aggregates/user.aggregate';
 import { User } from '../../entities/user.entity';
 import { EventStoreService } from '../../../shared/infrastructure/event-store/event-store.service';
 import { v4 as uuidv4 } from 'uuid';
+import { UserRegisteredEvent } from 'src/users/events/events/user-registered.event';
 
 @CommandHandler(RegisterUserCommand)
 export class RegisterUserHandler implements ICommandHandler<RegisterUserCommand> {
+  private readonly logger = new Logger(RegisterUserHandler.name)
+
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    private readonly eventStoreService: EventStoreService
+    private readonly eventStoreService: EventStoreService,
+    @Inject(EventBus) private readonly eventBus: EventBus
   ) {}
 
   async execute(command: RegisterUserCommand) {
@@ -67,8 +71,12 @@ export class RegisterUserHandler implements ICommandHandler<RegisterUserCommand>
               (2) 이벤트 처리 실패에 대한 대응이 필요하다.
               -> DB 트랜잭션 고려 or 메시지 큐(재시도 큐)로 처리 로직 설계 필요
               -> 비동기 처리에 대한 모니터링 필요
-      
      */
+
+    // 이벤트 비동기 발행
+    const userRegisteredEvent = new UserRegisteredEvent(userId, email, name, phoneNumber, false, 1);
+    this.logger.log(`Publishing UserRegisteredEvent for user: ${userId}`);
+    this.eventBus.publish(userRegisteredEvent);
 
     // 컨트롤러에 응답 반환
     return userId;

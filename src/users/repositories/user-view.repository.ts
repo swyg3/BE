@@ -10,12 +10,14 @@ export class UserViewRepository {
   ) {}
 
   async create(userView: Partial<UserView>): Promise<UserView> {
-    const createdUserView = new this.userViewModel(userView);
+    const createdUserView = new this.userViewModel({
+      ...userView
+    });
     return createdUserView.save();
   }
 
-  async findById(id: string): Promise<UserView | null> {
-    return this.userViewModel.findById(id).exec();
+  async findByUserId(userId: string): Promise<UserView | null> {
+    return this.userViewModel.findOne({ userId }).exec();
   }
 
   async findByEmail(email: string): Promise<UserView | null> {

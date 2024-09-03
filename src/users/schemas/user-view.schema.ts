@@ -3,8 +3,9 @@ import { Document } from 'mongoose';
 
 @Schema()
 export class UserView extends Document {
-  @Prop({ required: true, unique: true })
-  id: string;
+
+  @Prop({ type: String, required: true, unique: true })
+  userId: string;
 
   @Prop({ required: true, unique: true })
   email: string;
