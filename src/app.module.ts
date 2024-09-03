@@ -9,6 +9,7 @@ import { configValidationSchema } from './common/config/config.validation';
 import { getTypeOrmConfig } from './common/config/typeorm.config';
 import { getMongoConfig } from './common/config/mongodb.config';
 import { createRedisClient, REDIS_CLIENT } from './common/config/redis.config';
+import { ProductModule } from './product/product.module';
 
 
 
@@ -30,7 +31,8 @@ import { createRedisClient, REDIS_CLIENT } from './common/config/redis.config';
       useFactory: getMongoConfig,
       inject: [ConfigService],
     }),
-  MetricsModule
+  MetricsModule,
+  ProductModule,
 ],
   controllers: [AppController],
   providers: [
