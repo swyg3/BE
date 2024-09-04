@@ -24,6 +24,6 @@ export class ProductController {
       discountedPrice,
     ));
 
-    return { sellerId, message: 'Product created successfully' };
+    return { name, message: 'Product created successfully' };
   }
 }
