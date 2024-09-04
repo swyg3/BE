@@ -10,6 +10,7 @@ import { GetUserProfileHandler } from './queries/handlers/get-user-profile.handl
 import { UserRegisteredHandler } from './events/handlers/user-registered.handler';
 import { UserViewRepository } from './repositories/user-view.repository';
 import { EventStoreModule } from '../shared/infrastructure/event-store/event-store.module';
+import { PasswordService } from './services/password.service';
 
 const CommandHandlers = [RegisterUserHandler];
 const QueryHandlers = [GetUserProfileHandler];
@@ -28,6 +29,7 @@ const EventHandlers = [UserRegisteredHandler];
     ...QueryHandlers,
     ...EventHandlers,
     UserViewRepository,
+    PasswordService
   ],
 })
 export class UsersModule {}

@@ -2,13 +2,13 @@ import { CommandHandler, EventBus, ICommandHandler } from '@nestjs/cqrs';
 import { BadRequestException, Inject, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import * as bcrypt from 'bcrypt';
 import { RegisterUserCommand } from '../commands/register-user.command';
 import { UserAggregate } from '../../aggregates/user.aggregate';
 import { User } from '../../entities/user.entity';
 import { EventStoreService } from '../../../shared/infrastructure/event-store/event-store.service';
 import { v4 as uuidv4 } from 'uuid';
 import { UserRegisteredEvent } from 'src/users/events/events/user-registered.event';
+import { PasswordService } from 'src/users/services/password.service';
 
 @CommandHandler(RegisterUserCommand)
 export class RegisterUserHandler implements ICommandHandler<RegisterUserCommand> {
@@ -18,6 +18,7 @@ export class RegisterUserHandler implements ICommandHandler<RegisterUserCommand>
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly eventStoreService: EventStoreService,
+    private readonly passwordService: PasswordService,
     @Inject(EventBus) private readonly eventBus: EventBus
   ) {}
 
@@ -31,7 +32,9 @@ export class RegisterUserHandler implements ICommandHandler<RegisterUserCommand>
     }
 
     const userId = uuidv4();
-    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Argon2를 사용한 비밀번호 해싱
+    const hashedPassword = await this.passwordService.hashPassword(password);
 
     const userAggregate = new UserAggregate(userId);
     const events = userAggregate.register(email, name, phoneNumber);
@@ -56,22 +59,6 @@ export class RegisterUserHandler implements ICommandHandler<RegisterUserCommand>
       phoneNumber
     });
     await this.userRepository.save(user);
-
-    /**
-     TODO: 이벤트 직접 발행으로 비동기 작업 처리 필요
-      why? 현재는 명령 핸들러(RegisterUserHandler)가 완료되면,
-           NestJS 이벤트 시스템에서 '자동으로' 이벤트 핸들러(RegisteredUserHandler)를
-           호출하여 MongoDB의 읽기 모델을 업데이트한다.
-      문제: 이벤트 스토어, 데이터베이스, 읽기 모델의 데이터 일관성을 보장하지만,
-           '동기적'으로 처리되기 때문에 응답시간이 길어지는 문제가 발생한다. 
-      해결: EventBus를 주입 받아 명령 처리 과정과 분리하여 이벤트 발행을 
-           비동기적으로 처리하면 응답 시간 개선할 수 있다.
-      주의사항: (1) 읽기 모델의 일관성이 즉시 보장되지 않는다. 이벤트 처리에 약간 지연이 발생.
-              -> 읽기 모델의 최종 일관성 모델을 고려한 로직 설계 필요
-              (2) 이벤트 처리 실패에 대한 대응이 필요하다.
-              -> DB 트랜잭션 고려 or 메시지 큐(재시도 큐)로 처리 로직 설계 필요
-              -> 비동기 처리에 대한 모니터링 필요
-     */
 
     // 이벤트 비동기 발행
     const userRegisteredEvent = new UserRegisteredEvent(userId, email, name, phoneNumber, false, 1);
