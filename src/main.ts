@@ -4,6 +4,7 @@ import { MetricsInterceptor } from './metrics/metrics.interceptor';
 import { CustomMetricsService } from './metrics/custom-metrics.service';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { VersioningType } from '@nestjs/common';
+import { HttpExceptionFilter } from './shared/filters/http-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -34,6 +35,9 @@ async function bootstrap() {
       };
   app.enableCors(corsOptions);
 
+  // HTTP 예외 필터
+  app.useGlobalFilters(new HttpExceptionFilter());
+  
   // Swagger 설정
   const config = new DocumentBuilder()
     .setTitle('Your API Title')
