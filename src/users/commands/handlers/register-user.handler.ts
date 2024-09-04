@@ -23,7 +23,12 @@ export class RegisterUserHandler implements ICommandHandler<RegisterUserCommand>
   ) {}
 
   async execute(command: RegisterUserCommand) {
-    const { email, password, name, phoneNumber } = command;
+    const { email, password, pwConfirm, name, phoneNumber } = command;
+
+    // 비밀번호 확인 검증
+    if (password !== pwConfirm) {
+      throw new BadRequestException('비밀번호와 비밀번호 확인이 일치하지 않습니다.');
+    }
 
     // 중복 이메일 검증
     const existingUser = await this.userRepository.findOne({ where: { email } });

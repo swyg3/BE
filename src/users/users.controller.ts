@@ -17,8 +17,8 @@ export class UsersController {
 
   @Post('register')
   async registerUser(@Body() registerUserDto: RegisterUserDto): Promise<ApiResponse<{ userId: string }>>  {
-    const { email, password, name, phoneNumber } = registerUserDto;
-    const userId = await this.commandBus.execute(new RegisterUserCommand(email, password, name, phoneNumber));
+    const { email, password, pwConfirm, name, phoneNumber } = registerUserDto;
+    const userId = await this.commandBus.execute(new RegisterUserCommand(email, password, pwConfirm, name, phoneNumber));
     return { 
       success: true,
       data: {
