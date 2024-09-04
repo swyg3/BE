@@ -1,6 +1,7 @@
 import { CreateProductCommand } from '../impl/create-product.command';
 import { ProductRepository } from '../../repositories/product.repository';
 import { Product } from 'src/product/entities/product.entity';
+import { CreateInventoryCommand } from 'src/inventory/commands/impl/create-inventory.command'; // Import CreateInventoryCommand
 import { InjectRepository } from '@nestjs/typeorm';
 import { ProductCreatedEvent } from 'src/product/events/impl/product-created.event';
 import { Category } from 'src/product/product.category';
@@ -20,15 +21,13 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
     private readonly productRepository: ProductRepository,
     private readonly eventStoreService: EventStoreService,
     @Inject(EventBus) private readonly eventBus: EventBus
-    //private productRepository: Repository<Product>,
   ) { }
 
   async execute(command: CreateProductCommand) {
     const { sellerId, category, name, productImageUrl, description, originalPrice, discountedPrice } = command;
 
-    const productId = uuidv4(); // Generate a unique ID
+    const productId = uuidv4(); 
     const expirationDate = new Date();
-
 
     const productAggregate = new ProductAggregate(productId);
     const events = productAggregate.createProduct(
@@ -39,8 +38,8 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
       description,
       originalPrice,
       discountedPrice,
-
     );
+
     console.log("command success");
     // 이벤트 저장소에 저장
     for (const event of events) {
@@ -53,7 +52,8 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
       });
       console.log("event success");
     }
-    //db에 저장 
+
+    // Product 저장
     const product = this.productRepository.create({
       sellerId,
       category,
@@ -66,7 +66,18 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
     await this.productRepository.save(product);
 
     console.log("db success");
-    const postRegisteredEvent = new ProductCreatedEvent(
+
+    // Inventory 생성 명령어 발행
+    const createInventoryCommand = new CreateInventoryCommand(
+      productId,
+      0, // 기본 재고 수량
+      expirationDate,
+    );
+    await this.eventBus.publish(createInventoryCommand);
+
+    console.log("Inventorycommand success");
+
+    const productRegisteredEvent = new ProductCreatedEvent(
       productId,
       sellerId,
       category,
@@ -81,13 +92,11 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
       new Date(),     // createdAt, 현재 날짜
       new Date()      // updatedAt, 현재 날짜
     );
-    this.logger.log(`Publishing postRegisteredEvent for user: ${name}`);
-    this.eventBus.publish(postRegisteredEvent);
+
+    this.logger.log(`Publishing productRegisteredEvent for user: ${name}`);
+    this.eventBus.publish(productRegisteredEvent);
 
     // 컨트롤러에 응답 반환
     return productId;
-
   }
 }
-
-

@@ -11,6 +11,7 @@ import { getMongoConfig } from './common/config/mongodb.config';
 import { createRedisClient, REDIS_CLIENT } from './common/config/redis.config';
 import { ProductModule } from './product/product.module';
 import { EventStoreModule } from './shared/event-store/event-store.module';
+import { InventoryModule } from './inventory/inventory.module';
 
 
 
@@ -34,7 +35,8 @@ import { EventStoreModule } from './shared/event-store/event-store.module';
     }),
   MetricsModule,
   ProductModule,
-  EventStoreModule, 
+  EventStoreModule,
+  InventoryModule, 
 ],
   controllers: [AppController],
   providers: [

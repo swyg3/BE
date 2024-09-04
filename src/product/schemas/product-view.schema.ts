@@ -4,7 +4,7 @@ import { Category } from 'src/product/product.category';
 
 @Schema()
 export class ProductView extends Document {
-  @Prop({ required: true })
+  @Prop({ required: true, type: String })
   productId: number;
 
   @Prop({ required: true })
