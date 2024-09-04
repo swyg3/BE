@@ -1,6 +1,6 @@
 import { CreateProductCommand } from '../impl/create-product.command';
 import { ProductRepository } from '../../repositories/product.repository';
-import { Product } from 'src/product/product.entity';
+import { Product } from 'src/product/entities/product.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ProductCreatedEvent } from 'src/product/events/impl/product-created.event';
 import { Category } from 'src/product/product.category';
@@ -26,9 +26,9 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
   async execute(command: CreateProductCommand) {
     const { sellerId, category, name, productImageUrl, description, originalPrice, discountedPrice } = command;
 
-    const userId = uuidv4();
     const productId = uuidv4(); // Generate a unique ID
     const expirationDate = new Date();
+
 
     const productAggregate = new ProductAggregate(productId);
     const events = productAggregate.createProduct(
@@ -41,6 +41,7 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
       discountedPrice,
 
     );
+    console.log("command success");
     // 이벤트 저장소에 저장
     for (const event of events) {
       await this.eventStoreService.saveEvent({
@@ -50,10 +51,10 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
         eventData: event,
         version: 1
       });
-
+      console.log("event success");
     }
     //db에 저장 
-    const product = this.productRepository.createProduct({
+    const product = this.productRepository.create({
       sellerId,
       category,
       name,
@@ -62,8 +63,9 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
       originalPrice,
       discountedPrice,
     });
-    
+    await this.productRepository.save(product);
 
+    console.log("db success");
     const postRegisteredEvent = new ProductCreatedEvent(
       productId,
       sellerId,

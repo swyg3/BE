@@ -1,7 +1,7 @@
 
 import { ProductCreatedEvent } from '../events/impl/product-created.event';
-import { Category } from '../entities/product.entity';
 import { AggregateRoot } from '@nestjs/cqrs';
+import { Category } from '../product.category';
 
 
 export class ProductAggregate extends AggregateRoot {

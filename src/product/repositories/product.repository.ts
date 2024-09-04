@@ -1,15 +1,17 @@
-import { EntityRepository, Repository } from 'typeorm';
 import { Injectable } from '@nestjs/common';
+import { DeepPartial, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Category } from '../product.category';
-import { Product } from '../product.entity';
+import { Product } from '../entities/product.entity';
 
 @Injectable()
-@EntityRepository(Product)
-export class ProductRepository extends Repository<Product> {
-  productRepository: any;
+export class ProductRepository {
+  save: any;
+  create: any;
   
-
+  constructor(
+    @InjectRepository(Product)
+    private readonly repository: Repository<Product>,
+  ) {}
 
   async createProduct({
     sellerId,
@@ -21,14 +23,15 @@ export class ProductRepository extends Repository<Product> {
     discountedPrice,
   }: {
     sellerId: number;
-    category: Category;
+    category: string;
     name: string;
     productImageUrl: string;
     description: string;
     originalPrice: number;
     discountedPrice: number;
-  }): Promise<Product> {
-    const product = this.productRepository.create({
+  }): Promise<Product| undefined> {
+
+    const product = this.repository.create({
       sellerId,
       category,
       name,
@@ -36,9 +39,9 @@ export class ProductRepository extends Repository<Product> {
       description,
       originalPrice,
       discountedPrice,
-    });
-    return await this.productRepository.save(product);
+    }as DeepPartial<Product>);
+
+    return await this.repository.save(product);
   }
+  
 }
-
-
