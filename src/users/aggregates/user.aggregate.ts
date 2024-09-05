@@ -6,8 +6,8 @@ export class UserAggregate extends AggregateRoot {
     super();
   }
 
-  register(email: string, name: string, phoneNumber: string, isSeller: boolean = false) {
-    const event = new UserRegisteredEvent(this.id, email, name, phoneNumber, isSeller, 1);
+  register(email: string, name: string, phoneNumber: string, isEmailVerified: boolean = false) {
+    const event = new UserRegisteredEvent(this.id, email, name, phoneNumber, isEmailVerified, 1);
     this.apply(event);
     return [event];
   }
