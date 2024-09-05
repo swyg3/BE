@@ -14,9 +14,6 @@ export class User {
   @Column()
   name: string;
 
-  @Column({ default: false })
-  isSeller: boolean;
-
   @Column()
   phoneNumber: string;
 

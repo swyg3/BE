@@ -1,5 +1,5 @@
 import { CommandHandler, EventBus, ICommandHandler } from '@nestjs/cqrs';
-import { BadRequestException, Inject, Logger } from '@nestjs/common';
+import { BadRequestException, Inject, Logger, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RegisterUserCommand } from '../commands/register-user.command';
@@ -9,6 +9,8 @@ import { EventStoreService } from '../../../shared/infrastructure/event-store/ev
 import { v4 as uuidv4 } from 'uuid';
 import { UserRegisteredEvent } from 'src/users/events/events/user-registered.event';
 import { PasswordService } from 'src/users/services/password.service';
+import { REDIS_CLIENT } from 'src/shared/infrastructure/redis/redis.config';
+import Redis from 'ioredis';
 
 @CommandHandler(RegisterUserCommand)
 export class RegisterUserHandler implements ICommandHandler<RegisterUserCommand> {
@@ -19,11 +21,18 @@ export class RegisterUserHandler implements ICommandHandler<RegisterUserCommand>
     private readonly userRepository: Repository<User>,
     private readonly eventStoreService: EventStoreService,
     private readonly passwordService: PasswordService,
-    @Inject(EventBus) private readonly eventBus: EventBus
+    @Inject(EventBus) private readonly eventBus: EventBus,
+    @Inject(REDIS_CLIENT) private readonly redisClient: Redis
   ) {}
 
   async execute(command: RegisterUserCommand) {
     const { email, password, pwConfirm, name, phoneNumber } = command;
+
+    // Redis에서 이메일 인증 상태 확인
+    const isEmailVerified = await this.redisClient.get(`email_verified:${email}`);
+    if (isEmailVerified !== 'true') {
+      throw new UnauthorizedException('이메일 인증이 완료되지 않았습니다.');
+    }
 
     // 비밀번호 확인 검증
     if (password !== pwConfirm) {
@@ -66,9 +75,12 @@ export class RegisterUserHandler implements ICommandHandler<RegisterUserCommand>
     await this.userRepository.save(user);
 
     // 이벤트 비동기 발행
-    const userRegisteredEvent = new UserRegisteredEvent(userId, email, name, phoneNumber, false, 1);
-    this.logger.log(`Publishing UserRegisteredEvent for user: ${userId}`);
+    const userRegisteredEvent = new UserRegisteredEvent(userId, email, name, phoneNumber, true, 1);
+    this.logger.log(`UserRegisteredEvent 이벤트 발행: ${userId}`);
     this.eventBus.publish(userRegisteredEvent);
+
+    // Redis에서 이메일 인증 상태 삭제
+    await this.redisClient.del(`email_verified:${email}`);
 
     // 컨트롤러에 응답 반환
     return userId;

@@ -13,6 +13,7 @@ import { EventStoreModule } from '../shared/infrastructure/event-store/event-sto
 import { PasswordService } from './services/password.service';
 import { UserProfileUpdatedHandler } from './events/handlers/user-profile-updated.handler';
 import { UpdateUserProfileHandler } from './commands/handlers/update-user-profile.handler';
+import { REDIS_CLIENT, RedisModule } from 'src/shared/infrastructure/redis/redis.config';
 
 const CommandHandlers = [RegisterUserHandler, UpdateUserProfileHandler];
 const QueryHandlers = [GetUserProfileHandler];
@@ -24,6 +25,7 @@ const EventHandlers = [UserRegisteredHandler, UserProfileUpdatedHandler];
     TypeOrmModule.forFeature([User]),
     MongooseModule.forFeature([{ name: UserView.name, schema: UserViewSchema }]),
     EventStoreModule,
+    RedisModule,
   ],
   controllers: [UsersController],
   providers: [
@@ -31,7 +33,7 @@ const EventHandlers = [UserRegisteredHandler, UserProfileUpdatedHandler];
     ...QueryHandlers,
     ...EventHandlers,
     UserViewRepository,
-    PasswordService
+    PasswordService,
   ],
 })
 export class UsersModule {}

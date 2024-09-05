@@ -4,7 +4,7 @@ export class UserRegisteredEvent {
       public readonly email: string,
       public readonly name: string,
       public readonly phoneNumber: string,
-      public readonly isSeller: boolean,
+      public readonly isEmailVerified: boolean,
       public readonly version: number
     ) {}
   }

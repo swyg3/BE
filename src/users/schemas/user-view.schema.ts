@@ -17,7 +17,7 @@ export class UserView extends Document {
   phoneNumber: string;
 
   @Prop({ required: true, default: false })
-  isSeller: boolean;
+  isEmailVerified: boolean;
 
   @Prop({ required: true })
   createdAt: Date;

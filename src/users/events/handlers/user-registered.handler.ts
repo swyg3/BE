@@ -19,7 +19,7 @@ export class UserRegisteredHandler implements IEventHandler<UserRegisteredEvent>
         email: event.email,
         name: event.name,
         phoneNumber: event.phoneNumber,
-        isSeller: event.isSeller,
+        isEmailVerified: event.isEmailVerified,
         createdAt: new Date(),
         updatedAt: new Date()
       });
