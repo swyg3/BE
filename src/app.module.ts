@@ -11,7 +11,8 @@ import { SellersModule } from './sellers/sellers.module';
 import { configValidationSchema } from './shared/infrastructure/config/config.validation';
 import { getTypeOrmConfig } from './shared/infrastructure/database/typeorm.config';
 import { getMongoConfig } from './shared/infrastructure/database/mongodb.config';
-import { createRedisClient, REDIS_CLIENT } from './shared/infrastructure/redis/redis.config';
+import { createRedisClient, REDIS_CLIENT, RedisModule } from './shared/infrastructure/redis/redis.config';
+import { ThrottlerModule } from '@nestjs/throttler';
 
 
 
@@ -25,6 +26,16 @@ import { createRedisClient, REDIS_CLIENT } from './shared/infrastructure/redis/r
         abortEarly: false,
       },
     }),
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ([
+        {
+          ttl: config.get<number>('THROTTLE_TTL'),
+          limit: config.get<number>('THROTTLE_LIMIT'),
+        },
+      ]),
+    }),
     TypeOrmModule.forRootAsync({
       useFactory: getTypeOrmConfig,
       inject: [ConfigService],
@@ -34,18 +45,13 @@ import { createRedisClient, REDIS_CLIENT } from './shared/infrastructure/redis/r
       inject: [ConfigService],
     }),
   MetricsModule,
+  RedisModule,
   AuthModule,
   UsersModule,
   SellersModule
 ],
   controllers: [AppController],
-  providers: [
-    {
-      provide: REDIS_CLIENT,
-      useFactory: createRedisClient,
-      inject: [ConfigService],
-    },
-    AppService
-  ],
+  providers: [AppService],
+  exports: [],
 })
 export class AppModule {}
