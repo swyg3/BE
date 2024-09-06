@@ -6,7 +6,7 @@ import { EmailService } from 'src/shared/email-service/email.service';
 import { HmacUtil } from 'src/shared/utils/hmac.util';
 import { REDIS_CLIENT } from 'src/shared/infrastructure/redis/redis.config';
 import { ConfigService } from '@nestjs/config';
-import { EmailVerificationRequestedEvent } from 'src/auth/events/events/email-verify-requested.event';
+import { EmailVerificationRequestedEvent } from 'src/auth/shared/events/events/email-verify-requested.event';
 
 @CommandHandler(RequestEmailVerificationCommand)
 export class RequestEmailVerificationHandler implements ICommandHandler<RequestEmailVerificationCommand> {

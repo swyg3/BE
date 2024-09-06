@@ -4,7 +4,7 @@ import Redis from 'ioredis';
 import { VerifyEmailCommand } from '../commands/verify-email.command';
 import { HmacUtil } from 'src/shared/utils/hmac.util';
 import { REDIS_CLIENT } from 'src/shared/infrastructure/redis/redis.config';
-import { EmailVerifiedEvent } from 'src/auth/events/events/email-verified.event';
+import { EmailVerifiedEvent } from 'src/auth/shared/events/events/email-verified.event';
 
 @CommandHandler(VerifyEmailCommand)
 export class VerifyEmailHandler implements ICommandHandler<VerifyEmailCommand> {
