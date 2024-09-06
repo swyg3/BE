@@ -1,9 +1,13 @@
 export class UpdateProductCommand {
     constructor(
-      public readonly productId: number,
-      public readonly name: string,
-      public readonly price: number,
-      public readonly category: string
+      public readonly Id: number,
+      public readonly updates: {
+        name?: string;
+        productImageUrl?: string;
+        description?: string;
+        originalPrice?: number;
+        discountedPrice?: number;
+      },
     ) {}
   }
   
