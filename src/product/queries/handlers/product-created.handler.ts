@@ -7,6 +7,5 @@ import { EventsHandler, IEventHandler } from '@nestjs/cqrs';
 export class ProductCreatedHandler implements IEventHandler<ProductCreatedEvent> {
   async handle(event: ProductCreatedEvent): Promise<void> {
     console.log('Product Created Event:', event);
-    // 필요한 후속 작업을 여기에 정의합니다.
   }
 }

@@ -8,6 +8,7 @@ export class ProductRepository {
   save: any;
   create: any;
     deleteOne: any;
+    findOne: any;
   
   constructor(
     @InjectRepository(Product)

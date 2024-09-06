@@ -1,10 +1,11 @@
 
-import { Controller, Post, Body, Delete } from '@nestjs/common';
+import { Controller, Post, Body, Delete, Get, Param } from '@nestjs/common';
 import { CreateProductCommand } from './commands/impl/create-product.command';
 import { CreateProductDto } from './dtos/create-product.dto';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { DeleteProductDto } from './dtos/delete-product.dto';
 import { DeleteProductCommand } from './commands/impl/delete-product.command';
+import { GetProductByIdQuery } from './queries/impl/get-product-by-id.query';
 
 @Controller('products')
 export class ProductController {
@@ -36,6 +37,11 @@ export class ProductController {
 
 
     return { Id, message: 'Product deleted successfully' };
+  }
+
+  @Get(':id')
+  async getProductById(@Param('id') id: number) {
+    return this.queryBus.execute(new GetProductByIdQuery(id));
   }
   
 }

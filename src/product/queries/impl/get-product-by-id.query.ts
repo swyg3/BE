@@ -1,3 +1,3 @@
-export class GetProductQuery {
+export class GetProductByIdQuery {
     constructor(public readonly Id: number) {}
   }

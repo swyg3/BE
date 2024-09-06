@@ -10,6 +10,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { EventStoreModule } from '../shared/event-store/event-store.module';
 import { CommandHandler, CqrsModule, EventsHandler } from '@nestjs/cqrs';
 import { ProductViewRepository } from './repositories/product-view.repository';
+import { GetProductByIdHandler } from './queries/handlers/get-product-by-id.handler';
 
 
 const CommandHandlers = [CreateProductHandler]
@@ -26,7 +27,8 @@ const EventsHandlers = [ProductCreatedHandler]
     ...CommandHandlers,
     ...EventsHandlers,
     ProductRepository,
-    ProductViewRepository
+    ProductViewRepository,
+    GetProductByIdHandler,
   ],
   controllers: [ProductController],
   exports: [ProductRepository],
