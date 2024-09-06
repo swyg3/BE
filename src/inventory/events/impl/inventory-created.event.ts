@@ -1,6 +1,6 @@
 export class InventoryCreatedEvent {
     constructor(
-      public readonly inventoryId: number,
+      public readonly id: number,
       public readonly productId: number,
       public readonly quantity: number,
       public readonly expirationDate: Date,

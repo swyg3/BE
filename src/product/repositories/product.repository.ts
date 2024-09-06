@@ -7,6 +7,7 @@ import { Product } from '../entities/product.entity';
 export class ProductRepository {
   save: any;
   create: any;
+    deleteOne: any;
   
   constructor(
     @InjectRepository(Product)
@@ -43,5 +44,7 @@ export class ProductRepository {
 
     return await this.repository.save(product);
   }
-  
+  delete(arg0: { Id: number; }) {
+    throw new Error('Method not implemented.');
+}
 }

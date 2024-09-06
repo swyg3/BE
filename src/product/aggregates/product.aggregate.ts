@@ -2,6 +2,7 @@
 import { ProductCreatedEvent } from '../events/impl/product-created.event';
 import { AggregateRoot } from '@nestjs/cqrs';
 import { Category } from '../product.category';
+import { ProductDeletedEvent } from '../events/impl/product-deleted.event';
 
 
 export class ProductAggregate extends AggregateRoot {
@@ -39,6 +40,14 @@ export class ProductAggregate extends AggregateRoot {
         );
 
 
+
+        this.apply(event);
+        return [event];
+    }
+
+    deleteProduct(Id: number) {
+        const event = new ProductDeletedEvent(
+        this.id);
 
         this.apply(event);
         return [event];

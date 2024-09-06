@@ -13,4 +13,11 @@ export class InventoryViewRepository {
     const createInventoryView = new this.inventoryViewModel(inventoryView);  
     return createInventoryView.save();
   }
+
+  async deleteInventoryById(productId: number): Promise<void> {
+    const result = await this.inventoryViewModel.deleteOne({ productId: productId }).exec();
+    if (result.deletedCount === 0) {
+      throw new Error(`No inventory found with ID ${productId}`);
+    }
+  }
 }

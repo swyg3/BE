@@ -10,11 +10,11 @@ export class InventoryCreatedHandler implements IEventHandler<InventoryCreatedEv
   constructor(private readonly inventoryViewRepository: InventoryViewRepository) {}
 
   async handle(event: InventoryCreatedEvent) {
-    this.logger.log(`Handling InventoryCreatedEvent for inventory: ${event.inventoryId}`);
+    this.logger.log(`Handling InventoryCreatedEvent for inventory: ${event.id}`);
 
     try {
       await this.inventoryViewRepository.createInventory({
-        inventoryId: event.inventoryId,
+        id: event.id,
         productId: event.productId,
         quantity: event.quantity,
         expirationDate: event.expirationDate,
@@ -22,9 +22,9 @@ export class InventoryCreatedHandler implements IEventHandler<InventoryCreatedEv
         updatedAt: event.updatedAt,
       });
 
-      this.logger.log(`Inventory view successfully updated: ${event.inventoryId}`);
+      this.logger.log(`Inventory view successfully updated: ${event.id}`);
     } catch (error) {
-      this.logger.error(`Failed to update inventory view: ${event.inventoryId}, ${error.message}`, error.stack);
+      this.logger.error(`Failed to update inventory view: ${event.id}, ${error.message}`, error.stack);
     }
   }
 }

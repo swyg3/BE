@@ -5,6 +5,9 @@ import { Model } from 'mongoose';
 import { ProductView } from '../schemas/product-view.schema';
 @Injectable()
 export class ProductViewRepository {
+    deletedProduct(arg0: { Id: number; }) {
+        throw new Error('Method not implemented.');
+    }
     constructor(
         @InjectModel(ProductView.name) private productViewModel: Model<ProductView>
       ) {}

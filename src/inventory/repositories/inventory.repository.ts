@@ -7,6 +7,7 @@ import { Inventory } from '../inventory.entity';
 export class InventoryRepository {
   save: any;
   create: any;
+  delete: any;
 
   constructor(
     @InjectRepository(Inventory)
