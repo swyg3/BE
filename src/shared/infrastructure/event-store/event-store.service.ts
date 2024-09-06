@@ -7,17 +7,17 @@ import { Event } from './event.entity';
 export class EventStoreService {
   constructor(
     @InjectRepository(Event)
-    private eventRepository: Repository<Event>
+    private eventRepository: Repository<Event>,
   ) {}
 
-  async saveEvent(event: Partial<Event>): Promise<Event> {
+  async saveEvent(eventData: {
+    aggregateId: string;
+    aggregateType: string;
+    eventType: string;
+    eventData: object;
+    version: number;
+  }): Promise<Event> {
+    const event = this.eventRepository.create(eventData);
     return this.eventRepository.save(event);
-  }
-
-  async getEventsForAggregate(aggregateId: string): Promise<Event[]> {
-    return this.eventRepository.find({
-      where: { aggregateId },
-      order: { version: 'ASC' }
-    });
   }
 }
