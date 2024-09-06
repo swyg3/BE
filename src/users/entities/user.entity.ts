@@ -17,6 +17,15 @@ export class User {
   @Column()
   phoneNumber: string;
 
+  @Column()
+  isEmailVerified: boolean;
+
+  @Column()
+  accessToken: string;
+
+  @Column()
+  lastLoginAt: Date;
+
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
 

@@ -14,6 +14,7 @@ import { PasswordService } from './services/password.service';
 import { UserProfileUpdatedHandler } from './events/handlers/user-profile-updated.handler';
 import { UpdateUserProfileHandler } from './commands/handlers/update-user-profile.handler';
 import { REDIS_CLIENT, RedisModule } from 'src/shared/infrastructure/redis/redis.config';
+import { UserRepository } from './repositories/user.repository';
 
 const CommandHandlers = [RegisterUserHandler, UpdateUserProfileHandler];
 const QueryHandlers = [GetUserProfileHandler];
@@ -34,6 +35,8 @@ const EventHandlers = [UserRegisteredHandler, UserProfileUpdatedHandler];
     ...EventHandlers,
     UserViewRepository,
     PasswordService,
+    UserRepository
   ],
+    exports: [UserRepository],
 })
 export class UsersModule {}

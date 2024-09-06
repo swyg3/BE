@@ -10,7 +10,33 @@ export class UserRepository {
     private readonly userRepository: Repository<User>,
   ) {}
 
+  async findByUserId(userId: string): Promise<User | undefined> {
+    return this.userRepository.findOne({ where: { id: userId } });
+  }
+
   async findByEmail(email: string): Promise<User | undefined> {
     return this.userRepository.findOne({ where: { email } });
+  }
+  
+  async upsert(email: string, userData: Partial<User>): Promise<{ user: User; isNewUser: boolean }> {
+    const existingUser = await this.userRepository.findOne({ where: { email } });
+
+    if (existingUser) {
+      await this.userRepository.update({ email }, userData);
+      const updatedUser = await this.findByEmail(email);
+      return { user: updatedUser, isNewUser: false };
+    } else {
+      const newUser = this.userRepository.create({ email, ...userData });
+      const savedUser = await this.userRepository.save(newUser);
+      return { user: savedUser, isNewUser: true };
+    }
+  }
+
+  async updateAccessToken(userId: string, accessToken: string): Promise<void> {
+    await this.userRepository.update(userId, { accessToken });
+  }
+
+  async updateLastLogin(userId: string): Promise<void> {
+    await this.userRepository.update(userId, { lastLoginAt: new Date() });
   }
 }
