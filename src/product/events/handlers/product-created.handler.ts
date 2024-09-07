@@ -14,7 +14,7 @@ export class ProductCreatedHandler implements IEventHandler<ProductCreatedEvent>
 
     try {
       await this.productViewRepository.createProduct({
-        productId: event.Id,
+        Id: event.Id,
         sellerId: event.sellerId,
         category: event.category,
         name: event.name,

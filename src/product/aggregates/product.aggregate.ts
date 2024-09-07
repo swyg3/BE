@@ -12,7 +12,7 @@ export class ProductAggregate extends AggregateRoot {
   private originalPrice?: number;
   private discountedPrice?: number;
 
-  constructor(private readonly id: number) {
+  constructor(private readonly Id: number) {
     super();
   }
 
@@ -30,7 +30,7 @@ export class ProductAggregate extends AggregateRoot {
 
     // 이벤트 생성
     const event = new ProductCreatedEvent(
-      this.id,
+      this.Id,
       sellerId,
       category,
       name,
@@ -51,8 +51,8 @@ export class ProductAggregate extends AggregateRoot {
   }
 
   // 제품 삭제
-  deleteProduct() {
-    const event = new ProductDeletedEvent(this.id);
+  deleteProduct(Id: number) {
+    const event = new ProductDeletedEvent(this.Id);
 
     this.apply(event);
     return [event];
@@ -75,7 +75,7 @@ export class ProductAggregate extends AggregateRoot {
 
     // 변경된 상태를 기반으로 이벤트를 생성
     const event = new ProductUpdatedEvent(
-      this.id,
+      this.Id,
       this.name,
       this.productImageUrl,
       this.description,

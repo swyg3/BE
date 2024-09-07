@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import {  Repository } from 'typeorm';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ProductView } from '../schemas/product-view.schema';
@@ -15,6 +14,9 @@ export class ProductViewRepository {
   async createProduct(productView: Partial<ProductView>): Promise<ProductView> {
     const createProductView = new this.productViewModel(productView);  
     return createProductView.save();  
+  }
+  async deleteProduct({ Id }: { Id: number }): Promise<void> {
+    await this.productViewModel.deleteOne({ _id: Id }).exec();
   }
 
 }

@@ -5,9 +5,11 @@ import { Product } from 'src/product/entities/product.entity';
 import { DeleteInventoryCommand } from 'src/inventory/commands/impl/delete-inventory.command';
 import { EventStoreService } from 'src/shared/event-store/event-store.service';
 import { ProductDeletedEvent } from 'src/product/events/impl/product-deleted.event'; // Product 삭제 이벤트
-import { Logger, Inject } from '@nestjs/common';
+import { Logger, Inject, NotFoundException } from '@nestjs/common';
 import { DeleteResult } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
+import { NOTFOUND } from 'dns';
+import { ProductAggregate } from 'src/product/aggregates/product.aggregate';
 
 @CommandHandler(DeleteProductCommand)
 export class DeleteProductHandler implements ICommandHandler<DeleteProductCommand> {
@@ -23,12 +25,23 @@ export class DeleteProductHandler implements ICommandHandler<DeleteProductComman
   async execute(command: DeleteProductCommand) {
     const { Id } = command;
 
-    // Product 삭제
-    const result: DeleteResult = await this.productRepository.deleteOne({ Id });
-    if (result.affected === 0) {
-      this.logger.warn(`No product found with ID ${Id}`);
-      return;
+    const productAggregate = new ProductAggregate(Id);
+    const events = productAggregate.deleteProduct(Id);
+
+    console.log("command success");
+    // 이벤트 저장소에 저장
+    for (const event of events) {
+      await this.eventStoreService.saveEvent({
+        aggregateId: Id.toString(),
+        aggregateType: 'Product',
+        eventType: event.constructor.name,
+        eventData: event,
+        version: 1
+      });
+      console.log("event success");
     }
+
+    this.productRepository.delete({ Id: Id });
     
     
     this.logger.log(`Product with ID ${Id} has been deleted`);
@@ -51,6 +64,7 @@ export class DeleteProductHandler implements ICommandHandler<DeleteProductComman
 
     this.logger.log(`ProductDeletedEvent for product ID ${Id} saved`);
 
-    return Id;
+    
   }
 }
+

@@ -9,6 +9,7 @@ export class ProductRepository {
   create: any;
     deleteOne: any;
     findOne: any;
+  delete: any;
   
   constructor(
     @InjectRepository(Product)
@@ -45,7 +46,5 @@ export class ProductRepository {
 
     return await this.repository.save(product);
   }
-  delete(arg0: { Id: number; }) {
-    throw new Error('Method not implemented.');
-}
+  
 }

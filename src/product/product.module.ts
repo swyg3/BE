@@ -11,10 +11,14 @@ import { EventStoreModule } from '../shared/event-store/event-store.module';
 import { CommandHandler, CqrsModule, EventsHandler } from '@nestjs/cqrs';
 import { ProductViewRepository } from './repositories/product-view.repository';
 import { GetProductByIdHandler } from './queries/handlers/get-product-by-id.handler';
+import { DeleteProductHandler } from './commands/handlers/delete-product.handler';
+import { UpdateProductHandler } from './commands/handlers/update-product.handler';
+import { ProductUpdatedEventHandler } from './events/handlers/product-update.handler';
+import { ProductDeletedHandler } from './events/handlers/product-deleted.handler';
 
 
-const CommandHandlers = [CreateProductHandler]
-const EventsHandlers = [ProductCreatedHandler]
+const CommandHandlers = [CreateProductHandler, UpdateProductHandler ,DeleteProductHandler]
+const EventsHandlers = [ProductCreatedHandler, ProductUpdatedEventHandler, ProductDeletedHandler ]
 
 @Module({
   imports: [
