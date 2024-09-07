@@ -11,8 +11,10 @@ import { RegisterSellerCommand } from "../commands/register-seller.command";
 import { Seller } from "src/sellers/entities/seller.entity";
 
 @CommandHandler(RegisterSellerCommand)
-export class RegisterSellerHandler implements ICommandHandler<RegisterSellerCommand> {
-  private readonly logger = new Logger(RegisterUserHandler.name)
+export class RegisterSellerHandler
+  implements ICommandHandler<RegisterSellerCommand>
+{
+  private readonly logger = new Logger(RegisterUserHandler.name);
 
   constructor(
     @InjectRepository(Seller)
@@ -20,11 +22,8 @@ export class RegisterSellerHandler implements ICommandHandler<RegisterSellerComm
     private readonly eventStoreService: EventStoreService,
     private readonly passwordService: PasswordService,
     @Inject(EventBus) private readonly eventBus: EventBus,
-    @Inject(REDIS_CLIENT) private readonly redisClient: Redis
+    @Inject(REDIS_CLIENT) private readonly redisClient: Redis,
   ) {}
 
-  async execute(command: RegisterSellerCommand): Promise<any> {
-      
-  }
+  async execute(command: RegisterSellerCommand): Promise<any> {}
 }
-

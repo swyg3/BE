@@ -1,6 +1,11 @@
-import { ExceptionFilter, Catch, ArgumentsHost, HttpException } from '@nestjs/common';
-import { Response } from 'express';
-import { ApiResponse } from '../interfaces/api-response.interface';
+import {
+  ExceptionFilter,
+  Catch,
+  ArgumentsHost,
+  HttpException,
+} from "@nestjs/common";
+import { Response } from "express";
+import { ApiResponse } from "../interfaces/api-response.interface";
 
 @Catch(HttpException)
 export class HttpExceptionFilter implements ExceptionFilter {
@@ -14,8 +19,6 @@ export class HttpExceptionFilter implements ExceptionFilter {
       message: exception.message,
     };
 
-    response
-      .status(status)
-      .json(errorResponse);
+    response.status(status).json(errorResponse);
   }
 }

@@ -1,3 +1,3 @@
 export class RequestEmailVerificationCommand {
-    constructor(public readonly email: string) {}
-  }
+  constructor(public readonly email: string) {}
+}

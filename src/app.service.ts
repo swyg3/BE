@@ -1,12 +1,12 @@
-import { Injectable } from '@nestjs/common';
-import { CustomMetricsService } from './metrics/custom-metrics.service';
+import { Injectable } from "@nestjs/common";
+import { CustomMetricsService } from "./metrics/custom-metrics.service";
 
 @Injectable()
 export class AppService {
   constructor(private customMetricsService: CustomMetricsService) {}
 
   getHello(): string {
-    return 'Hello World!';
+    return "Hello World!";
   }
 
   async excuteHeavyWork(): Promise<{ result: string; duration: number }> {

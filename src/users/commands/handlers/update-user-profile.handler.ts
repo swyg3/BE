@@ -7,11 +7,13 @@ import { Repository } from "typeorm";
 import { UpdateUserProfileCommand } from "../commands/update-user-profile.command";
 
 @CommandHandler(UpdateUserProfileCommand)
-export class UpdateUserProfileHandler implements ICommandHandler<UpdateUserProfileCommand> {
+export class UpdateUserProfileHandler
+  implements ICommandHandler<UpdateUserProfileCommand>
+{
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    private readonly eventBus: EventBus
+    private readonly eventBus: EventBus,
   ) {}
 
   async execute(command: UpdateUserProfileCommand) {
@@ -19,12 +21,13 @@ export class UpdateUserProfileHandler implements ICommandHandler<UpdateUserProfi
 
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) {
-      throw new NotFoundException('존재하지 않는 회원입니다.');
+      throw new NotFoundException("존재하지 않는 회원입니다.");
     }
 
     // 변경 가능한 필드만 업데이트
     if (updateData.name !== undefined) user.name = updateData.name;
-    if (updateData.phoneNumber !== undefined) user.phoneNumber = updateData.phoneNumber;
+    if (updateData.phoneNumber !== undefined)
+      user.phoneNumber = updateData.phoneNumber;
 
     await this.userRepository.save(user);
 

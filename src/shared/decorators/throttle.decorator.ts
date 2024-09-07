@@ -1,6 +1,6 @@
-import { SetMetadata } from '@nestjs/common';
+import { SetMetadata } from "@nestjs/common";
 
-export const THROTTLE_KEY = 'throttle';
+export const THROTTLE_KEY = "throttle";
 
 export interface ThrottleOptions {
   default: {
@@ -9,4 +9,5 @@ export interface ThrottleOptions {
   };
 }
 
-export const Throttle = (options: ThrottleOptions) => SetMetadata(THROTTLE_KEY, options);
+export const Throttle = (options: ThrottleOptions) =>
+  SetMetadata(THROTTLE_KEY, options);

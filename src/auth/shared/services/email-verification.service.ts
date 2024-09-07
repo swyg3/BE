@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common';
-import { CommandBus } from '@nestjs/cqrs';
-import { RequestEmailVerificationCommand } from '../commands/commands/request-email-verify.command';
-import { VerifyEmailCommand } from '../commands/commands/verify-email.command';
+import { Injectable } from "@nestjs/common";
+import { CommandBus } from "@nestjs/cqrs";
+import { RequestEmailVerificationCommand } from "../commands/commands/request-email-verify.command";
+import { VerifyEmailCommand } from "../commands/commands/verify-email.command";
 
 @Injectable()
 export class EmailVerificationService {
@@ -12,6 +12,8 @@ export class EmailVerificationService {
   }
 
   async verifyEmail(email: string, verificationCode: string): Promise<boolean> {
-    return await this.commandBus.execute(new VerifyEmailCommand(email, verificationCode));
+    return await this.commandBus.execute(
+      new VerifyEmailCommand(email, verificationCode),
+    );
   }
 }

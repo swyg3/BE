@@ -8,7 +8,7 @@ export class UserRegisteredEvent {
     public readonly name: string,
     public readonly phoneNumber: string,
     public readonly isEmailVerified: boolean,
-    version: number = 1
+    version: number = 1,
   ) {
     this.aggregateId = userId;
     this.version = version;

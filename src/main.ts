@@ -1,10 +1,10 @@
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
-import { MetricsInterceptor } from './metrics/metrics.interceptor';
-import { CustomMetricsService } from './metrics/custom-metrics.service';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { VersioningType } from '@nestjs/common';
-import { HttpExceptionFilter } from './shared/filters/http-exception.filter';
+import { NestFactory } from "@nestjs/core";
+import { AppModule } from "./app.module";
+import { MetricsInterceptor } from "./metrics/metrics.interceptor";
+import { CustomMetricsService } from "./metrics/custom-metrics.service";
+import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import { VersioningType } from "@nestjs/common";
+import { HttpExceptionFilter } from "./shared/filters/http-exception.filter";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -20,40 +20,41 @@ async function bootstrap() {
   });
 
   // 전역 접두사 설정
-  app.setGlobalPrefix('api');
+  app.setGlobalPrefix("api");
 
   // CORS 설정
-  const corsOptions = process.env.NODE_ENV === 'production'
-    ? {
-        origin: ['https://your-production-frontend.com'],
-        methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-        allowedHeaders: ['Content-Type', 'Authorization'],
-      }
-    : {
-        origin: '*',
-        methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-      };
+  const corsOptions =
+    process.env.NODE_ENV === "production"
+      ? {
+          origin: ["https://your-production-frontend.com"],
+          methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+          allowedHeaders: ["Content-Type", "Authorization"],
+        }
+      : {
+          origin: "*",
+          methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+        };
   app.enableCors(corsOptions);
 
   // HTTP 예외 필터
   app.useGlobalFilters(new HttpExceptionFilter());
-  
+
   // Swagger 설정
   const config = new DocumentBuilder()
-    .setTitle('Your API Title')
-    .setDescription('API description')
-    .setVersion('1.0')
-    .addTag('your-tag')
+    .setTitle("Your API Title")
+    .setDescription("API description")
+    .setVersion("1.0")
+    .addTag("your-tag")
     .addBearerAuth()
     .build();
-  
+
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
+  SwaggerModule.setup("api/docs", app, document);
 
   const port = process.env.NODE_PORT || 3000;
   await app.listen(port);
   const baseUrl = await app.getUrl();
   console.log(`서버 실행 중...: ${baseUrl}/api`);
-  console.log(`Swagger UI: ${baseUrl}/api/docs`); 
+  console.log(`Swagger UI: ${baseUrl}/api/docs`);
 }
 bootstrap();
