@@ -1,7 +1,6 @@
-import { IsEmail, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsString, MinLength } from "class-validator";
 
 export class CompleteSellerProfileDto {
-
   @IsString()
   storeName: string;
 
@@ -10,5 +9,4 @@ export class CompleteSellerProfileDto {
 
   @IsString()
   storePhoneNumber: string;
-
 }

@@ -1,6 +1,11 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+} from "typeorm";
 
-@Entity('access_logs')
+@Entity("access_logs")
 export class AccessLog {
   @PrimaryGeneratedColumn()
   id: number;
@@ -9,7 +14,7 @@ export class AccessLog {
   userId: string;
 
   @Column()
-  userType: 'user' | 'seller';
+  userType: "user" | "seller";
 
   @Column()
   action: string;

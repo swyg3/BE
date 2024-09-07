@@ -5,14 +5,14 @@ import { Seller } from "src/sellers/entities/seller.entity";
 import { UpdateSellerProfileCommand } from "../commands/update-seller-profile.command";
 
 @CommandHandler(UpdateSellerProfileCommand)
-export class UpdateSellerProfileHandler implements ICommandHandler<UpdateSellerProfileCommand> {
+export class UpdateSellerProfileHandler
+  implements ICommandHandler<UpdateSellerProfileCommand>
+{
   constructor(
     @InjectRepository(Seller)
     private readonly sellerRepository: Repository<Seller>,
-    private readonly eventBus: EventBus
+    private readonly eventBus: EventBus,
   ) {}
 
-  async execute(command: UpdateSellerProfileCommand) {
-    
-  }
+  async execute(command: UpdateSellerProfileCommand) {}
 }

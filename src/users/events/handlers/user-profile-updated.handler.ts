@@ -4,12 +4,12 @@ import { UserViewRepository } from "src/users/repositories/user-view.repository"
 import { Logger } from "@nestjs/common";
 
 @EventsHandler(UserProfileUpdatedEvent)
-export class UserProfileUpdatedHandler implements IEventHandler<UserProfileUpdatedEvent> {
+export class UserProfileUpdatedHandler
+  implements IEventHandler<UserProfileUpdatedEvent>
+{
   private readonly logger = new Logger(UserProfileUpdatedHandler.name);
-  
-  constructor(
-    private readonly userViewRepository: UserViewRepository
-  ) {}
+
+  constructor(private readonly userViewRepository: UserViewRepository) {}
 
   async handle(event: UserProfileUpdatedEvent) {
     const { userId, updateData } = event;

@@ -1,6 +1,9 @@
 export class BusinessNumberVerifiedEvent {
-    constructor(
-      public readonly sellerId: string,
-      public readonly businessNumber: string
-    ) {}
+  public readonly aggregateId: string;
+  public readonly version: number;
+
+  constructor(sellerId: string, version: number) {
+    this.aggregateId = sellerId;
+    this.version = version;
   }
+}

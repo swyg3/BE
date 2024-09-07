@@ -4,10 +4,10 @@ export class UserLoggedInEvent {
 
   constructor(
     public readonly userId: string,
-    public readonly userType: 'user' | 'seller',
+    public readonly userType: "user" | "seller",
     public readonly loginMethod: string,
     public readonly accessToken: string,
-    version: number = 1
+    version: number = 1,
   ) {
     this.aggregateId = userId;
     this.version = version;

@@ -1,23 +1,25 @@
-import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { MongooseModule } from '@nestjs/mongoose';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { MetricsModule } from './metrics/metrics.module';
-import { UsersModule } from './users/users.module';
-import { AuthModule } from './auth/auth.module';
-import { SellersModule } from './sellers/sellers.module';
-import { configValidationSchema } from './shared/infrastructure/config/config.validation';
-import { getTypeOrmConfig } from './shared/infrastructure/database/typeorm.config';
-import { getMongoConfig } from './shared/infrastructure/database/mongodb.config';
-import { createRedisClient, REDIS_CLIENT, RedisModule } from './shared/infrastructure/redis/redis.config';
-import { ThrottlerModule } from '@nestjs/throttler';
-
-
+import { Module } from "@nestjs/common";
+import { AppController } from "./app.controller";
+import { AppService } from "./app.service";
+import { TypeOrmModule } from "@nestjs/typeorm";
+import { MongooseModule } from "@nestjs/mongoose";
+import { ConfigModule, ConfigService } from "@nestjs/config";
+import { MetricsModule } from "./metrics/metrics.module";
+import { UsersModule } from "./users/users.module";
+import { AuthModule } from "./auth/auth.module";
+import { SellersModule } from "./sellers/sellers.module";
+import { configValidationSchema } from "./shared/infrastructure/config/config.validation";
+import { getTypeOrmConfig } from "./shared/infrastructure/database/typeorm.config";
+import { getMongoConfig } from "./shared/infrastructure/database/mongodb.config";
+import {
+  createRedisClient,
+  REDIS_CLIENT,
+  RedisModule,
+} from "./shared/infrastructure/redis/redis.config";
+import { ThrottlerModule } from "@nestjs/throttler";
 
 @Module({
-  imports: [   
+  imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       validationSchema: configValidationSchema,
@@ -29,12 +31,12 @@ import { ThrottlerModule } from '@nestjs/throttler';
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ([
+      useFactory: (config: ConfigService) => [
         {
-          ttl: config.get<number>('THROTTLE_TTL'),
-          limit: config.get<number>('THROTTLE_LIMIT'),
+          ttl: config.get<number>("THROTTLE_TTL"),
+          limit: config.get<number>("THROTTLE_LIMIT"),
         },
-      ]),
+      ],
     }),
     TypeOrmModule.forRootAsync({
       useFactory: getTypeOrmConfig,
@@ -44,12 +46,12 @@ import { ThrottlerModule } from '@nestjs/throttler';
       useFactory: getMongoConfig,
       inject: [ConfigService],
     }),
-  MetricsModule,
-  RedisModule,
-  AuthModule,
-  UsersModule,
-  SellersModule
-],
+    MetricsModule,
+    RedisModule,
+    AuthModule,
+    UsersModule,
+    SellersModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
   exports: [],

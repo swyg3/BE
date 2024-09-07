@@ -1,15 +1,15 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { UserView } from '../schemas/user-view.schema';
-import { UpdateUserProfileDto } from '../dtos/update-user-profile.dto';
+import { Injectable, Logger } from "@nestjs/common";
+import { InjectModel } from "@nestjs/mongoose";
+import { Model } from "mongoose";
+import { UserView } from "../schemas/user-view.schema";
+import { UpdateUserProfileDto } from "../dtos/update-user-profile.dto";
 
 @Injectable()
 export class UserViewRepository {
   private readonly logger = new Logger(UserViewRepository.name);
-  
+
   constructor(
-    @InjectModel(UserView.name) private userViewModel: Model<UserView>
+    @InjectModel(UserView.name) private userViewModel: Model<UserView>,
   ) {}
 
   async create(userView: Partial<UserView>): Promise<UserView> {
