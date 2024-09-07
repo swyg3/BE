@@ -1,4 +1,4 @@
-import { UpdateSellerProfileDto } from "../dtos/update-seller-profile.dto";
+import { UpdateSellerProfileDto } from "../../dtos/update-seller-profile.dto";
 
 export class SellerProfileUpdatedEvent {
     constructor(
