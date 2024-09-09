@@ -8,6 +8,6 @@ export class CreateOrderCommand {
         public readonly pickupTime: Date,
         public readonly paymentMethod: PaymentMethod,
         public readonly status: Status,
-        public readonly items: { orderId: number; productId: number; quantity: number; price: number } []
+        public readonly items: { productId: number; quantity: number; price: number } []
     ) {}
 }

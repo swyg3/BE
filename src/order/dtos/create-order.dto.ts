@@ -28,5 +28,5 @@ export class CreateOrderDto {
     @IsEnum(Status)
     status: Status;
 
-    items: { orderId: number; productId: number; quantity: number; price: number } []
+    items: { productId: number; quantity: number; price: number } []
 }
