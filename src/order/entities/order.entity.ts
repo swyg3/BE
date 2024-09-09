@@ -3,8 +3,8 @@ import { PaymentMethod, Status } from "../enums/order.enum";
 
 @Entity('order')
 export class Order {
-    @PrimaryGeneratedColumn('increment', { type: 'bigint' })
-    id: number;
+    @PrimaryGeneratedColumn('uuid')
+    id: string;
     
     @Column({ type: 'bigint', name: 'user_id', nullable: false })
     userId: number;

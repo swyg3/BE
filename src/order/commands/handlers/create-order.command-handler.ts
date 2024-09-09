@@ -5,7 +5,6 @@ import { OrderItems } from "src/order-items/entities/order-items.entity";
 import { Order } from "src/order/entities/order.entity";
 import { Status } from "src/order/enums/order.enum";
 import { Repository } from 'typeorm';
-import { v4 as uuidv4 } from 'uuid';
 import { CreateOrderCommand } from "../create-order.command";
 
 @CommandHandler(CreateOrderCommand)
@@ -40,7 +39,7 @@ export class CreateOrderCommandHandler implements ICommandHandler<CreateOrderCom
         // 2. 주문 내역 생성
         const orderItems = items.map(item => {
             const orderItem = new OrderItems();
-            orderItem.orderId = uuidv4();
+            orderItem.orderId = item.orderId;
             orderItem.productId = item.productId;
             orderItem.quantity = item.quantity;
             orderItem.price = item.price;
