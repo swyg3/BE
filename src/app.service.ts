@@ -9,7 +9,7 @@ export class AppService {
     return 'Hello World!';
   }
 
-  async excuteHeavyWork(): Promise<{ result: string; duration: number }> {
+  async executeHeavyWork(): Promise<{ result: string; duration: number }> {
     const startTime = Date.now();
 
     // 무거운 작업 시뮬레이션

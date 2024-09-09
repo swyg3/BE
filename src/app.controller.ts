@@ -1,8 +1,8 @@
 import { Controller, Get } from '@nestjs/common';
-import { AppService } from './app.service';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { AppService } from './app.service';
 
-@ApiTags('Promeheus 테스트')  // 컨트롤러에 대한 태그 추가
+@ApiTags('Prometheus 테스트')  // 컨트롤러에 대한 태그 추가
 @Controller()
 export class AppController {
   constructor(private readonly appService: AppService) {}
@@ -18,6 +18,6 @@ export class AppController {
   @ApiOperation({ summary: '무거운 작업 테스트' })
   @ApiResponse({ status: 200, description: '실행 결과를 반환합니다.', type: String })
   async executeHeavyWork() {
-    return this.appService.excuteHeavyWork();
+    return this.appService.executeHeavyWork();
   }
 }

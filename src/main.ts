@@ -1,9 +1,9 @@
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
-import { MetricsInterceptor } from './metrics/metrics.interceptor';
-import { CustomMetricsService } from './metrics/custom-metrics.service';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { VersioningType } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { AppModule } from './app.module';
+import { CustomMetricsService } from './metrics/custom-metrics.service';
+import { MetricsInterceptor } from './metrics/metrics.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -50,6 +50,6 @@ async function bootstrap() {
   await app.listen(port);
   const baseUrl = await app.getUrl();
   console.log(`서버 실행 중...: ${baseUrl}/api`);
-  console.log(`Swagger UI: ${baseUrl}/api/docs`); 
+  console.log(`Swagger UI: ${baseUrl}/api/docs`);
 }
 bootstrap();
