@@ -26,6 +26,5 @@ export class Inventory {
         default: () => 'CURRENT_TIMESTAMP',
     })
     updatedAt: Date;
-    createdAt: Date;
-    inventoryId: any;
+
 }
