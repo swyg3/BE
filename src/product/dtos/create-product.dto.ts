@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsOptional, IsEnum, Min, Max, IsUrl } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsEnum, Min, Max, IsUrl, IsDate, IsDateString } from 'class-validator';
 import { Category } from '../product.category'; 
 
 export class CreateProductDto {
@@ -17,11 +17,11 @@ export class CreateProductDto {
   @IsUrl({}, {
     message: '상품 이미지 URL은 유효한 URL 형식이어야 합니다.'
   })
-  productImageUrl: string;
+  productImageUrl?: string;
 
   @IsOptional()
   @IsString()
-  description: string;
+  description?: string;
 
   @IsNumber()
   @Min(0, {
@@ -35,4 +35,17 @@ export class CreateProductDto {
     message: '할인 가격은 0보다 커야 합니다.'
   })
   discountedPrice?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0, {
+    message: '재고는 0보다 커야 합니다.'
+  })
+  quantity?: number;
+
+  @IsOptional()
+  @IsDateString({}, {
+    message: '만기일은 유효한 날짜 문자열이어야 합니다.'
+  })
+  expirationDate?: string;
 }

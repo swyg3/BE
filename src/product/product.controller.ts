@@ -16,8 +16,9 @@ export class ProductController {
 
   @Post()
   async createProduct(@Body() createProductDto: CreateProductDto) {
-    const { sellerId, category, name, productImageUrl, description, originalPrice, discountedPrice } = createProductDto;
-
+    const { sellerId, category, name, productImageUrl, description, originalPrice, discountedPrice, 
+      quantity, expirationDate } = createProductDto;
+      const expirationDateObj = expirationDate ? new Date(expirationDate) : null;
     await this.commandBus.execute(new CreateProductCommand(
       sellerId,
       category,
@@ -26,6 +27,8 @@ export class ProductController {
       description,
       originalPrice,
       discountedPrice,
+      quantity,
+      expirationDateObj
     ));
   }
 

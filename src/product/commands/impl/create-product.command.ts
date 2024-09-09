@@ -9,5 +9,7 @@ export class CreateProductCommand {
       public readonly description: string,
       public readonly originalPrice: number,
       public readonly discountedPrice: number,
+      public readonly quantity: number,
+      public readonly expirationDate: Date
     ) {}
   }

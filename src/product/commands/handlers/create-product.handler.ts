@@ -25,9 +25,7 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
   ) { }
 
   async execute(command: CreateProductCommand) {
-    const { sellerId, category, name, productImageUrl, description, originalPrice, discountedPrice } = command;
-
-    const expirationDate = new Date();
+    const { sellerId, category, name, productImageUrl, description, originalPrice, discountedPrice, quantity, expirationDate } = command;
 
      // Product 저장
      const product = this.productRepository.create({
@@ -70,12 +68,13 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
 
     console.log("db success");
 
+   
+
     // Inventory 생성 명령어 발행
     const createInventoryCommand = new CreateInventoryCommand(
-      Id,
-      0, // 기본 재고 수량
-      expirationDate,
+      Id, quantity, expirationDate
     );
+    const discountRate = ((originalPrice - discountedPrice) / originalPrice) * 100;
     await this.commandBus.execute(createInventoryCommand);
 
     console.log("Inventorycommand success");
@@ -89,8 +88,8 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
       description,
       originalPrice,
       discountedPrice,
-      0,              // discountRate, 기본값으로 설정
-      0,              // availableStock, 기본값으로 설정
+      discountRate,              
+      quantity,            
       expirationDate, // 만기일을 설정한 날짜로 지정
       new Date(),     // createdAt, 현재 날짜
       new Date()      // updatedAt, 현재 날짜
