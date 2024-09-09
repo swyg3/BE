@@ -3,7 +3,7 @@ import { InventoryDeletedEvent } from '../impl/inventory-deleted.event';
 import { InventoryViewRepository } from '../../repositories/inventory-view.repository';
 
 @EventsHandler(InventoryDeletedEvent)
-export class InventoryDeletedEventHandler implements IEventHandler<InventoryDeletedEvent> {
+export class InventoryDeletedHandler implements IEventHandler<InventoryDeletedEvent> {
   constructor(private readonly inventoryViewRepository: InventoryViewRepository) {}
 
   async handle(event: InventoryDeletedEvent) {

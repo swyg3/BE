@@ -34,8 +34,8 @@ export class CreateInventoryHandler implements ICommandHandler<CreateInventoryCo
       productId,
       quantity,
       expirationDate,
-      new Date(), // createdAt
-      new Date(), // updatedAt
+      new Date(),
+      
     );
 
     this.eventBus.publish(inventoryCreatedEvent);

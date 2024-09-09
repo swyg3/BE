@@ -1,4 +1,3 @@
-// src/product/aggregates/product.aggregate.ts
 import { AggregateRoot } from '@nestjs/cqrs';
 import { ProductCreatedEvent } from '../events/impl/product-created.event';
 import { ProductDeletedEvent } from '../events/impl/product-deleted.event';

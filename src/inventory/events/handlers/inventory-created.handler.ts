@@ -18,7 +18,6 @@ export class InventoryCreatedHandler implements IEventHandler<InventoryCreatedEv
         productId: event.productId,
         quantity: event.quantity,
         expirationDate: event.expirationDate,
-        createdAt: event.createdAt,
         updatedAt: event.updatedAt,
       });
 
