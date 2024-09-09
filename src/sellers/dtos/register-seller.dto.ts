@@ -59,11 +59,4 @@ export class RegisterSellerDto {
     message: "유효한 상점 전화번호 형식이 아닙니다.",
   })
   storePhoneNumber: string;
-
-  @IsString()
-  @IsNotEmpty({ message: "사업자 등록 번호는 필수 입력 항목입니다." })
-  @Matches(/^[0-9]{10}$/, {
-    message: "유효한 사업자 등록 번호 형식이 아닙니다. (10자리 숫자)",
-  })
-  businessNumber: string;
 }

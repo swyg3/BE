@@ -2,7 +2,7 @@ import { CommandHandler, ICommandHandler } from "@nestjs/cqrs";
 import { CompleteSellerProfileCommand } from "../commands/complete-seller-profile.command";
 import { SellerProfileCompletedEvent } from "../events/seller-profile-completed.event";
 import { SellerRepository } from "src/sellers/repositories/seller.repository";
-import { EventBusService } from "src/shared/infrastructure/cqrs/event-bus.service";
+import { EventBusService } from "src/shared/infrastructure/event-sourcing/event-bus.service";
 
 @CommandHandler(CompleteSellerProfileCommand)
 export class CompleteSellerProfileHandler
@@ -29,7 +29,7 @@ export class CompleteSellerProfileHandler
     await this.sellerRepository.save(seller);
 
     // 이벤트 발행 및 저장
-    const event = new SellerProfileCompletedEvent(sellerId, profileData);
+    const event = new SellerProfileCompletedEvent(sellerId, profileData, 1);
     await this.eventBusService.publishAndSave(event);
 
     return {

@@ -1,4 +1,4 @@
-import { CommandHandler, ICommandHandler, EventBus } from "@nestjs/cqrs";
+import { CommandHandler, ICommandHandler } from "@nestjs/cqrs";
 import { Inject } from "@nestjs/common";
 import Redis from "ioredis";
 import { RequestEmailVerificationCommand } from "../commands/request-email-verify.command";
@@ -7,13 +7,14 @@ import { HmacUtil } from "src/shared/utils/hmac.util";
 import { REDIS_CLIENT } from "src/shared/infrastructure/redis/redis.config";
 import { ConfigService } from "@nestjs/config";
 import { EmailVerificationRequestedEvent } from "src/auth/shared/events/events/email-verify-requested.event";
+import { EventBusService } from "src/shared/infrastructure/event-sourcing/event-bus.service";
 
 @CommandHandler(RequestEmailVerificationCommand)
 export class RequestEmailVerificationHandler
   implements ICommandHandler<RequestEmailVerificationCommand>
 {
   constructor(
-    private readonly eventBus: EventBus,
+    private readonly eventBusService: EventBusService,
     private readonly emailService: EmailService,
     private readonly hmacUtil: HmacUtil,
     @Inject(REDIS_CLIENT) private readonly redisClient: Redis,
@@ -44,7 +45,9 @@ export class RequestEmailVerificationHandler
     await this.emailService.sendVerificationEmail(email, verificationCode);
 
     // 이벤트 발행
-    this.eventBus.publish(
+    await this.emailService.sendVerificationEmail(email, verificationCode);
+
+    await this.eventBusService.publishAndSave(
       new EmailVerificationRequestedEvent(
         email,
         verificationCode,

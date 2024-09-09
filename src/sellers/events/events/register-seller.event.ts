@@ -1,19 +1,20 @@
-export class SellerRegisteredEvent {
-  public readonly aggregateId: string;
-  public readonly version: number;
+import { BaseEvent } from "src/shared/infrastructure/event-sourcing";
+
+export class SellerRegisteredEvent implements BaseEvent {
+  eventType = "SellerRegistered";
+  aggregateType = "Seller";
 
   constructor(
-    public readonly sellerId: string,
-    public readonly email: string,
-    public readonly name: string,
-    public readonly phoneNumber: string,
-    public readonly storeName: string,
-    public readonly storeAddress: string,
-    public readonly storePhoneNumber: string,
-    public readonly isEmailVerified: boolean,
-    version: number = 1,
-  ) {
-    this.aggregateId = sellerId;
-    this.version = version;
-  }
+    public readonly aggregateId: string,
+    public readonly data: {
+      email: string;
+      name: string;
+      phoneNumber: string;
+      storeName: string;
+      storeAddress: string;
+      storePhoneNumber: string;
+      isEmailVerified: boolean;
+    },
+    public readonly version: number,
+  ) {}
 }

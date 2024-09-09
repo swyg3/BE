@@ -1,11 +1,12 @@
-export class SellerProfileCompletedEvent {
-  public readonly aggregateId: string;
-  public readonly version: number = 1;
+import { BaseEvent } from "src/shared/infrastructure/event-sourcing";
+
+export class SellerProfileCompletedEvent implements BaseEvent {
+  readonly eventType = "SellerProfileCompleted";
+  readonly aggregateType = "Seller";
 
   constructor(
-    public readonly sellerId: string,
-    public readonly profileData: any,
-  ) {
-    this.aggregateId = sellerId;
-  }
+    public readonly aggregateId: string,
+    public readonly data: any,
+    public readonly version: number,
+  ) {}
 }

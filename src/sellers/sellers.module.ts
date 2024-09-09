@@ -1,10 +1,9 @@
 import { Module } from "@nestjs/common";
-import { CqrsModule } from "@nestjs/cqrs";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { MongooseModule } from "@nestjs/mongoose";
 import { SellersController } from "./sellers.controller";
 import { Seller } from "./entities/seller.entity";
-import { EventStoreModule } from "src/shared/infrastructure/event-store/event-store.module";
+import { EventSourcingModule } from "src/shared/infrastructure/event-sourcing/event-sourcing.module";
 import { RedisModule } from "src/shared/infrastructure/redis/redis.config";
 import { SellerView, SellerViewSchema } from "./schemas/seller-view.schema";
 import { SellerViewRepository } from "./repositories/seller-view.repository";
@@ -30,12 +29,11 @@ const EventHandlers = [
 
 @Module({
   imports: [
-    CqrsModule,
+    EventSourcingModule,
     TypeOrmModule.forFeature([Seller]),
     MongooseModule.forFeature([
       { name: SellerView.name, schema: SellerViewSchema },
     ]),
-    EventStoreModule,
     RedisModule,
   ],
   controllers: [SellersController],

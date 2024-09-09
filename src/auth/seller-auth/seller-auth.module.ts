@@ -6,9 +6,14 @@ import { VerifyBusinessNumberHandler } from "./handlers/verify-business-number.h
 import { BusinessNumberVerificationService } from "./services/business-number-verification.service";
 import { Seller } from "src/sellers/entities/seller.entity";
 import { SellersModule } from "src/sellers/sellers.module";
+import { EventSourcingModule } from "src/shared/infrastructure/event-sourcing/event-sourcing.module";
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Seller]), SellersModule],
+  imports: [
+    TypeOrmModule.forFeature([Seller]),
+    SellersModule,
+    EventSourcingModule,
+  ],
   controllers: [SellerAuthController],
   providers: [
     CompleteSellerProfileHandler,

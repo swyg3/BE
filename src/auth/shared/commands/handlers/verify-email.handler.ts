@@ -1,15 +1,16 @@
-import { CommandHandler, ICommandHandler, EventBus } from "@nestjs/cqrs";
+import { CommandHandler, ICommandHandler } from "@nestjs/cqrs";
 import { Inject, UnauthorizedException } from "@nestjs/common";
 import Redis from "ioredis";
 import { VerifyEmailCommand } from "../commands/verify-email.command";
 import { HmacUtil } from "src/shared/utils/hmac.util";
 import { REDIS_CLIENT } from "src/shared/infrastructure/redis/redis.config";
 import { EmailVerifiedEvent } from "src/auth/shared/events/events/email-verified.event";
+import { EventBusService } from "src/shared/infrastructure/event-sourcing/event-bus.service";
 
 @CommandHandler(VerifyEmailCommand)
 export class VerifyEmailHandler implements ICommandHandler<VerifyEmailCommand> {
   constructor(
-    private readonly eventBus: EventBus,
+    private readonly eventBusService: EventBusService,
     private readonly hmacUtil: HmacUtil,
     @Inject(REDIS_CLIENT) private readonly redisClient: Redis,
   ) {}
@@ -59,8 +60,10 @@ export class VerifyEmailHandler implements ICommandHandler<VerifyEmailCommand> {
     // 인증 완료 상태를 Redis에 저장
     await this.redisClient.set(`email_verified:${email}`, "true", "EX", 86400); // 24시간 동안 유효
 
-    // 이벤트 발행
-    this.eventBus.publish(new EmailVerifiedEvent(email));
+    // 이벤트 생성 및 발행
+    const emailVerifiedEvent = new EmailVerifiedEvent(email, { email }, 1);
+
+    await this.eventBusService.publishAndSave(emailVerifiedEvent);
 
     return true;
   }

@@ -12,22 +12,22 @@ export class UserRegisteredHandler
   constructor(private readonly userViewRepository: UserViewRepository) {}
 
   async handle(event: UserRegisteredEvent) {
-    this.logger.log(`Handling UserRegisteredEvent for user: ${event.userId}`);
+    this.logger.log(`UserRegisteredEvent 처리중: ${event.aggregateId}`);
 
     try {
       await this.userViewRepository.create({
-        userId: event.userId,
-        email: event.email,
-        name: event.name,
-        phoneNumber: event.phoneNumber,
-        isEmailVerified: event.isEmailVerified,
+        userId: event.aggregateId,
+        email: event.data.email,
+        name: event.data.name,
+        phoneNumber: event.data.phoneNumber,
+        isEmailVerified: event.data.isEmailVerified,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
-      this.logger.log(`Users-View 업데이트 성공: ${event.userId}`);
+      this.logger.log(`Users-View 업데이트 성공: ${event.aggregateId}`);
     } catch (error) {
       this.logger.error(
-        `---Users-View 업데이트 실패: ${event.userId}, ${error.message}`,
+        `---Users-View 업데이트 실패: ${event.aggregateId}, ${error.message}`,
         error.stack,
       );
     }

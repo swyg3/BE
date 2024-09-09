@@ -1,4 +1,4 @@
-import { CommandHandler, EventBus, ICommandHandler } from "@nestjs/cqrs";
+import { CommandHandler, ICommandHandler } from "@nestjs/cqrs";
 import {
   BadRequestException,
   Inject,
@@ -10,12 +10,12 @@ import { Repository } from "typeorm";
 import { RegisterUserCommand } from "../commands/register-user.command";
 import { UserAggregate } from "../../aggregates/user.aggregate";
 import { User } from "../../entities/user.entity";
-import { EventStoreService } from "../../../shared/infrastructure/event-store/event-store.service";
 import { v4 as uuidv4 } from "uuid";
 import { UserRegisteredEvent } from "src/users/events/events/user-registered.event";
 import { PasswordService } from "src/users/services/password.service";
 import { REDIS_CLIENT } from "src/shared/infrastructure/redis/redis.config";
 import Redis from "ioredis";
+import { EventBusService } from "src/shared/infrastructure/event-sourcing/event-bus.service";
 
 @CommandHandler(RegisterUserCommand)
 export class RegisterUserHandler
@@ -26,9 +26,8 @@ export class RegisterUserHandler
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    private readonly eventStoreService: EventStoreService,
     private readonly passwordService: PasswordService,
-    @Inject(EventBus) private readonly eventBus: EventBus,
+    private readonly eventBusService: EventBusService,
     @Inject(REDIS_CLIENT) private readonly redisClient: Redis,
   ) {}
 
@@ -66,17 +65,6 @@ export class RegisterUserHandler
     const userAggregate = new UserAggregate(userId);
     const events = userAggregate.register(email, name, phoneNumber);
 
-    // 이벤트 저장소에 저장
-    for (const event of events) {
-      await this.eventStoreService.saveEvent({
-        aggregateId: userId,
-        aggregateType: "User",
-        eventType: event.constructor.name,
-        eventData: event,
-        version: event.version,
-      });
-    }
-
     // 데이터베이스에 저장
     const user = this.userRepository.create({
       id: userId,
@@ -87,17 +75,26 @@ export class RegisterUserHandler
     });
     await this.userRepository.save(user);
 
-    // 이벤트 비동기 발행
+    // 이벤트 저장 및 발행
+    for (const event of events) {
+      await this.eventBusService.publishAndSave({
+        ...event,
+        aggregateId: userId,
+        aggregateType: "User",
+      });
+    }
+
+    // UserRegisteredEvent 발행
     const userRegisteredEvent = new UserRegisteredEvent(
       userId,
       email,
       name,
       phoneNumber,
       true,
-      1,
+      events.length + 1, // 버전을 이벤트 수 + 1로 설정
     );
     this.logger.log(`UserRegisteredEvent 이벤트 발행: ${userId}`);
-    this.eventBus.publish(userRegisteredEvent);
+    await this.eventBusService.publishAndSave(userRegisteredEvent);
 
     // Redis에서 이메일 인증 상태 삭제
     await this.redisClient.del(`email_verified:${email}`);

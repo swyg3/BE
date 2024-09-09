@@ -19,29 +19,25 @@ export class SellerAuthController extends BaseAuthController {
   }
 
   @Post("verify-business-number")
-  @UseGuards(AuthGuard("jwt"))
   async verifyBusinessNumber(
-    @Req() req,
-    @Body() dto: VerifyBusinessNumberDto,
+    @Body() verifyBusinessNumberDto: VerifyBusinessNumberDto,
   ): Promise<ApiResponse> {
-    const result = await this.commandBus.execute(
-      new VerifyBusinessNumberCommand(req.user.id, dto.businessNumber),
+    const { businessNumber } = verifyBusinessNumberDto;
+    await this.commandBus.execute(
+      new VerifyBusinessNumberCommand(businessNumber),
     );
     return {
       success: true,
       message: "사업자 등록번호가 성공적으로 검증되었습니다.",
-      data: result,
     };
   }
 
   @Post("complete-profile")
-  @UseGuards(AuthGuard("jwt"))
   async completeProfile(
-    @Req() req,
     @Body() profileDto: CompleteSellerProfileDto,
   ): Promise<ApiResponse> {
     const result = await this.commandBus.execute(
-      new CompleteSellerProfileCommand(req.user.id, profileDto),
+      new CompleteSellerProfileCommand(profileDto),
     );
     return {
       success: true,

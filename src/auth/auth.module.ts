@@ -1,9 +1,7 @@
 import { Module } from "@nestjs/common";
-import { CqrsModule } from "@nestjs/cqrs";
 import { JwtModule } from "@nestjs/jwt";
 import { PassportModule } from "@nestjs/passport";
 import { TypeOrmModule } from "@nestjs/typeorm";
-
 import * as SharedCommandHandlers from "./shared/commands/handlers";
 import * as SharedEventHandlers from "./shared/events/handlers";
 import { User } from "src/users/entities/user.entity";
@@ -12,7 +10,7 @@ import { EmailModule } from "src/shared/email-service/email.module";
 import { RedisModule } from "src/shared/infrastructure/redis/redis.config";
 import { UsersModule } from "src/users/users.module";
 import { SellersModule } from "src/sellers/sellers.module";
-import { EventStoreModule } from "src/shared/infrastructure/event-store/event-store.module";
+import { EventSourcingModule } from "src/shared/infrastructure/event-sourcing/event-sourcing.module";
 import { UserActivitiesModule } from "src/user-activities/user-activity.module";
 import { SellerAuthModule } from "./seller-auth/seller-auth.module";
 import { UserAuthController } from "./user-auth/user-auth.controller";
@@ -22,13 +20,11 @@ import { GoogleStrategy } from "./shared/strategies/google.strategy";
 import { KakaoStrategy } from "./shared/strategies/kakao.strategy";
 import { AuthService } from "./shared/services/auth.service";
 import { TokenService } from "./shared/services/token.service";
-import { EventBusService } from "src/shared/infrastructure/cqrs/event-bus.service";
 import { EmailVerificationService } from "./shared/services/email-verification.service";
 import { TokenBlacklistService } from "./shared/services/token-blacklist.service";
 
 @Module({
   imports: [
-    CqrsModule,
     PassportModule.register({ defaultStrategy: "jwt" }),
     JwtModule.register({
       secret: process.env.JWT_SECRET,
@@ -39,7 +35,7 @@ import { TokenBlacklistService } from "./shared/services/token-blacklist.service
     RedisModule,
     UsersModule,
     SellersModule,
-    EventStoreModule,
+    EventSourcingModule,
     UserActivitiesModule,
     SellerAuthModule,
   ],
@@ -51,7 +47,6 @@ import { TokenBlacklistService } from "./shared/services/token-blacklist.service
     KakaoStrategy,
     AuthService,
     TokenService,
-    EventBusService,
     EmailVerificationService,
     TokenBlacklistService,
     ...Object.values(SharedCommandHandlers),
