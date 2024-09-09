@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryGeneratedColumn, Timestamp } from "typeorm";
+import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { PaymentMethod, Status } from "../enums/order.enum";
 
 @Entity('order')
 export class Order {
@@ -11,15 +12,18 @@ export class Order {
     @Column({ type: 'bigint', name: 'total_amount', nullable: false })
     totalAmount: number;
 
+    @Column({ type: 'bigint', name: 'total_price', nullable: false })
+    totalPrice: number;
+
     @Column({ type: 'date', name: 'pickup_time', nullable: false })
     pickupTime: Date;
 
     @Column({ type: 'enum', name: 'payment_method', nullable: false })
-    paymentMethod: Enumerator;
+    paymentMethod: PaymentMethod;
 
     @Column({ type: 'enum', name: 'status', nullable: false })
-    status: Enumerator;
+    status: Status;
 
     @Column({ type: 'timestamp', name: 'created_at', nullable: false })
-    createdAt: Timestamp;
+    createdAt: Date;
 }
