@@ -10,6 +10,7 @@ export class ProductRepository {
     deleteOne: any;
     findOne: any;
   delete: any;
+    findById: any;
   
   constructor(
     @InjectRepository(Product)
