@@ -1,7 +1,7 @@
 import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
 import { PaymentMethod, Status } from "../enums/order.enum";
 
-@Entity('order')
+@Entity('orders')
 export class Order {
     @PrimaryGeneratedColumn('uuid')
     id: string;

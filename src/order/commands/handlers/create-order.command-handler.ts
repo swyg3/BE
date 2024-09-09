@@ -3,7 +3,7 @@ import { CommandBus, CommandHandler, ICommandHandler } from "@nestjs/cqrs";
 import { InjectRepository } from "@nestjs/typeorm";
 import { OrderItems } from "src/order-items/entities/order-items.entity";
 import { Order } from "src/order/entities/order.entity";
-import { Status } from "src/order/enums/order.enum";
+import { PaymentMethod, Status } from "src/order/enums/order.enum";
 import { Repository } from 'typeorm';
 import { CreateOrderCommand } from "../create-order.command";
 
@@ -28,7 +28,7 @@ export class CreateOrderCommandHandler implements ICommandHandler<CreateOrderCom
         newOrder.totalAmount = totalAmount;
         newOrder.totalPrice = totalPrice;
         newOrder.pickupTime = pickupTime;
-        newOrder.paymentMethod = paymentMethod;
+        newOrder.paymentMethod = PaymentMethod.CASH;
         // 초기값 진행중 pending
         newOrder.status = Status.PENDING;
         // 현재 시간으로 설정
