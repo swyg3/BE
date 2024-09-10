@@ -1,5 +1,4 @@
 import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
-import { PaymentMethod, Status } from "../enums/order.enum";
 
 @Entity('orders')
 export class Order {
@@ -18,12 +17,12 @@ export class Order {
     @Column({ type: 'date', name: 'pickup_time', nullable: false })
     pickupTime: Date;
 
-    @Column({ type: 'enum', name: 'payment_method', nullable: false })
-    paymentMethod: PaymentMethod;
+    @Column({ type: 'varchar', name: 'payment_method', nullable: false })
+    paymentMethod: string;
 
-    @Column({ type: 'enum', name: 'status', nullable: false })
-    status: Status;
+    @Column({ type: 'varchar', name: 'status', nullable: false })
+    status: string;
 
-    @Column({ type: 'timestamp', name: 'created_at', nullable: false })
+    @Column({ type: 'timestamp', name: 'created_at', default: () => 'CURRENT_TIMESTAMP' })
     createdAt: Date;
 }

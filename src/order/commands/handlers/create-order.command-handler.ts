@@ -1,12 +1,12 @@
-import { Logger } from "@nestjs/common";
-import { CommandBus, CommandHandler, ICommandHandler } from "@nestjs/cqrs";
+import { Injectable, Logger } from "@nestjs/common";
+import { CommandHandler, ICommandHandler } from "@nestjs/cqrs";
 import { InjectRepository } from "@nestjs/typeorm";
 import { OrderItems } from "src/order-items/entities/order-items.entity";
 import { Order } from "src/order/entities/order.entity";
-import { PaymentMethod, Status } from "src/order/enums/order.enum";
 import { Repository } from 'typeorm';
 import { CreateOrderCommand } from "../create-order.command";
 
+@Injectable()
 @CommandHandler(CreateOrderCommand)
 export class CreateOrderCommandHandler implements ICommandHandler<CreateOrderCommand> {
     private readonly logger = new Logger(CreateOrderCommandHandler.name);
@@ -16,11 +16,10 @@ export class CreateOrderCommandHandler implements ICommandHandler<CreateOrderCom
         private readonly orderRepository: Repository<Order>,
         @InjectRepository(OrderItems)
         private readonly orderItemsRepository: Repository<OrderItems>,
-        private readonly commandBus: CommandBus
     ) {}
 
-    async execute(command: CreateOrderCommand): Promise<Order> {
-        const { userId, totalAmount, totalPrice, pickupTime, paymentMethod, items } = command;
+    async execute(command: CreateOrderCommand): Promise<any> {
+        const { userId, totalAmount, totalPrice, pickupTime, items } = command;
 
         // 1. 주문 생성
         const newOrder = new Order();
@@ -28,29 +27,26 @@ export class CreateOrderCommandHandler implements ICommandHandler<CreateOrderCom
         newOrder.totalAmount = totalAmount;
         newOrder.totalPrice = totalPrice;
         newOrder.pickupTime = pickupTime;
-        newOrder.paymentMethod = PaymentMethod.CASH;
+        newOrder.paymentMethod = 'CASH';
         // 초기값 진행중 pending
-        newOrder.status = Status.PENDING;
+        newOrder.status = 'PENDING';
         // 현재 시간으로 설정
         newOrder.createdAt = new Date();
-
-        const saveOrder = await this.orderRepository.save(newOrder);
+        const savedOrder = await this.orderRepository.save(newOrder);
 
         // 2. 주문 내역 생성
         const orderItems = items.map(item => {
             const orderItem = new OrderItems();
-            orderItem.orderId = item.orderId;
+            orderItem.orderId = savedOrder.id;
             orderItem.productId = item.productId;
             orderItem.quantity = item.quantity;
             orderItem.price = item.price;
             return orderItem;
         });
-
         await this.orderItemsRepository.save(orderItems);
 
-        // 2. 이벤트 발생
-        this.logger.log('Order created, publishing event...');
+        // 3. 주문 수량 만큼 재고 삭제
 
-        return saveOrder;
+        // 4. 이벤트 발생
     }
 }

@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { CreateOrderCommand } from './commands/create-order.command';
 import { CreateOrderDto } from './dtos/create-order.dto';
@@ -39,8 +39,4 @@ export class OrderController {
     요청: 주문 취소
     결과: 주문 내역(주문 시간 등), 주문 상세 내역(상품 정보 등) 삭제
     */
-    @Delete(':orderId')
-    cancelOrder(@Param('orderId') orderId: number) {
-
-    }
 }

@@ -6,7 +6,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { configValidationSchema } from './common/config/config.validation';
 import { getMongoConfig } from './common/config/mongodb.config';
-import { createRedisClient, REDIS_CLIENT } from './common/config/redis.config';
+import { REDIS_CLIENT } from './common/config/redis.config';
 import { getTypeOrmConfig } from './common/config/typeorm.config';
 import { MetricsModule } from './metrics/metrics.module';
 import { OrderItemsModule } from './order-items/order-items.module';
@@ -23,6 +23,7 @@ import { OrderModule } from './order/order.module';
       },
     }),
     TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
       useFactory: getTypeOrmConfig,
       inject: [ConfigService],
     }),
@@ -38,7 +39,7 @@ import { OrderModule } from './order/order.module';
   providers: [
     {
       provide: REDIS_CLIENT,
-      useFactory: createRedisClient,
+      useFactory: (configService: ConfigService) => getTypeOrmConfig(configService),
       inject: [ConfigService],
     },
     AppService

@@ -1,4 +1,4 @@
-import { PaymentMethod, Status } from "../enums/order.enum";
+import { OrderItemsDto } from "src/order-items/dtos/order-items.dto";
 
 export class CreateOrderCommand {
     constructor(
@@ -6,8 +6,8 @@ export class CreateOrderCommand {
         public readonly totalAmount: number,
         public readonly totalPrice: number,
         public readonly pickupTime: Date,
-        public readonly paymentMethod: PaymentMethod,
-        public readonly status: Status,
-        public readonly items: { orderId: string; productId: number; quantity: number; price: number } []
+        public readonly paymentMethod: string,
+        public readonly status: string,
+        public readonly items: OrderItemsDto[],
     ) {}
 }
