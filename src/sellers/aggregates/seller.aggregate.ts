@@ -1,5 +1,4 @@
 import { AggregateRoot } from "@nestjs/cqrs";
-import { BusinessNumberVerifiedEvent } from "src/auth/seller-auth/events/business-number-verified.event";
 import { SellerRegisteredEvent } from "../events/events/register-seller.event";
 
 export class SellerAggregate extends AggregateRoot {
@@ -18,35 +17,33 @@ export class SellerAggregate extends AggregateRoot {
     storeAddress: string,
     storePhoneNumber: string,
     isEmailVerified: boolean = false,
+    isBusinessNumberVerified: boolean = false
   ) {
     this.version++;
     const event = new SellerRegisteredEvent(
       this.id,
-      email,
-      name,
-      phoneNumber,
-      storeName,
-      storeAddress,
-      storePhoneNumber,
-      isEmailVerified,
-      this.version,
+      {
+        email,
+        name,
+        phoneNumber,
+        storeName,
+        storeAddress,
+        storePhoneNumber,
+        isEmailVerified,
+        isBusinessNumberVerified: isBusinessNumberVerified, 
+      },
+      this.version
     );
     this.apply(event);
-    return [event];
+    return event;
   }
 
-  verifyBusinessNumber() {
-    if (this.isBusinessNumberVerified) {
-      throw new Error("사업자 등록번호가 이미 인증되었습니다.");
-    }
-    this.version++;
-    const event = new BusinessNumberVerifiedEvent(this.id, this.version);
-    this.apply(event);
-    return [event];
+  setBusinessNumberVerification(isVerified: boolean) {
+    this.isBusinessNumberVerified = isVerified;
   }
 
-  onBusinessNumberVerifiedEvent(event: BusinessNumberVerifiedEvent) {
-    this.isBusinessNumberVerified = true;
+  private onSellerRegisteredEvent(event: SellerRegisteredEvent) {
+    this.isBusinessNumberVerified = event.data.isBusinessNumberVerified;
     this.version = event.version;
   }
 

@@ -9,7 +9,12 @@ export class SellerProfileUpdatedHandler
 {
   private readonly logger = new Logger(SellerProfileUpdatedHandler.name);
 
-  constructor(private readonly userViewRepository: SellerViewRepository) {}
+  constructor(private readonly sellerViewRepository: SellerViewRepository) {}
 
-  async handle(event: SellerProfileUpdatedEvent) {}
+  async handle(event: SellerProfileUpdatedEvent) {
+
+    /**
+     * TODO: 읽기 모델 업데이트 처리
+     */
+  }
 }

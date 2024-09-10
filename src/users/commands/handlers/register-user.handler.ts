@@ -12,10 +12,10 @@ import { UserAggregate } from "../../aggregates/user.aggregate";
 import { User } from "../../entities/user.entity";
 import { v4 as uuidv4 } from "uuid";
 import { UserRegisteredEvent } from "src/users/events/events/user-registered.event";
-import { PasswordService } from "src/users/services/password.service";
 import { REDIS_CLIENT } from "src/shared/infrastructure/redis/redis.config";
 import Redis from "ioredis";
 import { EventBusService } from "src/shared/infrastructure/event-sourcing/event-bus.service";
+import { PasswordService } from "src/shared/services/password.service";
 
 @CommandHandler(RegisterUserCommand)
 export class RegisterUserHandler
@@ -87,11 +87,13 @@ export class RegisterUserHandler
     // UserRegisteredEvent 발행
     const userRegisteredEvent = new UserRegisteredEvent(
       userId,
-      email,
-      name,
-      phoneNumber,
-      true,
-      events.length + 1, // 버전을 이벤트 수 + 1로 설정
+      {
+        email,
+        name,
+        phoneNumber,
+        isEmailVerified: true,
+      },
+      events.length + 1 // 버전을 이벤트 수 + 1로 설정
     );
     this.logger.log(`UserRegisteredEvent 이벤트 발행: ${userId}`);
     await this.eventBusService.publishAndSave(userRegisteredEvent);

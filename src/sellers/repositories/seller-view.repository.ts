@@ -9,25 +9,26 @@ export class SellerViewRepository {
     @InjectModel(SellerView.name) private sellerViewModel: Model<SellerView>,
   ) {}
 
-  async findById(sellerId: string): Promise<SellerView | null> {
-    return this.sellerViewModel.findOne({ sellerId }).exec();
+  async create(sellerView: Partial<SellerView>): Promise<SellerView> {
+    const createdSellerView = new this.sellerViewModel(sellerView);
+    return await createdSellerView.save();
+  }
+
+  async findBySellerId(sellerId: string): Promise<SellerView | null> {
+    return await this.sellerViewModel.findOne({ sellerId }).exec();
   }
 
   async findByEmail(email: string): Promise<SellerView | null> {
-    return this.sellerViewModel.findOne({ email }).exec();
+    return await this.sellerViewModel.findOne({ email }).exec();
   }
 
-  async create(sellerData: Partial<SellerView>): Promise<SellerView> {
-    const newSellerView = new this.sellerViewModel(sellerData);
-    return newSellerView.save();
-  }
 
   async update(
     sellerId: string,
-    sellerData: Partial<SellerView>,
+    updates: Partial<SellerView>,
   ): Promise<SellerView | null> {
-    return this.sellerViewModel
-      .findOneAndUpdate({ sellerId }, { $set: sellerData }, { new: true })
+    return await this.sellerViewModel
+      .findOneAndUpdate({ sellerId }, { $set: updates }, { new: true })
       .exec();
   }
 

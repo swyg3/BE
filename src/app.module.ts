@@ -17,6 +17,7 @@ import {
   RedisModule,
 } from "./shared/infrastructure/redis/redis.config";
 import { ThrottlerModule } from "@nestjs/throttler";
+import { SharedModule } from "./shared/shared.module";
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { ThrottlerModule } from "@nestjs/throttler";
     }),
     MetricsModule,
     RedisModule,
+    SharedModule,
     AuthModule,
     UsersModule,
     SellersModule,

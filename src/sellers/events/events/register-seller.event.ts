@@ -14,6 +14,7 @@ export class SellerRegisteredEvent implements BaseEvent {
       storeAddress: string;
       storePhoneNumber: string;
       isEmailVerified: boolean;
+      isBusinessNumberVerified: boolean;
     },
     public readonly version: number,
   ) {}

@@ -1,10 +1,11 @@
 import { NotFoundException } from "@nestjs/common";
-import { CommandHandler, ICommandHandler, EventBus } from "@nestjs/cqrs";
+import { CommandHandler, ICommandHandler } from "@nestjs/cqrs";
 import { InjectRepository } from "@nestjs/typeorm";
 import { User } from "src/users/entities/user.entity";
 import { UserProfileUpdatedEvent } from "src/users/events/events/user-profile-updated.event";
 import { Repository } from "typeorm";
 import { UpdateUserProfileCommand } from "../commands/update-user-profile.command";
+import { EventBusService } from "src/shared/infrastructure/event-sourcing";
 
 @CommandHandler(UpdateUserProfileCommand)
 export class UpdateUserProfileHandler
@@ -13,7 +14,7 @@ export class UpdateUserProfileHandler
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    private readonly eventBus: EventBus,
+    private readonly eventBusService: EventBusService,
   ) {}
 
   async execute(command: UpdateUserProfileCommand) {
@@ -31,8 +32,15 @@ export class UpdateUserProfileHandler
 
     await this.userRepository.save(user);
 
-    // 이벤트 발행
-    this.eventBus.publish(new UserProfileUpdatedEvent(userId, updateData));
+    // 이벤트 발행 및 저장
+    const version = 1; 
+    const userProfileUpdatedEvent = new UserProfileUpdatedEvent(
+      userId, 
+      updateData, 
+      version, 
+    );
+
+    await this.eventBusService.publishAndSave(userProfileUpdatedEvent);
 
     return user;
   }

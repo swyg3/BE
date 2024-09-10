@@ -9,25 +9,25 @@ import { GetUserProfileHandler } from "./queries/handlers/get-user-profile.handl
 import { UserRegisteredHandler } from "./events/handlers/user-registered.handler";
 import { UserViewRepository } from "./repositories/user-view.repository";
 import { EventSourcingModule } from "../shared/infrastructure/event-sourcing/event-sourcing.module";
-import { PasswordService } from "./services/password.service";
 import { UserProfileUpdatedHandler } from "./events/handlers/user-profile-updated.handler";
 import { UpdateUserProfileHandler } from "./commands/handlers/update-user-profile.handler";
-import {
-  REDIS_CLIENT,
-  RedisModule,
-} from "src/shared/infrastructure/redis/redis.config";
+import { RedisModule } from "src/shared/infrastructure/redis/redis.config";
 import { UserRepository } from "./repositories/user.repository";
+import { SharedModule } from "src/shared/shared.module";
+
+
 const CommandHandlers = [RegisterUserHandler, UpdateUserProfileHandler];
 const QueryHandlers = [GetUserProfileHandler];
 const EventHandlers = [UserRegisteredHandler, UserProfileUpdatedHandler];
 
 @Module({
   imports: [
+    SharedModule,
+    EventSourcingModule,
     TypeOrmModule.forFeature([User]),
     MongooseModule.forFeature([
       { name: UserView.name, schema: UserViewSchema },
     ]),
-    EventSourcingModule,
     RedisModule,
   ],
   controllers: [UsersController],
@@ -36,9 +36,8 @@ const EventHandlers = [UserRegisteredHandler, UserProfileUpdatedHandler];
     ...QueryHandlers,
     ...EventHandlers,
     UserViewRepository,
-    PasswordService,
     UserRepository,
   ],
-  exports: [UserRepository],
+  exports: [UserRepository, UserViewRepository],
 })
 export class UsersModule {}

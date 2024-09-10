@@ -12,7 +12,9 @@ export class UserProfileUpdatedHandler
   constructor(private readonly userViewRepository: UserViewRepository) {}
 
   async handle(event: UserProfileUpdatedEvent) {
-    const { userId, updateData } = event;
-    await this.userViewRepository.update(userId, updateData);
+
+    /**
+     * TODO: 읽기 모델 업데이트 처리
+     */
   }
 }

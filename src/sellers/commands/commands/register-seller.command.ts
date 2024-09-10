@@ -8,5 +8,6 @@ export class RegisterSellerCommand {
     public readonly storeName: string,
     public readonly storeAddress: string,
     public readonly storePhoneNumber: string,
+    public readonly businessNumber?: string,
   ) {}
 }

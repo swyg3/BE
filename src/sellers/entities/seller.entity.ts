@@ -30,6 +30,9 @@ export class Seller {
   isBusinessNumberVerified: boolean;
 
   @Column()
+  isEmailVerified: boolean;
+
+  @Column()
   accessToken: string;
 
   @Column()

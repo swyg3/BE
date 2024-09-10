@@ -4,9 +4,17 @@ import {
   Matches,
   MinLength,
   MaxLength,
+  isEmail,
+  IsEmail,
+  IsBoolean,
 } from "class-validator";
 
 export class UpdateSellerProfileDto {
+
+  @IsEmail()
+  @IsString()
+  email?: string;
+
   @IsOptional()
   @IsString()
   @MinLength(2, { message: "이름은 최소 2자 이상이어야 합니다." })
@@ -38,4 +46,10 @@ export class UpdateSellerProfileDto {
     message: "유효한 상점 전화번호 형식이 아닙니다.",
   })
   storePhoneNumber?: string;
+
+  @IsBoolean()
+  isBusinessNumberVerified?: boolean;
+
+  @IsBoolean()
+  isEmailVerified?: boolean;
 }

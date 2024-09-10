@@ -48,10 +48,6 @@ export class SellerRepository {
     await this.sellerRepository.update(sellerId, { accessToken });
   }
 
-  async updateLastLogin(sellerId: string): Promise<void> {
-    await this.sellerRepository.update(sellerId, { lastLoginAt: new Date() });
-  }
-
   async updateBusinessNumberVerification(
     sellerId: string,
     isVerified: boolean,
@@ -63,5 +59,9 @@ export class SellerRepository {
 
     seller.isBusinessNumberVerified = isVerified;
     return this.sellerRepository.save(seller);
+  }
+
+  async updateSellerLastLogin(sellerId: string): Promise<void> {
+    await this.sellerRepository.update(sellerId, { lastLoginAt: new Date() });
   }
 }

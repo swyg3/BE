@@ -27,6 +27,9 @@ export class SellerView extends Document {
   @Prop({ required: true, default: false })
   isBusinessNumberVerified: boolean;
 
+  @Prop({ required: true, default: false })
+  isEmailVerified: boolean;
+
   @Prop()
   lastLoginAt?: Date;
 
