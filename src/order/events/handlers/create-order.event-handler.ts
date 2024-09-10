@@ -1,8 +1,8 @@
 import { EventsHandler, IEventHandler } from "@nestjs/cqrs";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
+import { OrderCreate } from "../../schemas/create-order.schema";
 import { CreateOrderEvent } from "../create-order.event";
-import { OrderCreate } from "../schemas/create-order.schema";
 
 @EventsHandler(CreateOrderEvent)
 export class CreateOrderEventHandler implements IEventHandler<CreateOrderEvent> {
