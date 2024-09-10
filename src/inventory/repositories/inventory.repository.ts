@@ -1,13 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { DeepPartial, Repository } from 'typeorm';
+import { DeepPartial, DeleteResult, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Inventory } from '../inventory.entity';
 
 @Injectable()
 export class InventoryRepository {
-  save: any;
-  create: any;
   delete: any;
+  deleteone: any;
 
   constructor(
     @InjectRepository(Inventory)
@@ -23,7 +22,6 @@ export class InventoryRepository {
     quantity: number;
     expirationDate: Date;
   }): Promise<Inventory | undefined> {
-
     const inventory = this.repository.create({
       productId,
       quantity,
@@ -32,4 +30,12 @@ export class InventoryRepository {
 
     return await this.repository.save(inventory);
   }
+
+  async findById(productId: number): Promise<Inventory | null> {
+    return this.repository.findOneBy({
+      Id: productId  
+    });
+  }
+ 
+  
 }

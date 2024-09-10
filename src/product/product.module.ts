@@ -3,7 +3,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Product } from './entities/product.entity';
 import { ProductController } from './product.controller';
 import { ProductRepository } from './repositories/product.repository';
-import { ProductCreatedHandler } from './events/handlers/product-created.handler';
 import { CreateProductHandler } from './commands/handlers/create-product.handler';
 import { ProductView, ProductViewSchema } from './schemas/product-view.schema';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -15,10 +14,14 @@ import { DeleteProductHandler } from './commands/handlers/delete-product.handler
 import { UpdateProductHandler } from './commands/handlers/update-product.handler';
 import { ProductUpdatedEventHandler } from './events/handlers/product-update.handler';
 import { ProductDeletedHandler } from './events/handlers/product-deleted.handler';
+import { InventoryRepository } from 'src/inventory/repositories/inventory.repository';
+import { ProductCreatedEvent } from './events/impl/product-created.event';
+import { ProductCreatedHandler } from './queries/handlers/product-created.handler';
+import { InventoryCreatedEvent } from 'src/inventory/events/impl/inventory-created.event';
 
 
 const CommandHandlers = [CreateProductHandler, UpdateProductHandler ,DeleteProductHandler]
-const EventsHandlers = [ProductCreatedHandler, ProductUpdatedEventHandler, ProductDeletedHandler ]
+const EventsHandlers = [InventoryCreatedEvent,ProductCreatedHandler, ProductUpdatedEventHandler, ProductDeletedHandler ]
 
 @Module({
   imports: [
@@ -33,6 +36,7 @@ const EventsHandlers = [ProductCreatedHandler, ProductUpdatedEventHandler, Produ
     ProductRepository,
     ProductViewRepository,
     GetProductByIdHandler,
+    
   ],
   controllers: [ProductController],
   exports: [ProductRepository],

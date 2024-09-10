@@ -1,4 +1,4 @@
-import { CommandHandler, EventBus, ICommandHandler } from '@nestjs/cqrs';
+import { CommandBus, CommandHandler, EventBus, ICommandHandler } from '@nestjs/cqrs';
 import { DeleteProductCommand } from '../impl/delete-product.command';
 import { ProductRepository } from '../../repositories/product.repository';
 import { Product } from 'src/product/entities/product.entity';
@@ -14,12 +14,15 @@ import { ProductAggregate } from 'src/product/aggregates/product.aggregate';
 @CommandHandler(DeleteProductCommand)
 export class DeleteProductHandler implements ICommandHandler<DeleteProductCommand> {
   private readonly logger = new Logger(DeleteProductHandler.name);
+  
 
   constructor(
     @InjectRepository(Product)
     private readonly productRepository: ProductRepository,
     private readonly eventStoreService: EventStoreService,
-    @Inject(EventBus) private readonly eventBus: EventBus
+    @Inject(EventBus) private readonly eventBus: EventBus,
+    @Inject(CommandBus) private readonly commandbus: CommandBus
+
   ) {}
 
   async execute(command: DeleteProductCommand) {
@@ -46,9 +49,11 @@ export class DeleteProductHandler implements ICommandHandler<DeleteProductComman
     
     this.logger.log(`Product with ID ${Id} has been deleted`);
 
+    const productId = Id;
+
     // Inventory 삭제 명령어 발행
-    const deleteInventoryCommand = new DeleteInventoryCommand(Id); // Product ID를 Inventory 삭제 명령에 사용
-    await this.eventBus.publish(deleteInventoryCommand);
+    const deleteInventoryCommand = new DeleteInventoryCommand(productId); // Product ID를 Inventory 삭제 명령에 사용
+    await this.commandbus.execute(deleteInventoryCommand);
     
     this.logger.log(`DeleteInventoryCommand for product ID ${Id} published`);
 
