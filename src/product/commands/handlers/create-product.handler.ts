@@ -38,9 +38,9 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
         discountedPrice,
       });
       const savedProduct = await this.productRepository.save(product);
-      const Id = savedProduct.Id;
+      const id = savedProduct.id;
 
-      const productAggregate = new ProductAggregate(Id);
+      const productAggregate = new ProductAggregate(id);
       const events = productAggregate.createProduct(
         sellerId,
         category,
@@ -54,7 +54,7 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
       // 이벤트 저장소에 저장
       for (const event of events) {
         await this.eventStoreService.saveEvent({
-          aggregateId: Id,
+          aggregateId: id,
           aggregateType: 'Product',
           eventType: event.constructor.name,
           eventData: event,
@@ -64,14 +64,14 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
 
       // Inventory 생성 명령어 발행
       const createInventoryCommand = new CreateInventoryCommand(
-        Id, quantity, expirationDate
+        id, quantity, expirationDate
       );
       const discountRate = ((originalPrice - discountedPrice) / originalPrice) * 100;
       await this.commandBus.execute(createInventoryCommand);
 
       // ProductCreatedEvent 생성
       const productRegisteredEvent = new ProductCreatedEvent(
-        Id,
+        id,
         sellerId,
         category,
         name,
@@ -87,7 +87,7 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
       );
 
       // 이벤트 버스에 이벤트 게시
-      this.logger.log(`Publishing productRegisteredEvent for user: ${Id}`);
+      this.logger.log(`Publishing productRegisteredEvent for user: ${id}`);
       this.eventBus.publish(productRegisteredEvent);
       
     } catch (error) {

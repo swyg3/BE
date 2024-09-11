@@ -11,7 +11,7 @@ import {
   @Entity('product')
   export class Product {
     @PrimaryGeneratedColumn('increment', { type: 'bigint' })
-    Id: number;
+    id: number;
   
     @Column({ type: 'bigint', name: 'seller_id', nullable: false })
     sellerId: number;

@@ -14,12 +14,12 @@ export class CreateInventoryHandler implements ICommandHandler<CreateInventoryCo
   ) {}
 
   async execute(command: CreateInventoryCommand): Promise<void> {
-    const { Id, quantity, expirationDate } = command;
+    const { id, quantity, expirationDate } = command;
 
     try {
       // Inventory 생성 로직
       const inventory = this.inventoryRepository.createInventory({
-        productId: Id,
+        productId: id,
         quantity: quantity,
         expirationDate: expirationDate,
       });
@@ -29,7 +29,7 @@ export class CreateInventoryHandler implements ICommandHandler<CreateInventoryCo
 
       // InventoryCreatedEvent 발행
       const inventoryCreatedEvent = new InventoryCreatedEvent(
-        savedInventory.Id,
+        savedInventory.id,
         savedInventory.productId,
         savedInventory.quantity,
         savedInventory.expirationDate,
@@ -39,7 +39,7 @@ export class CreateInventoryHandler implements ICommandHandler<CreateInventoryCo
       this.eventBus.publish(inventoryCreatedEvent);
 
     } catch (error) {
-      this.logger.error(`Failed to create inventory for product: ${Id}. Error: ${error.message}`, error.stack);
+      this.logger.error(`Failed to create inventory for product: ${id}. Error: ${error.message}`, error.stack);
       throw error;
     }
   }

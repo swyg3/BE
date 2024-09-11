@@ -10,11 +10,11 @@ export class ProductCreatedHandler implements IEventHandler<ProductCreatedEvent>
   constructor(private readonly productViewRepository: ProductViewRepository) {}
 
   async handle(event: ProductCreatedEvent) {
-    this.logger.log(`Handling ProductCreatedEvent for product: ${event.Id}`);
+    this.logger.log(`Handling ProductCreatedEvent for product: ${event.id}`);
 
     try {
       await this.productViewRepository.createProduct({
-        Id: event.Id,
+        id: event.id,
         sellerId: event.sellerId,
         category: event.category,
         name: event.name,
@@ -29,9 +29,9 @@ export class ProductCreatedHandler implements IEventHandler<ProductCreatedEvent>
         updatedAt: event.updated_at,
       });
 
-      this.logger.log(`Product view successfully updated: ${event.Id}`);
+      this.logger.log(`Product view successfully updated: ${event.id}`);
     } catch (error) {
-      this.logger.error(`Failed to update product view: ${event.Id}, ${error.message}`, error.stack);
+      this.logger.error(`Failed to update product view: ${event.id}, ${error.message}`, error.stack);
     }
   }
 }

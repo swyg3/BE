@@ -26,16 +26,16 @@ export class DeleteProductHandler implements ICommandHandler<DeleteProductComman
   ) {}
 
   async execute(command: DeleteProductCommand) {
-    const { Id } = command;
+    const { id } = command;
 
-    const productAggregate = new ProductAggregate(Id);
-    const events = productAggregate.deleteProduct(Id);
+    const productAggregate = new ProductAggregate(id);
+    const events = productAggregate.deleteProduct(id);
 
     console.log("command success");
     // 이벤트 저장소에 저장
     for (const event of events) {
       await this.eventStoreService.saveEvent({
-        aggregateId: Id.toString(),
+        aggregateId: id.toString(),
         aggregateType: 'Product',
         eventType: event.constructor.name,
         eventData: event,
@@ -44,33 +44,33 @@ export class DeleteProductHandler implements ICommandHandler<DeleteProductComman
       console.log("event success");
     }
 
-    this.productRepository.delete({ Id: Id });
+    this.productRepository.delete({ id: id });
 
-    const productViewDeletedEvent = new ProductDeletedEvent(Id);
+    const productViewDeletedEvent = new ProductDeletedEvent(id);
     await this.eventBus.publish(productViewDeletedEvent);
     
     
-    this.logger.log(`Product with ID ${Id} has been deleted`);
+    this.logger.log(`Product with ID ${id} has been deleted`);
 
-    const productId = Id;
+    const productId = id;
 
     // Inventory 삭제 명령어 발행
     const deleteInventoryCommand = new DeleteInventoryCommand(productId); // Product ID를 Inventory 삭제 명령에 사용
     await this.commandbus.execute(deleteInventoryCommand);
     
-    this.logger.log(`DeleteInventoryCommand for product ID ${Id} published`);
+    this.logger.log(`DeleteInventoryCommand for product ID ${id} published`);
 
     // Event 저장소에 Product 삭제 이벤트 저장
-    const productDeletedEvent = new ProductDeletedEvent(Id);
+    const productDeletedEvent = new ProductDeletedEvent(id);
     await this.eventStoreService.saveEvent({
-      aggregateId: Id.toString(),
+      aggregateId: id.toString(),
       aggregateType: 'Product',
       eventType: productDeletedEvent.constructor.name,
       eventData: productDeletedEvent,
       version: 1
     });
 
-    this.logger.log(`ProductDeletedEvent for product ID ${Id} saved`);
+    this.logger.log(`ProductDeletedEvent for product ID ${id} saved`);
 
     
   }

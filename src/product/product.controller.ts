@@ -41,14 +41,14 @@ export class ProductController {
     console.log('No expiration date provided');
   }
 
-    return { name, success: true }; // boolean 타입 대신 true로 설정
+    return { name, success: true }; 
   }
 
   @Delete(':id')
   async deleteProduct(@Body() deleteProductDto: DeleteProductDto) {
-    const { Id } = deleteProductDto;
-    await this.commandBus.execute(new DeleteProductCommand(Id));
-    return { Id, success: true }; // boolean 타입 대신 true로 설정
+    const { id } = deleteProductDto;
+    await this.commandBus.execute(new DeleteProductCommand(id));
+    return { id, success: true }; 
   }
 
   @Get(':id')

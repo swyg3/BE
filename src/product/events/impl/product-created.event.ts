@@ -3,7 +3,7 @@ import { Category } from "src/product/product.category";
 export class ProductCreatedEvent {
     
     constructor(
-      public readonly Id: number,
+      public readonly id: number,
       public readonly sellerId: number,
       public readonly category: Category,
       public readonly name: string,

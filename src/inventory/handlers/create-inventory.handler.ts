@@ -14,11 +14,11 @@ export class CreateInventoryHandler implements ICommandHandler<CreateInventoryCo
   ) { }
 
   async execute(command: CreateInventoryCommand) {
-    const { Id, quantity, expirationDate } = command;
+    const { id, quantity, expirationDate } = command;
 
     // Inventory 생성
     const inventory = this.inventoryRepository.create({
-      Id,
+      id,
       quantity,
       expirationDate,
     });
@@ -28,7 +28,7 @@ export class CreateInventoryHandler implements ICommandHandler<CreateInventoryCo
 
     // InventoryCreatedEvent 생성 및 발행
     const inventoryCreatedEvent = new InventoryCreatedEvent(
-      inventory.Id,
+      inventory.id,
       inventory.productId, 
       quantity,
       expirationDate,

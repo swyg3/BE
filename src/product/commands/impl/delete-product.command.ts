@@ -1,4 +1,4 @@
 export class DeleteProductCommand {
-    constructor(public readonly Id: number) {}
+    constructor(public readonly id: number) {}
   }
   

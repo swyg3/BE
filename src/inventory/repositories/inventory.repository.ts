@@ -13,7 +13,7 @@ export class InventoryRepository {
   constructor(
     @InjectRepository(Inventory)
     private readonly repository: Repository<Inventory>,
-  ) {}
+  ) { }
 
   async createInventory({
     productId,
@@ -35,9 +35,9 @@ export class InventoryRepository {
 
   async findById(productId: number): Promise<Inventory | null> {
     return this.repository.findOneBy({
-      Id: productId  
+      id: productId
     });
   }
- 
-  
+
+
 }

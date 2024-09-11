@@ -1,4 +1,4 @@
 export class DeleteProductDto {
-    Id: number; 
+    id: number; 
   }
   

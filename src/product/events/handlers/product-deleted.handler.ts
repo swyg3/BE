@@ -14,12 +14,12 @@ export class ProductDeletedHandler implements IEventHandler<ProductDeletedEvent>
   ) { }
 
   async handle(event: ProductDeletedEvent) {
-    const Id = event.Id;
-    this.logger.log(`Handling ProductDeletedEvent for product: ${Id}`);
+    const id = event.id;
+    this.logger.log(`Handling ProductDeletedEvent for product: ${id}`);
 
 
     // MongoDB에서 제품 삭제
-    await this.productViewRepository.deleteProduct({ Id });
+    await this.productViewRepository.deleteProduct({ id });
 
 
 

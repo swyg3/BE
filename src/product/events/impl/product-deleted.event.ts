@@ -1,7 +1,7 @@
 export class ProductDeletedEvent {
     
     constructor(
-      public readonly Id: number,
+      public readonly id: number,
       
     ) {}
   }
