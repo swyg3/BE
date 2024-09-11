@@ -1,36 +1,25 @@
 import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
-import { CreateInventoryHandler } from './commands/handlers/create-inventory.handler'; // 핸들러 경로
+import { CreateInventoryHandler } from './commands/handlers/create-inventory.handler';
 import { InventoryRepository } from './repositories/inventory.repository';
 import { EventStoreModule } from 'src/shared/event-store/event-store.module';
 import { Inventory } from './inventory.entity';
-import { InventoryView, InventoryViewSchema } from './schemas/inventory-view.schema';
-import { MongooseModule } from '@nestjs/mongoose';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DeleteInventoryHandler } from './commands/handlers/delete-inventory.handler';
-import { InventoryDeletedHandler } from './events/handlers/inventory-deleted.handler';
-import { InventoryViewRepository } from './repositories/inventory-view.repository';
 
-const CommandHandlers = [
-    CreateInventoryHandler,    
-    DeleteInventoryHandler   ]
-    const EventsHandlers = [
-        
-        InventoryDeletedHandler   
-      ];
+const CommandHandlers = [CreateInventoryHandler, DeleteInventoryHandler]
+const EventsHandlers = [];
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: InventoryView.name, schema: InventoryViewSchema }]),
     TypeOrmModule.forFeature([Inventory]),
     CqrsModule,
     EventStoreModule,
   ],
   providers: [
     ...CommandHandlers,
-    ...EventsHandlers, 
+    ...EventsHandlers,
     InventoryRepository,
-    InventoryViewRepository
   ],
 })
-export class InventoryModule {}
+export class InventoryModule { }
