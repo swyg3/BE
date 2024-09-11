@@ -81,7 +81,7 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
         discountedPrice,
         discountRate,
         quantity,
-        expirationDate || new Date(), // 만기일이 없으면 현재 날짜로
+        expirationDate,
         new Date(), // createdAt
         new Date()  // updatedAt
       );
