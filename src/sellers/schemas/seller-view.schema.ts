@@ -30,8 +30,8 @@ export class SellerView extends Document {
   @Prop({ required: true, default: false })
   isEmailVerified: boolean;
 
-  @Prop()
-  lastLoginAt?: Date;
+  @Prop({ required: true })
+  lastLoginAt: Date;
 
   @Prop({ required: true })
   createdAt: Date;
@@ -41,3 +41,4 @@ export class SellerView extends Document {
 }
 
 export const SellerViewSchema = SchemaFactory.createForClass(SellerView);
+SellerViewSchema.index({ sellerId: 1 }, { unique: true });

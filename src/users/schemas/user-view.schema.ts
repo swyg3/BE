@@ -3,7 +3,7 @@ import { Document } from "mongoose";
 
 @Schema()
 export class UserView extends Document {
-  @Prop({ type: String, required: true, unique: true })
+  @Prop({ required: true, unique: true })
   userId: string;
 
   @Prop({ required: true, unique: true })
@@ -19,6 +19,9 @@ export class UserView extends Document {
   isEmailVerified: boolean;
 
   @Prop({ required: true })
+  lastLoginAt: Date;
+
+  @Prop({ required: true })
   createdAt: Date;
 
   @Prop({ required: true })
@@ -26,3 +29,4 @@ export class UserView extends Document {
 }
 
 export const UserViewSchema = SchemaFactory.createForClass(UserView);
+UserViewSchema.index({ userId: 1 }, { unique: true });
