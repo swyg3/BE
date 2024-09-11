@@ -15,10 +15,15 @@ export class LogoutHandler implements ICommandHandler<LogoutCommand> {
   ) {}
 
   async execute(command: LogoutCommand) {
-    const { userId, accessToken, refreshToken, userType } = command;
+    try {
+    const { userId, accessToken, userType } = command;
 
-    const accessTokenExpiry = this.configService.get<number>('ACCESS_TOKEN_EXPIRY');
-    const refreshTokenExpiry = this.configService.get<number>('REFRESH_TOKEN_EXPIRY');
+    console.log({ userId, accessToken, userType });
+    const accessTokenExpiry = this.configService.get<string>('ACCESS_TOKEN_EXPIRY')
+    const refreshTokenExpiry = this.configService.get<string>('REFRESH_TOKEN_EXPIRY')
+
+    const refreshToken = await this.refreshTokenService.getRefreshToken(userId);
+    console.log({ userId, accessToken, refreshToken, userType });
 
     await Promise.all([
       this.refreshTokenService.deleteRefreshToken(userId),
@@ -42,5 +47,9 @@ export class LogoutHandler implements ICommandHandler<LogoutCommand> {
     await this.eventBusService.publishAndSave(event);
 
     return { success: true };
+  } catch (error) {
+    console.error('로그아웃 처리 중 오류 발생:', error);
+    throw new Error('로그아웃 처리 중 오류 발생');
   }
+}
 }

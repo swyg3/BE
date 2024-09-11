@@ -11,6 +11,7 @@ export class SellerLoggedInEvent implements BaseEvent {
       provider: string,
       isNewSeller: boolean,
       isBusinessNumberVerified: boolean,
+      timestamp: Date
     },
     public readonly version: number,
   ) {}

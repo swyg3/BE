@@ -1,4 +1,4 @@
-import { Post, Body, Get, UseGuards, Req } from "@nestjs/common";
+import { Post, Body, Get, UseGuards, Req, Controller } from "@nestjs/common";
 import { CommandBus } from "@nestjs/cqrs";
 import { AuthGuard } from "@nestjs/passport";
 import { Throttle, ThrottlerGuard } from "@nestjs/throttler";
@@ -18,6 +18,7 @@ import { CompleteSellerProfileCommand } from "./commands/commands/complete-selle
 import { VerifyBusinessNumberCommand } from "./commands/commands/verify-business-number.command";
 import { VerifyBusinessNumberDto } from "./dtos/verify-business-number.dto";
 
+@Controller("auth")
 @UseGuards(ThrottlerGuard)
 export class AuthController {
   constructor(protected readonly commandBus: CommandBus) {}
@@ -49,7 +50,7 @@ export class AuthController {
     };
   }
 
-  @Post("login/email")
+  @Post("login-email")
   async loginEmail(
     @Body() loginDto: LoginEmailDto,
     @Req() req
@@ -82,9 +83,12 @@ export class AuthController {
   @Post("logout")
   @UseGuards(AuthGuard("jwt"))
   async logout(@Req() req): Promise<ApiResponse> {
-    const { userId, accessToken, refreshToken, userType } = req.user;
+    console.log('Request User:', req.user);
+    const { userId, accessToken, userType } = req.user;
+    
+    console.log({ userId, accessToken, userType });
     await this.commandBus.execute(
-      new LogoutCommand(userId, accessToken, refreshToken, userType),
+      new LogoutCommand(userId, accessToken, userType),
     );
     return {
       success: true,

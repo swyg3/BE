@@ -1,6 +1,6 @@
 export class VerifyBusinessNumberCommand {
   constructor(
-    public readonly sellerId: string,
+    public readonly email: string,
     public readonly businessNumber: string
   ) {}
 }

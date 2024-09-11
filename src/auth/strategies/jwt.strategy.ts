@@ -3,6 +3,13 @@ import { PassportStrategy } from "@nestjs/passport";
 import { ExtractJwt, Strategy } from "passport-jwt";
 import { ConfigService } from "@nestjs/config";
 import { RefreshTokenService } from "../services/refresh-token.service";
+import { Request } from 'express';
+
+interface JwtPayload {
+  sub: string;
+  email: string;
+  userType: string;
+}
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -18,19 +25,28 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(req: any, payload: any) {
+  async validate(req: Request, payload: JwtPayload) {
     const token = ExtractJwt.fromAuthHeaderAsBearerToken()(req);
     
     if (!token) {
-      throw new UnauthorizedException("No token provided");
+      throw new UnauthorizedException("토큰이 제공되지 않았습니다.");
     }
 
     const isBlacklisted = await this.refreshTokenService.isBlacklisted(token);
 
     if (isBlacklisted) {
-      throw new UnauthorizedException("Token has been revoked");
+      throw new UnauthorizedException("토큰이 취소되었습니다.");
     }
 
-    return { userId: payload.sub, email: payload.email };
+    if (!payload.sub || !payload.email || !payload.userType) {
+      throw new UnauthorizedException("유효하지 않은 토큰 페이로드입니다.");
+    }
+
+    return { 
+      userId: payload.sub, 
+      email: payload.email,
+      userType: payload.userType,
+      accessToken: token,
+    };
   }
 }

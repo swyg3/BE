@@ -2,8 +2,6 @@ export class LogoutCommand {
   constructor(
     public readonly userId: string,
     public readonly accessToken: string,
-    public readonly refreshToken: string,
-    public readonly userType: 'user' | 'seller'
-
+    public readonly userType: string
   ) {}
 }

@@ -12,8 +12,12 @@ export class RefreshTokenService {
 
   async storeRefreshToken(userId: string, refreshToken: string): Promise<void> {
     const key = `refresh_token:${userId}`;
-    const expiryTime = this.configService.get<number>('REFRESH_TOKEN_EXPIRY');
-    await this.redisClient.set(key, refreshToken, 'EX', expiryTime);
+    const expiryTime = this.configService.get<string>('REFRESH_TOKEN_EXPIRY');
+    const seconds = parseDuration(expiryTime);
+    if (isNaN(seconds) || seconds <= 0) {
+      throw new Error('유효하지 않은 만료 시간 설정');
+    }
+    await this.redisClient.set(key, refreshToken, 'EX', seconds);
   }
 
   async getRefreshToken(userId: string): Promise<string | null> {
@@ -26,16 +30,43 @@ export class RefreshTokenService {
     await this.redisClient.del(key);
   }
 
-  // 블랙리스트 추가
-  async addToBlacklist(token: string, expirationTime: number): Promise<void> {
+  async addToBlacklist(token: string, expirationTime: string): Promise<void> {
+    if (!token) {
+      throw new Error('유효하지 않은 토큰');
+    }
+
     const key = `blacklist:${token}`;
-    await this.redisClient.set(key, "1", "EX", expirationTime);
+    const expiryTime = this.configService.get<string>('REFRESH_TOKEN_EXPIRY');
+    const seconds = parseDuration(expiryTime);
+    if (isNaN(seconds) || seconds <= 0) {
+      throw new Error("유효하지 않은 블랙리스트 만료 시간 설정");
+    }
+    await this.redisClient.set(key, "1", "EX", seconds);
   }
 
-  // 블랙리스트 확인
   async isBlacklisted(token: string): Promise<boolean> {
+    if (!token) {
+      throw new Error('유효하지 않은 토큰');
+    }
     const key = `blacklist:${token}`;
     const result = await this.redisClient.get(key);
     return result === "1";
+  }
+}
+
+
+function parseDuration(duration: string): number {
+  const match = duration.match(/^(\d+)([smhd])$/);
+  if (!match) return NaN;
+
+  const value = parseInt(match[1], 10);
+  const unit = match[2];
+
+  switch (unit) {
+    case 's': return value;
+    case 'm': return value * 60;
+    case 'h': return value * 60 * 60;
+    case 'd': return value * 24 * 60 * 60;
+    default: return NaN;
   }
 }

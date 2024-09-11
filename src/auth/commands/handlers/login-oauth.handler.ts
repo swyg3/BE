@@ -7,16 +7,12 @@ import { EventBusService } from "src/shared/infrastructure/event-sourcing";
 import { RefreshTokenService } from "../../services/refresh-token.service";
 import { UserLoggedInEvent } from "../../events/events/user-logged-in.event";
 import { SellerLoggedInEvent } from "../../events/events/seller-logged-in.event";
-import { GoogleStrategy } from "../../strategies/google.strategy";
-import { KakaoStrategy } from "../../strategies/kakao.strategy";
 
 @CommandHandler(LoginOAuthCommand)
 export class LoginOAuthCommandHandler
   implements ICommandHandler<LoginOAuthCommand>
 {
   constructor(
-    private googleStrategy: GoogleStrategy,
-    private kakaoStrategy: KakaoStrategy,
     private readonly userRepository: UserRepository,
     private readonly sellerRepository: SellerRepository,
     private readonly tokenService: TokenService,
@@ -25,56 +21,16 @@ export class LoginOAuthCommandHandler
   ) {}
 
   async execute(command: LoginOAuthCommand) {
-
     const { provider, userType, accessToken } = command.loginOAuthDto;
 
-    // 0. OAuth 전략 유형에 따라 처리
-    let strategy;
-    if (provider === 'google') {
-      strategy = this.googleStrategy;
-    } else if (provider === 'kakao') {
-      strategy = this.kakaoStrategy;
-    } else {
-      throw new Error('지원하지 않는 소셜 제공자입니다.');
-    }
-
     // 1. OAuth 제공자로부터 사용자 정보 가져오기
-    const oauthUserInfo = await strategy.validate(accessToken);
+    const oauthUserInfo = await this.fetchUserInfo(provider, accessToken);
 
     // 2. 사용자 유형에 따라 처리
-    let user;
-    let isNew = false;
-    let event: UserLoggedInEvent | SellerLoggedInEvent;
-
-    if (userType === 'user') {
-      ({ user, isNew } = await this.handleUserLogin(oauthUserInfo));
-      event = new UserLoggedInEvent(
-        user.id,
-        {
-          email: user.email,
-          provider,
-          isNewUser: isNew,
-        },
-        user.version
-      );
-    } else if (userType === 'seller') {
-      ({ user, isNew } = await this.handleSellerLogin(oauthUserInfo));
-      event = new SellerLoggedInEvent(
-        user.id,
-        {
-          email: user.email,
-          provider,
-          isNewSeller: isNew,
-          isBusinessNumberVerified: user.isBusinessNumberVerified,
-        },
-        user.version
-      );
-    } else {
-      throw new Error('지원하지 않는 사용자 유형입니다.');
-    }
+    const { user, isNew, event } = await this.handleUserOrSellerLogin(userType, oauthUserInfo);
 
     // 3. 토큰 생성
-    const tokens = await this.tokenService.generateTokens(user.id, userType);
+    const tokens = await this.tokenService.generateTokens(user.id, user.email, userType);
     await this.refreshTokenService.storeRefreshToken(user.id, tokens.refreshToken);
 
     // 이벤트 발행 및 저장
@@ -89,7 +45,49 @@ export class LoginOAuthCommandHandler
         userType: userType,
       },
       ...tokens,
+    };
+  }
+
+  private async fetchUserInfo(provider: string, accessToken: string) {
+    // 인증 전략에 따라 사용자 정보를 가져오는 로직을 구현
+    return {}; // 실제 사용자 정보 반환
+  }
+
+  private async handleUserOrSellerLogin(userType: string, oauthUserInfo: any) {
+    let user;
+    let isNew = false;
+    let event: UserLoggedInEvent | SellerLoggedInEvent;
+
+    if (userType === 'user') {
+      ({ user, isNew } = await this.handleUserLogin(oauthUserInfo));
+      event = new UserLoggedInEvent(
+        user.id,
+        {
+          email: user.email,
+          provider: oauthUserInfo.provider,
+          isNewUser: isNew,
+          timestamp: new Date()
+        },
+        user.version
+      );
+    } else if (userType === 'seller') {
+      ({ user, isNew } = await this.handleSellerLogin(oauthUserInfo));
+      event = new SellerLoggedInEvent(
+        user.id,
+        {
+          email: user.email,
+          provider: oauthUserInfo.provider,
+          isNewSeller: isNew,
+          isBusinessNumberVerified: user.isBusinessNumberVerified,
+          timestamp: new Date()
+        },
+        user.version
+      );
+    } else {
+      throw new Error('지원하지 않는 사용자 유형입니다.');
     }
+
+    return { user, isNew, event };
   }
 
   private async handleUserLogin(oauthUserInfo: any) {
@@ -98,7 +96,7 @@ export class LoginOAuthCommandHandler
       name: `${oauthUserInfo.firstName} ${oauthUserInfo.lastName}`,
       phoneNumber: oauthUserInfo.phone
     });
-    await this.userRepository.updateUserLastLogin(user.id);
+    
     return { user, isNew: isNewUser };
   }
 
@@ -108,9 +106,6 @@ export class LoginOAuthCommandHandler
       name: oauthUserInfo.name,
     });
     
-    await this.sellerRepository.updateSellerLastLogin(seller.id);
     return { user: seller, isNew: isNewSeller };
   }
 }
-
-

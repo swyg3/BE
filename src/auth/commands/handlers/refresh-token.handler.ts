@@ -32,7 +32,7 @@ export class RefreshTokenCommandHandler
         throw new UnauthorizedException('Refresh token has been revoked');
       }
 
-      const newTokens = await this.tokenService.generateTokens(payload.sub, payload.userType);
+      const newTokens = await this.tokenService.generateTokens(payload.sub, payload.email, payload.userType);
       await this.refreshTokenService.storeRefreshToken(payload.sub, newTokens.refreshToken);
       await this.refreshTokenService.deleteRefreshToken(payload.sub);
 

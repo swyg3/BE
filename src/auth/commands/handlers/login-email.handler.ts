@@ -7,65 +7,45 @@ import { EventBusService } from "src/shared/infrastructure/event-sourcing";
 import { RefreshTokenService } from "../../services/refresh-token.service";
 import { UserLoggedInEvent } from "../../events/events/user-logged-in.event";
 import { SellerLoggedInEvent } from "../../events/events/seller-logged-in.event";
-import { UnauthorizedException, BadRequestException } from "@nestjs/common";
-import * as argon2 from "argon2";
+import { UnauthorizedException, BadRequestException, Logger } from "@nestjs/common";
+import { PasswordService } from "src/shared/services/password.service";
+
 
 @CommandHandler(LoginEmailCommand)
 export class LoginEmailCommandHandler implements ICommandHandler<LoginEmailCommand> {
+  private readonly logger = new Logger(LoginEmailCommandHandler.name);
+  
   constructor(
     private readonly userRepository: UserRepository,
     private readonly sellerRepository: SellerRepository,
     private readonly tokenService: TokenService,
     private readonly refreshTokenService: RefreshTokenService,
     private readonly eventBusService: EventBusService,
+    private readonly passwordService: PasswordService,
   ) {}
 
   async execute(command: LoginEmailCommand) {
     const { loginDto, req } = command;
     const userType = req.path.includes('seller') ? 'seller' : 'user';
-    const provider = 'email';
 
     try {
-      // 1. 사용자 검증
-      let user;
-      let isNew = false;
-      let event: UserLoggedInEvent | SellerLoggedInEvent;
+      this.logger.log(`${userType} 로그인 시도 - 이메일: ${loginDto.email}`);
 
-      if (userType === 'user') {
-        ({ user, isNew } = await this.handleUserLogin(loginDto.email, loginDto.password));
-        event = new UserLoggedInEvent(
-          user.id,
-          {
-            email: user.email,
-            provider,
-            isNewUser: isNew,
-          },
-          user.version
-        );
-      } else if (userType === 'seller') {
-        ({ user, isNew } = await this.handleSellerLogin(loginDto.email, loginDto.password));
-        event = new SellerLoggedInEvent(
-          user.id,
-          {
-            email: user.email,
-            provider,
-            isNewSeller: isNew,
-            isBusinessNumberVerified: user.isBusinessNumberVerified,
-          },
-          user.version
-        );
-      } else {
-        throw new BadRequestException('지원하지 않는 사용자 유형입니다.');
-      }
+      // 1. 사용자 검증
+      const user = await this.authenticateUser(loginDto.email, loginDto.password, userType);
 
       // 2. 토큰 생성
-      const tokens = await this.tokenService.generateTokens(user.id, userType);
+      this.logger.log(`${userType} 사용자 ID ${user.id}에 대한 토큰 생성`);
+      const tokens = await this.tokenService.generateTokens(user.id, user.email, userType);
       await this.refreshTokenService.storeRefreshToken(user.id, tokens.refreshToken);
 
-      // 3. 이벤트 발행 및 저장
+      // 3. 로그인 이벤트 생성 및 발행
+      this.logger.log(`${userType} 사용자 ID ${user.id}에 대한 이벤트 생성 및 발행`);
+      const event = this.createLoggedInEvent(user, userType, 'email');
       await this.eventBusService.publishAndSave(event);
 
       // 4. 결과 반환
+      this.logger.log(`${userType} 사용자 ID ${user.id} 로그인 성공`);
       return {
         success: true,
         data: {
@@ -79,6 +59,7 @@ export class LoginEmailCommandHandler implements ICommandHandler<LoginEmailComma
         },
       };
     } catch (error) {
+      this.logger.error('로그인 실패', error.stack);
       if (error instanceof UnauthorizedException) {
         throw error;
       }
@@ -86,34 +67,42 @@ export class LoginEmailCommandHandler implements ICommandHandler<LoginEmailComma
     }
   }
 
-  private async handleUserLogin(email: string, password: string) {
-    const user = await this.userRepository.findByEmail(email);
+  private async authenticateUser(email: string, password: string, userType: string) {
+    this.logger.log(`${userType} 사용자 이메일 ${email} 검증 중`);
+    
+    const repository = userType === 'user' ? this.userRepository : this.sellerRepository;
+    const user = await repository.findByEmail(email);
     if (!user) {
+      this.logger.warn(`이메일 ${email}에 대한 사용자 정보를 찾을 수 없습니다.`);
       throw new UnauthorizedException("등록되지 않은 이메일 주소입니다.");
     }
-    await this.verifyPassword(password, user.password);
-    const { user: updatedUser, isNewUser } = await this.userRepository.upsert(email, {
-      lastLoginAt: new Date(),
-    });
-    return { user: updatedUser, isNew: isNewUser };
-  }
 
-  private async handleSellerLogin(email: string, password: string) {
-    const seller = await this.sellerRepository.findByEmail(email);
-    if (!seller) {
-      throw new UnauthorizedException("등록되지 않은 이메일 주소입니다.");
-    }
-    await this.verifyPassword(password, seller.password);
-    const { seller: updatedSeller, isNewSeller } = await this.sellerRepository.upsert(email, {
-      lastLoginAt: new Date(),
-    });
-    return { user: updatedSeller, isNew: isNewSeller };
-  }
-
-  private async verifyPassword(plainPassword: string, hashedPassword: string) {
-    const isPasswordValid = await argon2.verify(hashedPassword, plainPassword);
+    const isPasswordValid = await this.passwordService.verifyPassword(user.password, password);
     if (!isPasswordValid) {
+      this.logger.warn('비밀번호가 올바르지 않습니다.');
       throw new UnauthorizedException("비밀번호가 올바르지 않습니다.");
+    }
+
+    return user;
+  }
+
+  private createLoggedInEvent(user: any, userType: string, provider: string) {
+    const timestamp = new Date();
+    const eventData = {
+      email: user.email,
+      provider,
+      isNewUser: false, 
+      timestamp
+    };
+
+    if (userType === 'user') {
+      return new UserLoggedInEvent(user.id, eventData, user.version || 1);
+    } else {
+      return new SellerLoggedInEvent(user.id, {
+        ...eventData,
+        isNewSeller: false, 
+        isBusinessNumberVerified: user.isBusinessNumberVerified
+      }, user.version || 1);
     }
   }
 }
