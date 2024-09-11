@@ -7,11 +7,58 @@ import { EventBusService } from "src/shared/infrastructure/event-sourcing";
 import { RefreshTokenService } from "../../services/refresh-token.service";
 import { UserLoggedInEvent } from "../../events/events/user-logged-in.event";
 import { SellerLoggedInEvent } from "../../events/events/seller-logged-in.event";
+import { BadRequestException, Logger, Injectable } from "@nestjs/common";
+import axios from "axios";
+
+enum UserType {
+  USER = 'user',
+  SELLER = 'seller',
+}
+
+interface OAuthProvider {
+  getUserInfoUrl(): string;
+  mapUserInfo(data: any): any;
+}
+
+@Injectable()
+class GoogleOAuthProvider implements OAuthProvider {
+  getUserInfoUrl() {
+    return 'https://www.googleapis.com/oauth2/v3/userinfo';
+  }
+
+  mapUserInfo(data: any) {
+    return {
+      email: data.email,
+      name: data.name || `${data.given_name || ''} ${data.family_name || ''}`,
+      phoneNumber: data.phone || '',
+    };
+  }
+}
+
+@Injectable()
+class KakaoOAuthProvider implements OAuthProvider {
+  getUserInfoUrl() {
+    return 'https://kapi.kakao.com/v2/user/me';
+  }
+
+  mapUserInfo(data: any) {
+    const kakaoAccount = data.kakao_account || {};
+    return {
+      email: kakaoAccount.email,
+      name: kakaoAccount.profile?.nickname || '',
+      phoneNumber: kakaoAccount.phone_number || '',
+    };
+  }
+}
 
 @CommandHandler(LoginOAuthCommand)
-export class LoginOAuthCommandHandler
-  implements ICommandHandler<LoginOAuthCommand>
-{
+export class LoginOAuthCommandHandler implements ICommandHandler<LoginOAuthCommand> {
+  private readonly logger = new Logger(LoginOAuthCommandHandler.name);
+  private readonly oauthProviders: { [key: string]: OAuthProvider } = {
+    google: new GoogleOAuthProvider(),
+    kakao: new KakaoOAuthProvider(),
+  };
+  
   constructor(
     private readonly userRepository: UserRepository,
     private readonly sellerRepository: SellerRepository,
@@ -23,89 +70,86 @@ export class LoginOAuthCommandHandler
   async execute(command: LoginOAuthCommand) {
     const { provider, userType, accessToken } = command.loginOAuthDto;
 
-    // 1. OAuth 제공자로부터 사용자 정보 가져오기
-    const oauthUserInfo = await this.fetchUserInfo(provider, accessToken);
+    if (!Object.values(UserType).includes(userType as UserType)) {
+      throw new BadRequestException('잘못된 사용자 유형입니다.');
+    }
 
-    // 2. 사용자 유형에 따라 처리
-    const { user, isNew, event } = await this.handleUserOrSellerLogin(userType, oauthUserInfo);
+    this.logger.log(`OAuth 로그인 요청 받음: provider=${provider}, userType=${userType}`);
 
-    // 3. 토큰 생성
+    const oauthProvider = this.oauthProviders[provider];
+    if (!oauthProvider) {
+      throw new BadRequestException('지원하지 않는 OAuth 제공자입니다.');
+    }
+
+    const oauthUserInfo = await this.fetchUserInfo(oauthProvider, accessToken);
+    const userInfo = oauthProvider.mapUserInfo(oauthUserInfo);
+    this.logger.log(`OAuth 제공자로부터 사용자 정보 가져옴: ${JSON.stringify(userInfo)}`);
+
+    if (!userInfo.email) {
+      throw new BadRequestException('OAuth 제공자로부터 이메일을 가져오지 못했습니다.');
+    }
+
+    const { user, event } = await this.handleUserOrSellerLogin(userType as UserType, userInfo, provider);
+
     const tokens = await this.tokenService.generateTokens(user.id, user.email, userType);
     await this.refreshTokenService.storeRefreshToken(user.id, tokens.refreshToken);
+    this.logger.log(`토큰 생성 완료, ${JSON.stringify(tokens)}`);
 
-    // 이벤트 발행 및 저장
     await this.eventBusService.publishAndSave(event);
+    this.logger.log('이벤트 발행 및 저장 완료');
 
-    // 4. 결과 반환
     return {
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        userType: userType,
-      },
+      [userType === UserType.USER ? 'userId' : 'sellerId']: user.id,
+      email: user.email,
+      name: user.name,
+      userType: userType,
       ...tokens,
     };
   }
 
-  private async fetchUserInfo(provider: string, accessToken: string) {
-    // 인증 전략에 따라 사용자 정보를 가져오는 로직을 구현
-    return {}; // 실제 사용자 정보 반환
+  private async fetchUserInfo(oauthProvider: OAuthProvider, accessToken: string) {
+    const response = await axios.get(oauthProvider.getUserInfoUrl(), {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    return response.data;
   }
 
-  private async handleUserOrSellerLogin(userType: string, oauthUserInfo: any) {
+  private async handleUserOrSellerLogin(userType: UserType, userInfo: any, provider: string) {
     let user;
-    let isNew = false;
-    let event: UserLoggedInEvent | SellerLoggedInEvent;
-
-    if (userType === 'user') {
-      ({ user, isNew } = await this.handleUserLogin(oauthUserInfo));
-      event = new UserLoggedInEvent(
-        user.id,
-        {
-          email: user.email,
-          provider: oauthUserInfo.provider,
-          isNewUser: isNew,
-          timestamp: new Date()
-        },
-        user.version
-      );
-    } else if (userType === 'seller') {
-      ({ user, isNew } = await this.handleSellerLogin(oauthUserInfo));
-      event = new SellerLoggedInEvent(
-        user.id,
-        {
-          email: user.email,
-          provider: oauthUserInfo.provider,
-          isNewSeller: isNew,
-          isBusinessNumberVerified: user.isBusinessNumberVerified,
-          timestamp: new Date()
-        },
-        user.version
-      );
+    let isNew;
+    let event;
+  
+    if (userType === UserType.USER) {
+      const result = await this.userRepository.upsert(userInfo.email, {
+        name: userInfo.name,
+        phoneNumber: userInfo.phoneNumber || '',
+        password: '',
+      });
+      user = result.user;
+      isNew = result.isNewUser;
+      event = new UserLoggedInEvent(user.id, {
+        email: user.email,
+        provider,
+        isNewUser: isNew,
+        timestamp: new Date(),
+      }, user.version || 1);
     } else {
-      throw new Error('지원하지 않는 사용자 유형입니다.');
+      const result = await this.sellerRepository.upsert(userInfo.email, {
+        name: userInfo.name,
+        phoneNumber: userInfo.phoneNumber || '',
+        password: '',
+      });
+      user = result.seller;
+      isNew = result.isNewSeller;
+      event = new SellerLoggedInEvent(user.id, {
+        email: user.email,
+        provider,
+        isNewSeller: isNew,
+        isBusinessNumberVerified: user.isBusinessNumberVerified,
+        timestamp: new Date(),
+      }, user.version || 1);
     }
-
-    return { user, isNew, event };
-  }
-
-  private async handleUserLogin(oauthUserInfo: any) {
-    // 일반 사용자 처리 로직
-    const { user, isNewUser } = await this.userRepository.upsert(oauthUserInfo.email, {
-      name: `${oauthUserInfo.firstName} ${oauthUserInfo.lastName}`,
-      phoneNumber: oauthUserInfo.phone
-    });
-    
-    return { user, isNew: isNewUser };
-  }
-
-  private async handleSellerLogin(oauthUserInfo: any) {
-    // 판매자 처리 로직
-    const { seller, isNewSeller } = await this.sellerRepository.upsert(oauthUserInfo.email, {
-      name: oauthUserInfo.name,
-    });
-    
-    return { user: seller, isNew: isNewSeller };
+  
+    return { user, event };
   }
 }

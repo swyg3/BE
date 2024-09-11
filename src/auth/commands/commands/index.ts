@@ -6,3 +6,4 @@ export * from './request-email-verification.command';
 export * from './verify-email.command';
 export * from './verify-business-number.command';
 export * from './complete-seller-profile.command';
+export * from './oauth-callback.command'
