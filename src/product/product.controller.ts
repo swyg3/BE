@@ -6,6 +6,7 @@ import { DeleteProductDto } from './dtos/delete-product.dto';
 import { DeleteProductCommand } from './commands/impl/delete-product.command';
 import { GetProductByIdQuery } from './queries/impl/get-product-by-id.query';
 import { UpdateProductCommand } from './commands/impl/update-product.command';
+import { boolean } from 'joi';
 
 @Controller('products')
 export class ProductController {
@@ -29,17 +30,17 @@ export class ProductController {
       quantity,
       expirationDateObj
     ));
+
+    return { name, success: boolean };
   }
 
-  @Delete()
+  @Delete(':id')
   async deleteProduct(@Body() deleteProductDto: DeleteProductDto) {
     
     const { Id } = deleteProductDto;
-
     await this.commandBus.execute(new DeleteProductCommand(Id));
 
-
-    return { Id, message: 'Product deleted successfully' };
+    return { Id, success: boolean };
   }
 
   @Get(':id')
