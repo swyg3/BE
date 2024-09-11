@@ -45,6 +45,9 @@ export class DeleteProductHandler implements ICommandHandler<DeleteProductComman
     }
 
     this.productRepository.delete({ Id: Id });
+
+    const productViewDeletedEvent = new ProductDeletedEvent(Id);
+    await this.eventBus.publish(productViewDeletedEvent);
     
     
     this.logger.log(`Product with ID ${Id} has been deleted`);

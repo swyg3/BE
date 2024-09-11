@@ -16,7 +16,7 @@ export class ProductViewRepository {
     return createProductView.save();  
   }
   async deleteProduct({ Id }: { Id: number }): Promise<void> {
-    await this.productViewModel.deleteOne({ _id: Id }).exec();
+    await this.productViewModel.deleteOne({ Id: Id }).exec();
   }
 
 }

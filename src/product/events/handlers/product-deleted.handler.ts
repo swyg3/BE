@@ -10,19 +10,19 @@ export class ProductDeletedHandler implements IEventHandler<ProductDeletedEvent>
 
   constructor(
     private readonly productViewRepository: ProductViewRepository,
-   
-  ) {}
+
+  ) { }
 
   async handle(event: ProductDeletedEvent) {
     const Id = event.Id;
     this.logger.log(`Handling ProductDeletedEvent for product: ${Id}`);
 
-    
-      // MongoDB에서 제품 삭제
-      await this.productViewRepository.deleteProduct( {Id });
-      
 
-     
-    }
+    // MongoDB에서 제품 삭제
+    await this.productViewRepository.deleteProduct({ Id });
+
+
 
   }
+
+}
