@@ -7,7 +7,6 @@ import { Inventory } from './inventory.entity';
 import { InventoryView, InventoryViewSchema } from './schemas/inventory-view.schema';
 import { MongooseModule } from '@nestjs/mongoose';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { InventoryCreatedHandler } from './events/handlers/inventory-created.handler';
 import { DeleteInventoryHandler } from './commands/handlers/delete-inventory.handler';
 import { InventoryDeletedHandler } from './events/handlers/inventory-deleted.handler';
 import { InventoryViewRepository } from './repositories/inventory-view.repository';
@@ -16,7 +15,7 @@ const CommandHandlers = [
     CreateInventoryHandler,    
     DeleteInventoryHandler   ]
     const EventsHandlers = [
-        InventoryCreatedHandler,  
+        
         InventoryDeletedHandler   
       ];
 
