@@ -61,7 +61,4 @@ export class SellerRepository {
     return this.sellerRepository.save(seller);
   }
 
-  async updateSellerLastLogin(sellerId: string): Promise<void> {
-    await this.sellerRepository.update(sellerId, { lastLoginAt: new Date() });
-  }
 }

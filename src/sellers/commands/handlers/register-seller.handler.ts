@@ -7,7 +7,6 @@ import { EventBusService } from "src/shared/infrastructure/event-sourcing/event-
 import { v4 as uuidv4 } from "uuid";
 import { SellerRegisteredEvent } from "src/sellers/events/events/register-seller.event";
 import { SellerRepository } from "src/sellers/repositories/seller.repository";
-import { BusinessNumberVerificationService } from "src/auth/services/business-number-verification.service";
 import { PasswordService } from "src/shared/services/password.service";
 
 @CommandHandler(RegisterSellerCommand)
@@ -18,7 +17,6 @@ export class RegisterSellerHandler implements ICommandHandler<RegisterSellerComm
     private readonly sellerRepository: SellerRepository,
     private readonly passwordService: PasswordService,
     private readonly eventBusService: EventBusService,
-    private readonly businessNumberVerificationService: BusinessNumberVerificationService,
     @Inject(REDIS_CLIENT) private readonly redisClient: Redis,
   ) {}
 
@@ -31,23 +29,26 @@ export class RegisterSellerHandler implements ICommandHandler<RegisterSellerComm
       phoneNumber,
       storeName,
       storeAddress,
-      storePhoneNumber,
-      businessNumber,
+      storePhoneNumber
     } = command;
 
     // 이메일 인증 상태 확인
-    const isEmailVerified = await this.redisClient.get(`email_verified:${email}`);
-    if (isEmailVerified !== "true") {
+    const isVerifiedEmail = await this.redisClient.get(`email_verified:${email}`);
+    if (isVerifiedEmail !== "true") {
       throw new UnauthorizedException("이메일 인증이 완료되지 않았습니다.");
     }
+
+    // 사업자등록번호 인증 상태 확인
+    const isVerifiedBusinessNumber = await this.redisClient.get(`business_number_verified:${email}`);
+    if (isVerifiedBusinessNumber !== "true") {
+      throw new UnauthorizedException("사업자 등록번호 인증이 완료되지 않았습니다.");
+    }
+
 
     // 비밀번호 확인
     if (password !== pwConfirm) {
       throw new BadRequestException("비밀번호와 비밀번호 확인이 일치하지 않습니다.");
     }
-
-    // 사업자 번호 검증
-    const isBusinessVerified = await this.businessNumberVerificationService.verify(businessNumber);
 
     const sellerId = uuidv4();
     const hashedPassword = await this.passwordService.hashPassword(password);
@@ -62,7 +63,7 @@ export class RegisterSellerHandler implements ICommandHandler<RegisterSellerComm
       storeAddress,
       storePhoneNumber,
       isEmailVerified: true,
-      isBusinessNumberVerified: isBusinessVerified,
+      isBusinessNumberVerified: true,
     });
 
     if (!isNewSeller) {
@@ -87,8 +88,10 @@ export class RegisterSellerHandler implements ICommandHandler<RegisterSellerComm
 
     await this.eventBusService.publishAndSave(sellerRegisteredEvent);
 
-    // Redis에서 이메일 인증 상태 삭제
+
+    // Redis에서 인증 상태 삭제
     await this.redisClient.del(`email_verified:${email}`);
+    await this.redisClient.del(`business_number_verified:${email}`);
 
     this.logger.log(`판매자 등록 완료: ${seller.id}`);
     return seller.id;
