@@ -1,4 +1,3 @@
-// src/inventory/handlers/create-inventory.handler.ts
 import { CommandHandler, ICommandHandler, EventBus } from '@nestjs/cqrs';
 import { CreateInventoryCommand } from '../commands/impl/create-inventory.command';
 import { InventoryCreatedEvent } from '../events/impl/inventory-created.event';
@@ -16,22 +15,22 @@ export class CreateInventoryHandler implements ICommandHandler<CreateInventoryCo
   ) { }
 
   async execute(command: CreateInventoryCommand) {
-    const { productId, quantity, expirationDate } = command;
+    const { Id, quantity, expirationDate } = command;
 
     // Inventory 생성
     const inventory = this.inventoryRepository.create({
-      productId,
+      Id,
       quantity,
       expirationDate,
     });
     await this.inventoryRepository.save(inventory);
 
-    this.logger.log(`Inventory created for productId: ${productId}`);
+    this.logger.log(`Inventory created for productId: ${inventory.productId}`);
 
     // InventoryCreatedEvent 생성 및 발행
     const inventoryCreatedEvent = new InventoryCreatedEvent(
+      inventory.Id,
       inventory.productId, 
-      productId,
       quantity,
       expirationDate,
       new Date(),
@@ -39,6 +38,6 @@ export class CreateInventoryHandler implements ICommandHandler<CreateInventoryCo
     );
 
     this.eventBus.publish(inventoryCreatedEvent);
-    this.logger.log(`Published InventoryCreatedEvent for productId: ${productId}`);
+    this.logger.log(`Published InventoryCreatedEvent for productId: ${inventory.productId}`);
   }
 }
