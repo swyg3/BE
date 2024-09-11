@@ -17,14 +17,11 @@ export class User {
   @Column()
   phoneNumber: string;
 
-  @Column()
+  @Column({ type: 'boolean', default: false })
   isEmailVerified: boolean;
 
-  @Column()
+  @Column({ nullable: true })
   accessToken: string;
-
-  @Column()
-  lastLoginAt: Date;
 
   @Column({ type: "timestamp", default: () => "CURRENT_TIMESTAMP" })
   createdAt: Date;

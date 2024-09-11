@@ -41,7 +41,4 @@ export class UserRepository {
     await this.userRepository.update(userId, { accessToken });
   }
 
-  async updateUserLastLogin(userId: string): Promise<void> {
-    await this.userRepository.update(userId, { lastLoginAt: new Date() });
-  }
 }
