@@ -14,10 +14,8 @@ import { DeleteProductHandler } from './commands/handlers/delete-product.handler
 import { UpdateProductHandler } from './commands/handlers/update-product.handler';
 import { ProductUpdatedEventHandler } from './events/handlers/product-update.handler';
 import { ProductDeletedHandler } from './events/handlers/product-deleted.handler';
-import { InventoryRepository } from 'src/inventory/repositories/inventory.repository';
-import { ProductCreatedEvent } from './events/impl/product-created.event';
-import { ProductCreatedHandler } from './queries/handlers/product-created.handler';
 import { InventoryCreatedEvent } from 'src/inventory/events/impl/inventory-created.event';
+import { ProductCreatedHandler } from './events/handlers/product-created.handler';
 
 
 const CommandHandlers = [CreateProductHandler, UpdateProductHandler ,DeleteProductHandler]

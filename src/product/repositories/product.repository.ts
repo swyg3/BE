@@ -5,12 +5,15 @@ import { Product } from '../entities/product.entity';
 
 @Injectable()
 export class ProductRepository {
+    findByStoreId(stellerId: any) {
+        throw new Error('Method not implemented.');
+    }
   save: any;
   create: any;
-    deleteOne: any;
-    findOne: any;
+  deleteOne: any;
+  findOne: any;
   delete: any;
-    findById: any;
+  findById: any;
   
   constructor(
     @InjectRepository(Product)

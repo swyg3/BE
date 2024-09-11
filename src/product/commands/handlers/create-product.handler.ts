@@ -7,7 +7,6 @@ import { ProductCreatedEvent } from 'src/product/events/impl/product-created.eve
 import { Category } from 'src/product/product.category';
 import { CommandBus, CommandHandler, EventBus, ICommandHandler } from '@nestjs/cqrs';
 import { EventStoreService } from 'src/shared/event-store/event-store.service';
-import { v4 as uuidv4 } from 'uuid';
 import { BadRequestException, Inject, Logger } from '@nestjs/common';
 import { ProductAggregate } from 'src/product/aggregates/product.aggregate';
 import { Repository } from 'typeorm';
@@ -27,78 +26,79 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
   async execute(command: CreateProductCommand) {
     const { sellerId, category, name, productImageUrl, description, originalPrice, discountedPrice, quantity, expirationDate } = command;
 
-     // Product 저장
-     const product = this.productRepository.create({
-      sellerId,
-      category,
-      name,
-      productImageUrl,
-      description,
-      originalPrice,
-      discountedPrice,
-    });
-    const savedProduct = await this.productRepository.save(product);
-
-    const Id = savedProduct.Id;
-
-    const productAggregate = new ProductAggregate(Id);
-    const events = productAggregate.createProduct(
-      sellerId,
-      category,
-      name,
-      productImageUrl,
-      description,
-      originalPrice,
-      discountedPrice,
-    );
-
-    console.log("command success");
-    // 이벤트 저장소에 저장
-    for (const event of events) {
-      await this.eventStoreService.saveEvent({
-        aggregateId: Id,
-        aggregateType: 'Product',
-        eventType: event.constructor.name,
-        eventData: event,
-        version: 1
+    try {
+      // Product 저장
+      const product = this.productRepository.create({
+        sellerId,
+        category,
+        name,
+        productImageUrl,
+        description,
+        originalPrice,
+        discountedPrice,
       });
-      console.log("event success");
+      const savedProduct = await this.productRepository.save(product);
+      const Id = savedProduct.Id;
+
+      const productAggregate = new ProductAggregate(Id);
+      const events = productAggregate.createProduct(
+        sellerId,
+        category,
+        name,
+        productImageUrl,
+        description,
+        originalPrice,
+        discountedPrice,
+      );
+
+      // 이벤트 저장소에 저장
+      for (const event of events) {
+        await this.eventStoreService.saveEvent({
+          aggregateId: Id,
+          aggregateType: 'Product',
+          eventType: event.constructor.name,
+          eventData: event,
+          version: 1
+        });
+      }
+
+      // Inventory 생성 명령어 발행
+      const createInventoryCommand = new CreateInventoryCommand(
+        Id, quantity, expirationDate
+      );
+      const discountRate = ((originalPrice - discountedPrice) / originalPrice) * 100;
+      await this.commandBus.execute(createInventoryCommand);
+
+      // ProductCreatedEvent 생성
+      const productRegisteredEvent = new ProductCreatedEvent(
+        Id,
+        sellerId,
+        category,
+        name,
+        productImageUrl,
+        description,
+        originalPrice,
+        discountedPrice,
+        discountRate,
+        quantity,
+        expirationDate || new Date(), // 만기일이 없으면 현재 날짜로
+        new Date(), // createdAt
+        new Date()  // updatedAt
+      );
+
+      // 이벤트 버스에 이벤트 게시
+      this.logger.log(`Publishing productRegisteredEvent for user: ${Id}`);
+      this.eventBus.publish(productRegisteredEvent);
+      
+    } catch (error) {
+      // 에러 발생 시 이벤트 전체와 함께 에러 로그 출력
+      this.logger.error(`Error occurred while executing CreateProductCommand: ${error.message}`);
+      this.logger.error(`Event data: ${JSON.stringify(command)}`);
+      this.logger.error(`Stack trace: ${error.stack}`);
+      throw new BadRequestException('Error occurred during product creation process');
     }
 
-
-    console.log("db success");
-
-   
-
-    // Inventory 생성 명령어 발행
-    const createInventoryCommand = new CreateInventoryCommand(
-      Id, quantity, expirationDate
-    );
-    const discountRate = ((originalPrice - discountedPrice) / originalPrice) * 100;
-    await this.commandBus.execute(createInventoryCommand);
-
-    console.log("Inventorycommand success");
-
-    const productRegisteredEvent = new ProductCreatedEvent(
-      Id,
-      sellerId,
-      category,
-      name,
-      productImageUrl,
-      description,
-      originalPrice,
-      discountedPrice,
-      discountRate,              
-      quantity,            
-      expirationDate, // 만기일을 설정한 날짜로 지정
-      new Date(),     // createdAt, 현재 날짜
-      new Date()      // updatedAt, 현재 날짜
-    );
-
-    this.logger.log(`Publishing productRegisteredEvent for user: ${name}`);
-    this.eventBus.publish(productRegisteredEvent);
-
     // 컨트롤러에 응답 반환
-    return Id;
+    return name;
   }
 }
