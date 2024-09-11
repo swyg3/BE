@@ -1,7 +1,6 @@
 import { CommandHandler, ICommandHandler, EventBus } from '@nestjs/cqrs';
 import { CreateInventoryCommand } from '../commands/impl/create-inventory.command';
 import { InventoryCreatedEvent } from '../events/impl/inventory-created.event';
-import { v4 as uuidv4 } from 'uuid';
 import { Logger } from '@nestjs/common';
 import { InventoryRepository } from '../repositories/inventory.repository';
 
