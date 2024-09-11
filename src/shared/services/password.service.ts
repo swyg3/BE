@@ -22,14 +22,19 @@ export class PasswordService {
     storedPassword: string,
     plainPassword: string,
   ): Promise<boolean> {
-    const [salt, hash] = storedPassword.split(":");
-    const verifyHash = await argon2.hash(plainPassword, {
-      type: argon2.argon2id,
-      memoryCost: 2 ** 16,
-      timeCost: 3,
-      parallelism: 1,
-      salt: Buffer.from(salt, "hex"),
-    });
-    return verifyHash === hash;
+    const [salt, storedHash] = storedPassword.split(":");
+    try {
+      const hash = await argon2.hash(plainPassword, {
+        type: argon2.argon2id,
+        memoryCost: 2 ** 16,
+        timeCost: 3,
+        parallelism: 1,
+        salt: Buffer.from(salt, "hex"),
+      });
+      return hash === storedHash;
+    } catch (error) {
+      console.error("Password verification error:", error);
+      return false;
+    }
   }
 }

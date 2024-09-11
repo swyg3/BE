@@ -4,6 +4,7 @@ import { AppService } from "./app.service";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { MongooseModule } from "@nestjs/mongoose";
 import { ConfigModule, ConfigService } from "@nestjs/config";
+import { ThrottlerModule } from "@nestjs/throttler";
 import { MetricsModule } from "./metrics/metrics.module";
 import { UsersModule } from "./users/users.module";
 import { AuthModule } from "./auth/auth.module";
@@ -11,13 +12,6 @@ import { SellersModule } from "./sellers/sellers.module";
 import { configValidationSchema } from "./shared/infrastructure/config/config.validation";
 import { getTypeOrmConfig } from "./shared/infrastructure/database/typeorm.config";
 import { getMongoConfig } from "./shared/infrastructure/database/mongodb.config";
-import {
-  createRedisClient,
-  REDIS_CLIENT,
-  RedisModule,
-} from "./shared/infrastructure/redis/redis.config";
-import { ThrottlerModule } from "@nestjs/throttler";
-import { SharedModule } from "./shared/shared.module";
 
 @Module({
   imports: [
@@ -48,14 +42,11 @@ import { SharedModule } from "./shared/shared.module";
       inject: [ConfigService],
     }),
     MetricsModule,
-    RedisModule,
-    SharedModule,
     AuthModule,
     UsersModule,
     SellersModule,
   ],
   controllers: [AppController],
   providers: [AppService],
-  exports: [],
 })
 export class AppModule {}
