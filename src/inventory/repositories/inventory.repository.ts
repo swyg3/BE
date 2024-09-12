@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common';
-import { DeepPartial, DeleteResult, Repository } from 'typeorm';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Inventory } from '../inventory.entity';
+import { Injectable } from "@nestjs/common";
+import { DeepPartial, DeleteResult, Repository } from "typeorm";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Inventory } from "../inventory.entity";
 
 @Injectable()
 export class InventoryRepository {
@@ -13,7 +13,7 @@ export class InventoryRepository {
   constructor(
     @InjectRepository(Inventory)
     private readonly repository: Repository<Inventory>,
-  ) { }
+  ) {}
 
   async createInventory({
     productId,
@@ -35,9 +35,7 @@ export class InventoryRepository {
 
   async findById(productId: number): Promise<Inventory | null> {
     return this.repository.findOneBy({
-      id: productId
+      id: productId,
     });
   }
-
-
 }

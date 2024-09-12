@@ -1,4 +1,3 @@
 export class DeleteInventoryCommand {
-    constructor(public readonly productId: number) {}
-  }
-  
+  constructor(public readonly productId: number) {}
+}

@@ -1,6 +1,6 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
-import { Category } from 'src/product/product.category';  
+import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
+import { Document } from "mongoose";
+import { Category } from "src/product/product.category";
 
 @Schema()
 export class ProductView extends Document {
@@ -11,7 +11,7 @@ export class ProductView extends Document {
   sellerId: number;
 
   @Prop({ required: true, enum: Category })
-  category: Category;  
+  category: Category;
 
   @Prop({ required: true })
   name: string;

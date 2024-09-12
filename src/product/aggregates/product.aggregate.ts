@@ -1,8 +1,8 @@
-import { AggregateRoot } from '@nestjs/cqrs';
-import { ProductCreatedEvent } from '../events/impl/product-created.event';
-import { ProductDeletedEvent } from '../events/impl/product-deleted.event';
-import { ProductUpdatedEvent } from '../events/impl/product-updated.event';
-import { Category } from '../product.category';
+import { AggregateRoot } from "@nestjs/cqrs";
+import { ProductCreatedEvent } from "../events/impl/product-created.event";
+import { ProductDeletedEvent } from "../events/impl/product-deleted.event";
+import { ProductUpdatedEvent } from "../events/impl/product-updated.event";
+import { Category } from "../product.category";
 
 export class ProductAggregate extends AggregateRoot {
   private name?: string;
@@ -23,7 +23,7 @@ export class ProductAggregate extends AggregateRoot {
     productImageUrl: string,
     description: string,
     originalPrice: number,
-    discountedPrice: number
+    discountedPrice: number,
   ) {
     const expirationDate = new Date();
 
@@ -37,11 +37,11 @@ export class ProductAggregate extends AggregateRoot {
       description,
       originalPrice,
       discountedPrice,
-      0,              // discountRate, 기본값으로 설정
-      0,              // availableStock, 기본값으로 설정
+      0, // discountRate, 기본값으로 설정
+      0, // availableStock, 기본값으로 설정
       expirationDate, // 만기일을 설정한 날짜로 지정
-      new Date(),     // createdAt, 현재 날짜
-      new Date()      // updatedAt, 현재 날짜
+      new Date(), // createdAt, 현재 날짜
+      new Date(), // updatedAt, 현재 날짜
     );
 
     // 상태를 변경하고 이벤트를 적용
@@ -63,7 +63,7 @@ export class ProductAggregate extends AggregateRoot {
     productImageUrl?: string,
     description?: string,
     originalPrice?: number,
-    discountedPrice?: number
+    discountedPrice?: number,
   ) {
     // 상태를 업데이트하는 로직
     if (name) this.name = name;
@@ -79,12 +79,10 @@ export class ProductAggregate extends AggregateRoot {
       this.productImageUrl,
       this.description,
       this.originalPrice,
-      this.discountedPrice
+      this.discountedPrice,
     );
 
     this.apply(event);
     return [event];
   }
-
- 
 }

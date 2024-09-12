@@ -1,3 +1,3 @@
 export class InventoryDeletedEvent {
-    constructor(public readonly productId: number) {}
-  }
+  constructor(public readonly productId: number) {}
+}

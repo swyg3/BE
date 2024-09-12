@@ -1,14 +1,16 @@
-import { QueryHandler, IQueryHandler } from '@nestjs/cqrs';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { ProductView } from '../../schemas/product-view.schema'; 
-import { GetProductByIdQuery } from '../impl/get-product-by-id.query';
-import { NotFoundException } from '@nestjs/common';
+import { QueryHandler, IQueryHandler } from "@nestjs/cqrs";
+import { InjectModel } from "@nestjs/mongoose";
+import { Model } from "mongoose";
+import { ProductView } from "../../schemas/product-view.schema";
+import { GetProductByIdQuery } from "../impl/get-product-by-id.query";
+import { NotFoundException } from "@nestjs/common";
 
 @QueryHandler(GetProductByIdQuery)
-export class GetProductByIdHandler implements IQueryHandler<GetProductByIdQuery> {
+export class GetProductByIdHandler
+  implements IQueryHandler<GetProductByIdQuery>
+{
   constructor(
-    @InjectModel(ProductView.name) 
+    @InjectModel(ProductView.name)
     private readonly productViewModel: Model<ProductView>,
   ) {}
 

@@ -1,10 +1,12 @@
-import { EventsHandler, IEventHandler } from '@nestjs/cqrs';
-import { ProductViewRepository } from '../../repositories/product-view.repository';
-import { Logger } from '@nestjs/common';
-import { ProductCreatedEvent } from '../impl/product-created.event';
+import { EventsHandler, IEventHandler } from "@nestjs/cqrs";
+import { ProductViewRepository } from "../../repositories/product-view.repository";
+import { Logger } from "@nestjs/common";
+import { ProductCreatedEvent } from "../impl/product-created.event";
 
 @EventsHandler(ProductCreatedEvent)
-export class ProductCreatedHandler implements IEventHandler<ProductCreatedEvent> {
+export class ProductCreatedHandler
+  implements IEventHandler<ProductCreatedEvent>
+{
   private readonly logger = new Logger(ProductCreatedHandler.name);
 
   constructor(private readonly productViewRepository: ProductViewRepository) {}
@@ -31,7 +33,10 @@ export class ProductCreatedHandler implements IEventHandler<ProductCreatedEvent>
 
       this.logger.log(`Product view successfully updated: ${event.id}`);
     } catch (error) {
-      this.logger.error(`Failed to update product view: ${event.id}, ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to update product view: ${event.id}, ${error.message}`,
+        error.stack,
+      );
     }
   }
 }

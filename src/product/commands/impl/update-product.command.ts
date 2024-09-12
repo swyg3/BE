@@ -7,9 +7,9 @@ export class UpdateProductCommand {
       description?: string;
       originalPrice?: number;
       discountedPrice?: number;
-      quantity?: number;          
+      quantity?: number;
       expirationDate?: Date;
-      updatedAt?: Date;   
+      updatedAt?: Date;
     },
   ) {}
 }

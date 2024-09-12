@@ -1,21 +1,21 @@
-import { Injectable } from '@nestjs/common';
-import { DeepPartial, Repository } from 'typeorm';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Product } from '../entities/product.entity';
+import { Injectable } from "@nestjs/common";
+import { DeepPartial, Repository } from "typeorm";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Product } from "../entities/product.entity";
 
 @Injectable()
 export class ProductRepository {
   findOneBy: any;
-    findByStoreId(stellerId: any) {
-        throw new Error('Method not implemented.');
-    }
+  findByStoreId(stellerId: any) {
+    throw new Error("Method not implemented.");
+  }
   save: any;
   create: any;
   deleteOne: any;
   findOne: any;
   delete: any;
   findById: any;
-  
+
   constructor(
     @InjectRepository(Product)
     private readonly repository: Repository<Product>,
@@ -37,8 +37,7 @@ export class ProductRepository {
     description: string;
     originalPrice: number;
     discountedPrice: number;
-  }): Promise<Product| undefined> {
-
+  }): Promise<Product | undefined> {
     const product = this.repository.create({
       sellerId,
       category,
@@ -47,9 +46,8 @@ export class ProductRepository {
       description,
       originalPrice,
       discountedPrice,
-    }as DeepPartial<Product>);
+    } as DeepPartial<Product>);
 
     return await this.repository.save(product);
   }
-  
 }

@@ -1,7 +1,7 @@
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
-import { MetricsInterceptor } from './metrics/metrics.interceptor';
-import { CustomMetricsService } from './metrics/custom-metrics.service';
+import { NestFactory } from "@nestjs/core";
+import { AppModule } from "./app.module";
+import { MetricsInterceptor } from "./metrics/metrics.interceptor";
+import { CustomMetricsService } from "./metrics/custom-metrics.service";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);

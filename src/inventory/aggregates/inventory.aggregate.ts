@@ -57,4 +57,3 @@ export class InventoryAggregate extends AggregateRoot {
         this.apply(event);
         return event;
     }*/
-

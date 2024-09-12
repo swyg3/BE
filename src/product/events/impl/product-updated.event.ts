@@ -10,6 +10,6 @@ export class ProductUpdatedEvent {
     public readonly availableStock?: number,
     public readonly expirationDate?: Date,
     public readonly createdAt?: Date,
-    public readonly updatedAt?: Date
+    public readonly updatedAt?: Date,
   ) {}
 }

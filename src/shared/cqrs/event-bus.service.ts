@@ -1,12 +1,12 @@
-import { Injectable } from '@nestjs/common';
-import { EventBus } from '@nestjs/cqrs';
-import { EventStoreService } from '../event-store/event-store.service';
+import { Injectable } from "@nestjs/common";
+import { EventBus } from "@nestjs/cqrs";
+import { EventStoreService } from "../event-store/event-store.service";
 
 @Injectable()
 export class EventBusService {
   constructor(
     private readonly eventBus: EventBus,
-    private readonly eventStoreService: EventStoreService
+    private readonly eventStoreService: EventStoreService,
   ) {}
 
   async publishAndSave(event: any): Promise<void> {
