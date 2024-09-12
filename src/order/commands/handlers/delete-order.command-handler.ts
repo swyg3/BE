@@ -8,21 +8,23 @@ import { DeleteOrderCommand } from "../delete-order.command";
 
 @Injectable()
 @CommandHandler(DeleteOrderCommand)
-export class DeleteOrderCommandHandler implements ICommandHandler<DeleteOrderCommand> {
-    constructor(
-        @InjectRepository(Order)
-        private readonly orderRepository: Repository<Order>,
-        @InjectRepository(OrderItems)
-        private readonly orderItemsRepository: Repository<OrderItems>,
-    ) {}
+export class DeleteOrderCommandHandler
+  implements ICommandHandler<DeleteOrderCommand>
+{
+  constructor(
+    @InjectRepository(Order)
+    private readonly orderRepository: Repository<Order>,
+    @InjectRepository(OrderItems)
+    private readonly orderItemsRepository: Repository<OrderItems>,
+  ) {}
 
-    async execute(command: DeleteOrderCommand): Promise<any> {
-        const { id } = command;
+  async execute(command: DeleteOrderCommand): Promise<any> {
+    const { id } = command;
 
-        // 1. 주문 및 주문 상세 삭제
-        await this.orderRepository.delete({ id: id })
-        await this.orderItemsRepository.delete({ orderId: id });
-        
-        // 2. 주문 수량 만큼 재고 추가
-    }
+    // 1. 주문 및 주문 상세 삭제
+    await this.orderRepository.delete({ id: id });
+    await this.orderItemsRepository.delete({ orderId: id });
+
+    // 2. 주문 수량 만큼 재고 추가
+  }
 }

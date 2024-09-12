@@ -1,4 +1,9 @@
-import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from "@nestjs/common";
+import {
+  Injectable,
+  NestInterceptor,
+  ExecutionContext,
+  CallHandler,
+} from "@nestjs/common";
 import { Observable, tap } from "rxjs";
 import { CustomMetricsService } from "./custom-metrics.service";
 
@@ -15,7 +20,7 @@ export class MetricsInterceptor implements NestInterceptor {
       tap({
         next: () => {
           const response = context.switchToHttp().getResponse();
-          const duration = (Date.now() - start) / 1000; 
+          const duration = (Date.now() - start) / 1000;
           this.customMetricsService.incrementHttpRequests(
             method,
             path,
@@ -29,7 +34,7 @@ export class MetricsInterceptor implements NestInterceptor {
           );
         },
         error: (error) => {
-          const duration = (Date.now() - start) / 1000; 
+          const duration = (Date.now() - start) / 1000;
           this.customMetricsService.incrementHttpRequests(
             method,
             path,

@@ -6,12 +6,12 @@ import { GetOrderQuery } from "../get-order.query";
 
 @QueryHandler(GetOrderQuery)
 export class GetOrderQueryHandler implements IQueryHandler<GetOrderQuery> {
-    constructor(
-        @InjectRepository(Order)
-        private readonly orderRepository: Repository<Order>
-    ) {}
+  constructor(
+    @InjectRepository(Order)
+    private readonly orderRepository: Repository<Order>,
+  ) {}
 
-    async execute(query: GetOrderQuery): Promise<Order[]> {
-        return this.orderRepository.find({ where: { userId: query.userId } });
-    }
+  async execute(query: GetOrderQuery): Promise<Order[]> {
+    return this.orderRepository.find({ where: { userId: query.userId } });
+  }
 }
