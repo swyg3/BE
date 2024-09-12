@@ -8,6 +8,8 @@ import { ProductUpdatedEvent } from 'src/product/events/impl/product-updated.eve
 import { UpdateProductCommand } from '../impl/update-product.command';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UpdateInventoryCommand } from 'src/inventory/commands/impl/update-inventory.command';
+import { ProductViewRepository } from './../../repositories/product-view.repository';
+import { ProductView } from 'src/product/schemas/product-view.schema';
 
 @CommandHandler(UpdateProductCommand)
 export class UpdateProductHandler implements ICommandHandler<UpdateProductCommand> {
@@ -16,10 +18,11 @@ export class UpdateProductHandler implements ICommandHandler<UpdateProductComman
   constructor(
     @InjectRepository(Product)
     private readonly productRepository: ProductRepository,
+    private readonly productViewRepository: ProductViewRepository,
     private readonly eventStoreService: EventStoreService,
     @Inject(EventBus) private readonly eventBus: EventBus,
     @Inject(CommandBus) private readonly commandBus: CommandBus
-  ) {}
+  ) { }
 
   async execute(command: UpdateProductCommand): Promise<Product> {
     const { id, updates } = command;
@@ -36,6 +39,8 @@ export class UpdateProductHandler implements ICommandHandler<UpdateProductComman
     if (updates.description) product.description = updates.description;
     if (updates.originalPrice) product.originalPrice = updates.originalPrice;
     if (updates.discountedPrice) product.discountedPrice = updates.discountedPrice;
+    if (updates.quantity) product.quantity = updates.quantity;
+    if (updates.expirationDate) product.expirationDate = updates.expirationDate;
 
     // Inventory 업데이트
     if (updates.quantity !== undefined || updates.expirationDate !== undefined) {
@@ -55,7 +60,8 @@ export class UpdateProductHandler implements ICommandHandler<UpdateProductComman
       updates.productImageUrl,
       updates.description,
       updates.originalPrice,
-      updates.discountedPrice
+      updates.discountedPrice,
+      updates.quantity,
     );
 
     // 이벤트 저장
@@ -64,7 +70,7 @@ export class UpdateProductHandler implements ICommandHandler<UpdateProductComman
       aggregateType: 'Product',
       eventType: productUpdatedEvent.constructor.name,
       eventData: productUpdatedEvent,
-      version: 1 
+      version: 1
     });
 
     // ProductUpdatedEvent 생성
@@ -92,6 +98,14 @@ export class UpdateProductHandler implements ICommandHandler<UpdateProductComman
 
     this.logger.log(`ProductUpdatedEvent for product ID ${id} saved`);
 
-    return product;
+    // 업데이트된 ProductView를 기다려서 반환
+    let productView: ProductView;
+    do {
+      productView = await this.productViewRepository.findById(id);
+      await new Promise(resolve => setTimeout(resolve, 100)); // 100ms 대기
+    } while (!productView);
+
+    return productView;
   }
 }
+

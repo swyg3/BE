@@ -4,7 +4,6 @@ import { Model } from 'mongoose';
 import { ProductView } from '../schemas/product-view.schema';
 @Injectable()
 export class ProductViewRepository {
-    
     constructor(
         @InjectModel(ProductView.name) private productViewModel: Model<ProductView>
       ) {}
@@ -16,5 +15,9 @@ export class ProductViewRepository {
   async deleteProduct({ id }: { id: number }): Promise<void> {
     await this.productViewModel.deleteOne({ id: id }).exec();
   }
+  async findById(id: number): Promise<ProductView | null> {
+    return this.productViewModel.findOne({ id }).exec();
+  }
+    
 
 }
