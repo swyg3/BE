@@ -1,6 +1,15 @@
-import { Post, Body, Get, UseGuards, Req, Controller, Res, Param, Query } from "@nestjs/common";
+import {
+  Post,
+  Body,
+  Get,
+  UseGuards,
+  Req,
+  Controller,
+  Res,
+  Param,
+  Query,
+} from "@nestjs/common";
 import { CommandBus } from "@nestjs/cqrs";
-import { AuthGuard } from "@nestjs/passport";
 import { Throttle, ThrottlerGuard } from "@nestjs/throttler";
 import { ApiResponse } from "src/shared/interfaces/api-response.interface";
 import { RequestEmailVerificationCommand } from "./commands/commands/request-email-verification.command";
@@ -20,6 +29,9 @@ import { VerifyBusinessNumberDto } from "./dtos/verify-business-number.dto";
 import { OAuthCallbackDto } from "./dtos/oauth-callback.dto";
 import { Response } from "express";
 import { OAuthCallbackCommand } from "./commands/commands";
+import { JwtAuthGuard } from "./guards/jwt-auth.guard";
+import { JwtPayload } from "src/shared/interfaces/jwt-payload.interface";
+import { GetUser } from "src/shared/decorators/get-user.decorator";
 
 @Controller("auth")
 @UseGuards(ThrottlerGuard)
@@ -56,7 +68,7 @@ export class AuthController {
   @Post("login-email")
   async loginEmail(
     @Body() loginDto: LoginEmailDto,
-    @Req() req
+    @Req() req,
   ): Promise<ApiResponse> {
     const result = await this.commandBus.execute(
       new LoginEmailCommand(loginDto, req),
@@ -69,23 +81,29 @@ export class AuthController {
   }
 
   // Authorization code를 OAuth Token으로 교환하는 과정
-  @Get('login/:provider/callback')
+  @Get("login/:provider/callback")
   async oauthCallback(
-    @Param('provider') provider: string,
-    @Query('code') code: string,
+    @Param("provider") provider: string,
+    @Query("code") code: string,
     @Res() res: Response,
-    @Query('userType') userType?: string,
-    @Query('state') state?: string,
+    @Query("userType") userType?: string,
+    @Query("state") state?: string,
   ) {
     const oauthCallbackDto: OAuthCallbackDto = { provider, code };
-    const result = await this.commandBus.execute(new OAuthCallbackCommand(oauthCallbackDto));
+    const result = await this.commandBus.execute(
+      new OAuthCallbackCommand(oauthCallbackDto),
+    );
 
     // state에서 userType 추출 - CSRF 공격 방지
-    const decodedState = JSON.parse(Buffer.from(state, 'base64').toString('utf-8'));
+    const decodedState = JSON.parse(
+      Buffer.from(state, "base64").toString("utf-8"),
+    );
     const decodedUserType = decodedState.userType;
 
     // 리다이렉트 시 userType을 명시적으로 전달
-    res.redirect(`/login-oauth?provider=${provider}&access_token=${result.accessToken}&user_type=${userType || decodedUserType}`);
+    res.redirect(
+      `/login-oauth?provider=${provider}&access_token=${result.accessToken}&user_type=${userType || decodedUserType}`,
+    );
 
     return {
       success: true,
@@ -97,14 +115,12 @@ export class AuthController {
   /**
    * OAuth Token을 사용하여 소셜 사용자 정보(email, name, phone ...)을 가져와서
    * (1) JWT 토큰을 발급하고,
-   * (2) 데이터베이스와 이벤트 저장소에 저장 
+   * (2) 데이터베이스와 이벤트 저장소에 저장
    * (3) 로그인 이벤트를 발행
-  */ 
-  @Post('login-oauth')
-  async loginOAuth(
-    @Body() loginOAuthDto: LoginOAuthDto
-  ): Promise<ApiResponse> {
-    console.log('Received DTO:', loginOAuthDto);
+   */
+  @Post("login-oauth")
+  async loginOAuth(@Body() loginOAuthDto: LoginOAuthDto): Promise<ApiResponse> {
+    console.log("Received DTO:", loginOAuthDto);
     const result = await this.commandBus.execute(
       new LoginOAuthCommand(loginOAuthDto),
     );
@@ -116,12 +132,9 @@ export class AuthController {
   }
 
   @Post("logout")
-  @UseGuards(AuthGuard("jwt"))
-  async logout(@Req() req): Promise<ApiResponse> {
-    console.log('Request User:', req.user);
-    const { userId, accessToken, userType } = req.user;
-    
-    console.log({ userId, accessToken, userType });
+  @UseGuards(JwtAuthGuard)
+  async logout(@GetUser() user: JwtPayload): Promise<ApiResponse> {
+    const { userId, accessToken, userType } = user;
     await this.commandBus.execute(
       new LogoutCommand(userId, accessToken, userType),
     );
@@ -146,13 +159,13 @@ export class AuthController {
   }
 
   @Post("verify-business-number")
-  @UseGuards(AuthGuard("jwt"))
+  @UseGuards(JwtAuthGuard)
   async verifyBusinessNumber(
-    @Req() req,
+    @GetUser() user: JwtPayload,
     @Body() dto: VerifyBusinessNumberDto,
   ): Promise<ApiResponse> {
     const result = await this.commandBus.execute(
-      new VerifyBusinessNumberCommand(req.user.id, dto.businessNumber),
+      new VerifyBusinessNumberCommand(user.userId, dto.businessNumber),
     );
     return {
       success: true,
@@ -162,13 +175,13 @@ export class AuthController {
   }
 
   @Post("complete-profile")
-  @UseGuards(AuthGuard("jwt"))
+  @UseGuards(JwtAuthGuard)
   async completeProfile(
-    @Req() req,
+    @GetUser() user: JwtPayload,
     @Body() profileDto: CompleteSellerProfileDto,
   ): Promise<ApiResponse> {
     const result = await this.commandBus.execute(
-      new CompleteSellerProfileCommand(req.user.id, profileDto),
+      new CompleteSellerProfileCommand(user.userId, profileDto),
     );
     return {
       success: true,
@@ -176,5 +189,4 @@ export class AuthController {
       data: result,
     };
   }
-
 }

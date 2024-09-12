@@ -6,6 +6,7 @@ import {
   Param,
   UseGuards,
   Patch,
+  ForbiddenException,
 } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { RegisterUserDto } from "./dtos/register-user.dto";
@@ -15,6 +16,9 @@ import { UpdateUserProfileDto } from "./dtos/update-user-profile.dto";
 import { UpdateUserProfileCommand } from "./commands/commands/update-user-profile.command";
 import { ApiResponse } from "src/shared/interfaces/api-response.interface";
 import { ValidateUUID } from "src/shared/decorators/validate-uuid.decorator";
+import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
+import { GetUser } from "src/shared/decorators/get-user.decorator";
+import { JwtPayload } from "src/shared/interfaces/jwt-payload.interface";
 
 @Controller("users")
 export class UsersController {
@@ -39,11 +43,15 @@ export class UsersController {
     };
   }
 
-  //@UseGuards(JwtAuthGuard)
   @Get("profile/:id")
+  @UseGuards(JwtAuthGuard)
   async getUserProfile(
     @ValidateUUID("id") id: string,
+    @GetUser() user: JwtPayload,
   ): Promise<ApiResponse<any>> {
+    if (user.userId !== id) {
+      throw new ForbiddenException("자신의 프로필만 조회할 수 있습니다.");
+    }
     const userProfile = await this.queryBus.execute(
       new GetUserProfileQuery(id),
     );
@@ -53,12 +61,16 @@ export class UsersController {
     };
   }
 
-  //@UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Patch("profile/:id")
   async updateUserProfile(
     @ValidateUUID("id") id: string,
+    @GetUser() user: JwtPayload,
     @Body() updateData: UpdateUserProfileDto,
   ): Promise<ApiResponse> {
+    if (user.userId !== id) {
+      throw new ForbiddenException("자신의 프로필만 수정할 수 있습니다.");
+    }
     await this.commandBus.execute(new UpdateUserProfileCommand(id, updateData));
     return {
       success: true,
