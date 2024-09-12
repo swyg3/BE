@@ -8,7 +8,7 @@ import {
   ForbiddenException,
 } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
-import { IApiResponse } from "../shared/interfaces/api-response.interface";
+import { CustomResponse } from "../shared/interfaces/api-response.interface";
 import { RegisterSellerDto } from "./dtos/register-seller.dto";
 import { RegisterSellerCommand } from "./commands/commands/register-seller.command";
 import { ValidateUUID } from "src/shared/decorators/validate-uuid.decorator";
@@ -33,7 +33,7 @@ export class SellersController {
   @Post("register")
   async registerSeller(
     @Body() registerSellerDto: RegisterSellerDto,
-  ): Promise<IApiResponse<{ sellerId: string }>> {
+  ): Promise<CustomResponse<{ sellerId: string }>> {
     const {
       email,
       password,
@@ -73,7 +73,7 @@ export class SellersController {
   async getSellerProfile(
     @ValidateUUID("id") id: string,
     @GetUser() user: JwtPayload,
-  ): Promise<IApiResponse<any>> {
+  ): Promise<CustomResponse<any>> {
     if (user.userId !== id) {
       throw new ForbiddenException("자신의 프로필만 조회할 수 있습니다.");
     }
@@ -94,7 +94,7 @@ export class SellersController {
     @ValidateUUID("id") id: string,
     @Body() updateData: UpdateSellerProfileDto,
     @GetUser() user: JwtPayload,
-  ): Promise<IApiResponse> {
+  ): Promise<CustomResponse> {
     if (user.userId !== id) {
       throw new ForbiddenException("자신의 프로필만 수정할 수 있습니다.");
     }

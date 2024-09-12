@@ -11,7 +11,6 @@ import {
 } from "@nestjs/common";
 import { CommandBus } from "@nestjs/cqrs";
 import { Throttle, ThrottlerGuard } from "@nestjs/throttler";
-import { IApiResponse } from "src/shared/interfaces/api-response.interface";
 import { RequestEmailVerificationCommand } from "./commands/commands/request-email-verification.command";
 import { VerifyEmailCommand } from "./commands/commands/verify-email.command";
 import { LoginEmailCommand } from "./commands/commands/login-email.command";
@@ -33,6 +32,7 @@ import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { JwtPayload } from "src/shared/interfaces/jwt-payload.interface";
 import { GetUser } from "src/shared/decorators/get-user.decorator";
 import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { CustomResponse } from "src/shared/interfaces/api-response.interface";
 
 @ApiTags("Auth")
 @Controller("auth")
@@ -46,7 +46,7 @@ export class AuthController {
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   async requestEmailVerification(
     @Body() dto: RequestEmailVerificationDto,
-  ): Promise<IApiResponse> {
+  ): Promise<CustomResponse> {
     const result = await this.commandBus.execute(
       new RequestEmailVerificationCommand(dto.email),
     );
@@ -61,7 +61,7 @@ export class AuthController {
   @ApiOperation({ summary: "이메일 인증 확인" })
   @ApiResponse({ status: 200, description: "이메일 인증 성공" })
   @Post("verify-email")
-  async verifyEmail(@Body() dto: VerifyEmailDto): Promise<IApiResponse> {
+  async verifyEmail(@Body() dto: VerifyEmailDto): Promise<CustomResponse> {
     const result = await this.commandBus.execute(
       new VerifyEmailCommand(dto.email, dto.verificationCode),
     );
@@ -77,7 +77,7 @@ export class AuthController {
   async loginEmail(
     @Body() loginDto: LoginEmailDto,
     @Req() req,
-  ): Promise<IApiResponse> {
+  ): Promise<CustomResponse> {
     const result = await this.commandBus.execute(
       new LoginEmailCommand(loginDto, req),
     );
@@ -98,7 +98,7 @@ export class AuthController {
     @Res() res: Response,
     @Query("userType") userType?: string,
     @Query("state") state?: string,
-  ): Promise<IApiResponse> {
+  ): Promise<CustomResponse> {
     const oauthCallbackDto: OAuthCallbackDto = { provider, code };
     const result = await this.commandBus.execute(
       new OAuthCallbackCommand(oauthCallbackDto),
@@ -134,7 +134,7 @@ export class AuthController {
   @Post("login-oauth")
   async loginOAuth(
     @Body() loginOAuthDto: LoginOAuthDto,
-  ): Promise<IApiResponse> {
+  ): Promise<CustomResponse> {
     console.log("Received DTO:", loginOAuthDto);
     const result = await this.commandBus.execute(
       new LoginOAuthCommand(loginOAuthDto),
@@ -150,7 +150,7 @@ export class AuthController {
   @ApiResponse({ status: 200, description: "로그아웃 성공" })
   @Post("logout")
   @UseGuards(JwtAuthGuard)
-  async logout(@GetUser() user: JwtPayload): Promise<IApiResponse> {
+  async logout(@GetUser() user: JwtPayload): Promise<CustomResponse> {
     const { userId, accessToken, userType } = user;
     await this.commandBus.execute(
       new LogoutCommand(userId, accessToken, userType),
@@ -166,7 +166,7 @@ export class AuthController {
   @Post("refresh-token")
   async refreshToken(
     @Body("refreshToken") refreshToken: string,
-  ): Promise<IApiResponse> {
+  ): Promise<CustomResponse> {
     const result = await this.commandBus.execute(
       new RefreshTokenCommand(refreshToken),
     );
@@ -184,7 +184,7 @@ export class AuthController {
   async verifyBusinessNumber(
     @GetUser() user: JwtPayload,
     @Body() dto: VerifyBusinessNumberDto,
-  ): Promise<IApiResponse> {
+  ): Promise<CustomResponse> {
     const result = await this.commandBus.execute(
       new VerifyBusinessNumberCommand(user.userId, dto.businessNumber),
     );
@@ -202,7 +202,7 @@ export class AuthController {
   async completeProfile(
     @GetUser() user: JwtPayload,
     @Body() profileDto: CompleteSellerProfileDto,
-  ): Promise<IApiResponse> {
+  ): Promise<CustomResponse> {
     const result = await this.commandBus.execute(
       new CompleteSellerProfileCommand(user.userId, profileDto),
     );

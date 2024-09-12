@@ -14,7 +14,7 @@ import { RegisterUserCommand } from "./commands/commands/register-user.command";
 import { GetUserProfileQuery } from "./queries/queries/get-user-profile.query";
 import { UpdateUserProfileDto } from "./dtos/update-user-profile.dto";
 import { UpdateUserProfileCommand } from "./commands/commands/update-user-profile.command";
-import { IApiResponse } from "src/shared/interfaces/api-response.interface";
+import { CustomResponse } from "src/shared/interfaces/api-response.interface";
 import { ValidateUUID } from "src/shared/decorators/validate-uuid.decorator";
 import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
 import { GetUser } from "src/shared/decorators/get-user.decorator";
@@ -34,7 +34,7 @@ export class UsersController {
   @Post("register")
   async registerUser(
     @Body() registerUserDto: RegisterUserDto,
-  ): Promise<IApiResponse<{ userId: string }>> {
+  ): Promise<CustomResponse<{ userId: string }>> {
     const { email, password, pwConfirm, name, phoneNumber } = registerUserDto;
     const userId = await this.commandBus.execute(
       new RegisterUserCommand(email, password, pwConfirm, name, phoneNumber),
@@ -54,7 +54,7 @@ export class UsersController {
   async getUserProfile(
     @ValidateUUID("id") id: string,
     @GetUser() user: JwtPayload,
-  ): Promise<IApiResponse<any>> {
+  ): Promise<CustomResponse<any>> {
     if (user.userId !== id) {
       throw new ForbiddenException("자신의 프로필만 조회할 수 있습니다.");
     }
@@ -75,7 +75,7 @@ export class UsersController {
     @ValidateUUID("id") id: string,
     @GetUser() user: JwtPayload,
     @Body() updateData: UpdateUserProfileDto,
-  ): Promise<IApiResponse> {
+  ): Promise<CustomResponse> {
     if (user.userId !== id) {
       throw new ForbiddenException("자신의 프로필만 수정할 수 있습니다.");
     }
