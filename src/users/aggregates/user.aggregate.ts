@@ -23,7 +23,7 @@ export class UserAggregate extends AggregateRoot {
         phoneNumber,
         isEmailVerified,
       },
-      this.version
+      this.version,
     );
     this.apply(event);
     return [event];

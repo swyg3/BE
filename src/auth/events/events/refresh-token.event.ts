@@ -7,8 +7,8 @@ export class TokenRefreshedEvent implements BaseEvent {
   constructor(
     public readonly aggregateId: string,
     public readonly data: {
-      userId: string,
-      newAccessToken: string,
+      userId: string;
+      newAccessToken: string;
     },
     public readonly version: number,
   ) {}

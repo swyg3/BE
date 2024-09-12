@@ -32,21 +32,29 @@ export class UserViewRepository {
   async findOneAndUpdate(
     filter: { userId: string },
     update: UpdateQuery<UserView>,
-    options: { upsert: boolean; new: boolean; setDefaultsOnInsert: boolean }
+    options: { upsert: boolean; new: boolean; setDefaultsOnInsert: boolean },
   ): Promise<UserView | null> {
     try {
-      const result = await this.userViewModel.findOneAndUpdate(
-        filter,
-        update,
-        { ...options, setDefaultsOnInsert: true }
-      ).exec();
+      const result = await this.userViewModel
+        .findOneAndUpdate(filter, update, {
+          ...options,
+          setDefaultsOnInsert: true,
+        })
+        .exec();
       return result;
     } catch (error) {
       if (error.code === 11000) {
-        this.logger.warn(`userId 중복 키 에러 발생: ${filter.userId}. Attempting to update existing document.`);
-        return await this.userViewModel.findOneAndUpdate(filter, update, { new: true }).exec();
+        this.logger.warn(
+          `userId 중복 키 에러 발생: ${filter.userId}. Attempting to update existing document.`,
+        );
+        return await this.userViewModel
+          .findOneAndUpdate(filter, update, { new: true })
+          .exec();
       }
-      this.logger.error(`User-View findOneAndUpdate: ${error.message}`, error.stack);
+      this.logger.error(
+        `User-View findOneAndUpdate: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }

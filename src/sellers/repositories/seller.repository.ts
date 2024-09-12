@@ -60,5 +60,4 @@ export class SellerRepository {
     seller.isBusinessNumberVerified = isVerified;
     return this.sellerRepository.save(seller);
   }
-
 }

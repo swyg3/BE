@@ -5,11 +5,11 @@ export class EmailVerificationRequestedEvent implements BaseEvent {
   readonly aggregateType = "User";
 
   constructor(
-    public readonly aggregateId: string, 
+    public readonly aggregateId: string,
     public readonly data: {
-      email: string,
-      verificationCode: string,
-      expirationTime: Date,
+      email: string;
+      verificationCode: string;
+      expirationTime: Date;
     },
     public readonly version: number,
   ) {}

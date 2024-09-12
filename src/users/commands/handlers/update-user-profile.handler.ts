@@ -33,11 +33,11 @@ export class UpdateUserProfileHandler
     await this.userRepository.save(user);
 
     // 이벤트 발행 및 저장
-    const version = 1; 
+    const version = 1;
     const userProfileUpdatedEvent = new UserProfileUpdatedEvent(
-      userId, 
-      updateData, 
-      version, 
+      userId,
+      updateData,
+      version,
     );
 
     await this.eventBusService.publishAndSave(userProfileUpdatedEvent);

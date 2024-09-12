@@ -16,40 +16,56 @@ export class LogoutHandler implements ICommandHandler<LogoutCommand> {
 
   async execute(command: LogoutCommand) {
     try {
-    const { userId, accessToken, userType } = command;
+      const { userId, accessToken, userType } = command;
 
-    console.log({ userId, accessToken, userType });
-    const accessTokenExpiry = this.configService.get<string>('ACCESS_TOKEN_EXPIRY')
-    const refreshTokenExpiry = this.configService.get<string>('REFRESH_TOKEN_EXPIRY')
+      console.log({ userId, accessToken, userType });
+      const accessTokenExpiry = this.configService.get<string>(
+        "ACCESS_TOKEN_EXPIRY",
+      );
+      const refreshTokenExpiry = this.configService.get<string>(
+        "REFRESH_TOKEN_EXPIRY",
+      );
 
-    const refreshToken = await this.refreshTokenService.getRefreshToken(userId);
-    console.log({ userId, accessToken, refreshToken, userType });
+      const refreshToken =
+        await this.refreshTokenService.getRefreshToken(userId);
+      console.log({ userId, accessToken, refreshToken, userType });
 
-    await Promise.all([
-      this.refreshTokenService.deleteRefreshToken(userId),
-      this.refreshTokenService.addToBlacklist(accessToken, accessTokenExpiry),
-      this.refreshTokenService.addToBlacklist(refreshToken, refreshTokenExpiry)
-    ]);
+      await Promise.all([
+        this.refreshTokenService.deleteRefreshToken(userId),
+        this.refreshTokenService.addToBlacklist(accessToken, accessTokenExpiry),
+        this.refreshTokenService.addToBlacklist(
+          refreshToken,
+          refreshTokenExpiry,
+        ),
+      ]);
 
-    let event;
-    if (userType === 'user') {
-      event = new UserLoggedOutEvent(userId, {
-        timestamp: new Date(),
-      }, 1);
-    } else if (userType === 'seller') {
-      event = new SellerLoggedOutEvent(userId, {
-        timestamp: new Date(),
-      }, 1);
-    } else {
-      throw new Error('Invalid user type');
+      let event;
+      if (userType === "user") {
+        event = new UserLoggedOutEvent(
+          userId,
+          {
+            timestamp: new Date(),
+          },
+          1,
+        );
+      } else if (userType === "seller") {
+        event = new SellerLoggedOutEvent(
+          userId,
+          {
+            timestamp: new Date(),
+          },
+          1,
+        );
+      } else {
+        throw new Error("Invalid user type");
+      }
+
+      await this.eventBusService.publishAndSave(event);
+
+      return { success: true };
+    } catch (error) {
+      console.error("로그아웃 처리 중 오류 발생:", error);
+      throw new Error("로그아웃 처리 중 오류 발생");
     }
-
-    await this.eventBusService.publishAndSave(event);
-
-    return { success: true };
-  } catch (error) {
-    console.error('로그아웃 처리 중 오류 발생:', error);
-    throw new Error('로그아웃 처리 중 오류 발생');
   }
-}
 }

@@ -20,7 +20,9 @@ export class UpdateSellerProfileHandler
   async execute(command: UpdateSellerProfileCommand) {
     const { sellerId, updateData } = command;
 
-    const seller = await this.sellerRepository.findOne({ where: { id: sellerId } });
+    const seller = await this.sellerRepository.findOne({
+      where: { id: sellerId },
+    });
     if (!seller) {
       throw new NotFoundException("존재하지 않는 회원입니다.");
     }
@@ -33,16 +35,15 @@ export class UpdateSellerProfileHandler
     await this.sellerRepository.save(seller);
 
     // 이벤트 발행 및 저장
-    const version = 1; 
+    const version = 1;
     const sellerProfileUpdatedEvent = new SellerProfileUpdatedEvent(
-      sellerId, 
-      updateData, 
-      version, 
+      sellerId,
+      updateData,
+      version,
     );
 
     await this.eventBusService.publishAndSave(sellerProfileUpdatedEvent);
 
     return seller;
-
-}
+  }
 }

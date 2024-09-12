@@ -1,7 +1,13 @@
-import { IsBoolean, IsEmail, IsOptional, IsString, Matches, MinLength } from "class-validator";
+import {
+  IsBoolean,
+  IsEmail,
+  IsOptional,
+  IsString,
+  Matches,
+  MinLength,
+} from "class-validator";
 
 export class UpdateUserProfileDto {
-
   @IsEmail()
   @IsString()
   email?: string;

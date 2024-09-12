@@ -1,1 +1,1 @@
-export * from './get-seller-profile.handler'
+export * from "./get-seller-profile.handler";

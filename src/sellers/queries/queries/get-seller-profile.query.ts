@@ -1,4 +1,3 @@
 export class GetSellerProfileQuery {
-    constructor(public readonly sellerId: string) {}
-  }
-  
+  constructor(public readonly sellerId: string) {}
+}

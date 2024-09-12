@@ -93,7 +93,7 @@ export class RegisterUserHandler
         phoneNumber,
         isEmailVerified: true,
       },
-      events.length + 1 // 버전을 이벤트 수 + 1로 설정
+      events.length + 1, // 버전을 이벤트 수 + 1로 설정
     );
     this.logger.log(`UserRegisteredEvent 이벤트 발행: ${userId}`);
     await this.eventBusService.publishAndSave(userRegisteredEvent);

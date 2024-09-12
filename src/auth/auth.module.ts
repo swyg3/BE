@@ -23,6 +23,7 @@ import { EmailModule } from "src/shared/email-service/email.module";
 import { EventSourcingModule } from "src/shared/infrastructure/event-sourcing";
 import { PasswordService } from "src/shared/services/password.service";
 import { HmacUtil } from "src/shared/utils/hmac.util";
+import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 
 @Module({
   imports: [
@@ -32,9 +33,9 @@ import { HmacUtil } from "src/shared/utils/hmac.util";
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET'),
-        signOptions: { 
-          expiresIn: configService.get<string>('ACCESS_TOKEN_EXPIRY'),
+        secret: configService.get<string>("JWT_SECRET"),
+        signOptions: {
+          expiresIn: configService.get<string>("ACCESS_TOKEN_EXPIRY"),
         },
       }),
       inject: [ConfigService],
@@ -44,13 +45,14 @@ import { HmacUtil } from "src/shared/utils/hmac.util";
     EmailModule,
     EventSourcingModule,
     UsersModule,
-    SellersModule
+    SellersModule,
   ],
   controllers: [AuthController],
   providers: [
     ...Object.values(CommandHandlers),
     ...Object.values(EventHandlers),
     JwtStrategy,
+    JwtAuthGuard,
     GoogleStrategy,
     KakaoStrategy,
     TokenService,
@@ -60,6 +62,12 @@ import { HmacUtil } from "src/shared/utils/hmac.util";
     PasswordService,
     HmacUtil,
   ],
-  exports: [EmailVerificationService, BusinessNumberVerificationService, PasswordService],
+  exports: [
+    JwtStrategy,
+    JwtAuthGuard,
+    EmailVerificationService,
+    BusinessNumberVerificationService,
+    PasswordService,
+  ],
 })
 export class AuthModule {}

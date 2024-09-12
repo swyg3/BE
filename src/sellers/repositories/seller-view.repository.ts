@@ -49,21 +49,29 @@ export class SellerViewRepository {
   async findOneAndUpdate(
     filter: { sellerId: string },
     update: UpdateQuery<SellerView>,
-    options: { upsert: boolean; new: boolean; setDefaultsOnInsert: boolean }
+    options: { upsert: boolean; new: boolean; setDefaultsOnInsert: boolean },
   ): Promise<SellerView | null> {
     try {
-      const result = await this.sellerViewModel.findOneAndUpdate(
-        filter,
-        update,
-        { ...options, setDefaultsOnInsert: true }
-      ).exec();
+      const result = await this.sellerViewModel
+        .findOneAndUpdate(filter, update, {
+          ...options,
+          setDefaultsOnInsert: true,
+        })
+        .exec();
       return result;
     } catch (error) {
       if (error.code === 11000) {
-        this.logger.warn(`sellerId 중복 키 에러 발생: ${filter.sellerId}. Attempting to update existing document.`);
-        return await this.sellerViewModel.findOneAndUpdate(filter, update, { new: true }).exec();
+        this.logger.warn(
+          `sellerId 중복 키 에러 발생: ${filter.sellerId}. Attempting to update existing document.`,
+        );
+        return await this.sellerViewModel
+          .findOneAndUpdate(filter, update, { new: true })
+          .exec();
       }
-      this.logger.error(`Seller-View findOneAndUpdate: ${error.message}`, error.stack);
+      this.logger.error(
+        `Seller-View findOneAndUpdate: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }

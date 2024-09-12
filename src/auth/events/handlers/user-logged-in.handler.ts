@@ -7,21 +7,24 @@ import { UserViewRepository } from "src/users/repositories/user-view.repository"
 import { Logger } from "@nestjs/common";
 
 @EventsHandler(UserLoggedInEvent)
-export class UserLoggedInEventHandler implements IEventHandler<UserLoggedInEvent> {
+export class UserLoggedInEventHandler
+  implements IEventHandler<UserLoggedInEvent>
+{
   private readonly logger = new Logger(UserLoggedInEventHandler.name);
 
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
-    private userViewRepository: UserViewRepository
+    private userViewRepository: UserViewRepository,
   ) {}
 
   async handle(event: UserLoggedInEvent) {
-
     this.logger.log(`사용자 로그인 이벤트 처리: userId=${event.aggregateId}`);
 
     // PostgreSQL에서 최신 사용자 정보 조회
-    const user = await this.userRepository.findOne({ where: { id: event.aggregateId } });
+    const user = await this.userRepository.findOne({
+      where: { id: event.aggregateId },
+    });
     if (!user) {
       throw new Error(`존재하지 않는 사용자입니다. : ${event.aggregateId}`);
     }
@@ -36,17 +39,21 @@ export class UserLoggedInEventHandler implements IEventHandler<UserLoggedInEvent
           phoneNumber: user.phoneNumber,
           isEmailVerified: user.isEmailVerified,
           lastLoginAt: new Date(),
-          updatedAt: new Date()
+          updatedAt: new Date(),
         },
         $setOnInsert: {
           userId: event.aggregateId,
-          createdAt: user.createdAt
-        }
+          createdAt: user.createdAt,
+        },
       },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
+      { upsert: true, new: true, setDefaultsOnInsert: true },
     );
     this.logger.log(`User_View 업데이트 완료: userId=${event.aggregateId}`);
-  } catch (error) {
-    this.logger.error(`User_View 업데이트 중 오류 발생: ${error.message}`, error.stack);
+  }
+  catch(error) {
+    this.logger.error(
+      `User_View 업데이트 중 오류 발생: ${error.message}`,
+      error.stack,
+    );
   }
 }

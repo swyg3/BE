@@ -8,6 +8,6 @@ export class UserProfileUpdatedEvent implements BaseEvent {
   constructor(
     public readonly aggregateId: string,
     public readonly data: UpdateUserProfileDto,
-    public readonly version: number, 
+    public readonly version: number,
   ) {}
 }

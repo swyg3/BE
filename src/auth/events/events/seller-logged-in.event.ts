@@ -7,11 +7,11 @@ export class SellerLoggedInEvent implements BaseEvent {
   constructor(
     public readonly aggregateId: string,
     public readonly data: {
-      email: string,
-      provider: string,
-      isNewSeller: boolean,
-      isBusinessNumberVerified: boolean,
-      timestamp: Date
+      email: string;
+      provider: string;
+      isNewSeller: boolean;
+      isBusinessNumberVerified: boolean;
+      timestamp: Date;
     },
     public readonly version: number,
   ) {}

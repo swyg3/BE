@@ -17,7 +17,7 @@ export class User {
   @Column()
   phoneNumber: string;
 
-  @Column({ type: 'boolean', default: false })
+  @Column({ type: "boolean", default: false })
   isEmailVerified: boolean;
 
   @Column({ nullable: true })

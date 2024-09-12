@@ -26,10 +26,10 @@ export class Seller {
   @Column()
   storePhoneNumber: string;
 
-  @Column({ type: 'boolean', default: false })
+  @Column({ type: "boolean", default: false })
   isBusinessNumberVerified: boolean;
 
-  @Column({ type: 'boolean', default: false })
+  @Column({ type: "boolean", default: false })
   isEmailVerified: boolean;
 
   @Column({ nullable: true })

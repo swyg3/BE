@@ -13,9 +13,8 @@ export interface TokenPayload {
 
 @Injectable()
 export class TokenService {
-
   private readonly logger = new Logger(TokenService.name);
-  
+
   constructor(
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
@@ -23,7 +22,11 @@ export class TokenService {
 
   async generateTokens(userId: string, email: string, userType: string) {
     const accessTokenPayload = this.createTokenPayload(userId, email, userType);
-    const refreshTokenPayload = this.createTokenPayload(userId, email, userType);
+    const refreshTokenPayload = this.createTokenPayload(
+      userId,
+      email,
+      userType,
+    );
 
     const [accessToken, refreshToken] = await Promise.all([
       this.createAccessToken(accessTokenPayload),
@@ -33,7 +36,11 @@ export class TokenService {
     return { accessToken, refreshToken };
   }
 
-  private createTokenPayload(userId: string, email: string, userType: string): TokenPayload {
+  private createTokenPayload(
+    userId: string,
+    email: string,
+    userType: string,
+  ): TokenPayload {
     return {
       sub: userId,
       email,
@@ -55,7 +62,7 @@ export class TokenService {
     const expiresIn = this.configService.get<string>("ACCESS_TOKEN_EXPIRY");
     this.logger.debug(`ACCESS_TOKEN_EXPIRY: ${expiresIn}`);
     if (!expiresIn) {
-      throw new Error('ACCESS_TOKEN_EXPIRY is not set in the environment');
+      throw new Error("ACCESS_TOKEN_EXPIRY is not set in the environment");
     }
     return this.jwtService.sign(payload, { expiresIn });
   }
@@ -63,7 +70,7 @@ export class TokenService {
   async createRefreshToken(payload: TokenPayload): Promise<string> {
     const expiresIn = this.configService.get<string>("REFRESH_TOKEN_EXPIRY");
     if (!expiresIn) {
-      throw new Error('REFRESH_TOKEN_EXPIRY is not set in the environment');
+      throw new Error("REFRESH_TOKEN_EXPIRY is not set in the environment");
     }
     return this.jwtService.sign(payload, { expiresIn });
   }

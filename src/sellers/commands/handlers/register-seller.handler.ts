@@ -1,4 +1,9 @@
-import { Logger, Inject, BadRequestException, UnauthorizedException } from "@nestjs/common";
+import {
+  Logger,
+  Inject,
+  BadRequestException,
+  UnauthorizedException,
+} from "@nestjs/common";
 import { CommandHandler, ICommandHandler } from "@nestjs/cqrs";
 import Redis from "ioredis";
 import { REDIS_CLIENT } from "src/shared/infrastructure/redis/redis.config";
@@ -10,7 +15,9 @@ import { SellerRepository } from "src/sellers/repositories/seller.repository";
 import { PasswordService } from "src/shared/services/password.service";
 
 @CommandHandler(RegisterSellerCommand)
-export class RegisterSellerHandler implements ICommandHandler<RegisterSellerCommand> {
+export class RegisterSellerHandler
+  implements ICommandHandler<RegisterSellerCommand>
+{
   private readonly logger = new Logger(RegisterSellerHandler.name);
 
   constructor(
@@ -29,25 +36,32 @@ export class RegisterSellerHandler implements ICommandHandler<RegisterSellerComm
       phoneNumber,
       storeName,
       storeAddress,
-      storePhoneNumber
+      storePhoneNumber,
     } = command;
 
     // 이메일 인증 상태 확인
-    const isVerifiedEmail = await this.redisClient.get(`email_verified:${email}`);
+    const isVerifiedEmail = await this.redisClient.get(
+      `email_verified:${email}`,
+    );
     if (isVerifiedEmail !== "true") {
       throw new UnauthorizedException("이메일 인증이 완료되지 않았습니다.");
     }
 
     // 사업자등록번호 인증 상태 확인
-    const isVerifiedBusinessNumber = await this.redisClient.get(`business_number_verified:${email}`);
+    const isVerifiedBusinessNumber = await this.redisClient.get(
+      `business_number_verified:${email}`,
+    );
     if (isVerifiedBusinessNumber !== "true") {
-      throw new UnauthorizedException("사업자 등록번호 인증이 완료되지 않았습니다.");
+      throw new UnauthorizedException(
+        "사업자 등록번호 인증이 완료되지 않았습니다.",
+      );
     }
-
 
     // 비밀번호 확인
     if (password !== pwConfirm) {
-      throw new BadRequestException("비밀번호와 비밀번호 확인이 일치하지 않습니다.");
+      throw new BadRequestException(
+        "비밀번호와 비밀번호 확인이 일치하지 않습니다.",
+      );
     }
 
     const sellerId = uuidv4();
@@ -87,7 +101,6 @@ export class RegisterSellerHandler implements ICommandHandler<RegisterSellerComm
     );
 
     await this.eventBusService.publishAndSave(sellerRegisteredEvent);
-
 
     // Redis에서 인증 상태 삭제
     await this.redisClient.del(`email_verified:${email}`);

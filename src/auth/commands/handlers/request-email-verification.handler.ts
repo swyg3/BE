@@ -46,13 +46,13 @@ export class RequestEmailVerificationHandler
 
     // 이벤트 발행
     const event = new EmailVerificationRequestedEvent(
-      email, 
+      email,
       {
         email,
         verificationCode,
         expirationTime,
       },
-      1 
+      1,
     );
     await this.eventBusService.publishAndSave(event);
 

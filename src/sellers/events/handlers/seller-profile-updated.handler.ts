@@ -12,7 +12,6 @@ export class SellerProfileUpdatedHandler
   constructor(private readonly sellerViewRepository: SellerViewRepository) {}
 
   async handle(event: SellerProfileUpdatedEvent) {
-
     /**
      * TODO: 읽기 모델 업데이트 처리
      */

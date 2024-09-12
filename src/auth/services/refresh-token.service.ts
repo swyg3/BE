@@ -7,17 +7,17 @@ import { ConfigService } from "@nestjs/config";
 export class RefreshTokenService {
   constructor(
     private readonly configService: ConfigService,
-    @Inject(REDIS_CLIENT) private readonly redisClient: Redis
+    @Inject(REDIS_CLIENT) private readonly redisClient: Redis,
   ) {}
 
   async storeRefreshToken(userId: string, refreshToken: string): Promise<void> {
     const key = `refresh_token:${userId}`;
-    const expiryTime = this.configService.get<string>('REFRESH_TOKEN_EXPIRY');
+    const expiryTime = this.configService.get<string>("REFRESH_TOKEN_EXPIRY");
     const seconds = parseDuration(expiryTime);
     if (isNaN(seconds) || seconds <= 0) {
-      throw new Error('유효하지 않은 만료 시간 설정');
+      throw new Error("유효하지 않은 만료 시간 설정");
     }
-    await this.redisClient.set(key, refreshToken, 'EX', seconds);
+    await this.redisClient.set(key, refreshToken, "EX", seconds);
   }
 
   async getRefreshToken(userId: string): Promise<string | null> {
@@ -32,11 +32,11 @@ export class RefreshTokenService {
 
   async addToBlacklist(token: string, expirationTime: string): Promise<void> {
     if (!token) {
-      throw new Error('유효하지 않은 토큰');
+      throw new Error("유효하지 않은 토큰");
     }
 
     const key = `blacklist:${token}`;
-    const expiryTime = this.configService.get<string>('REFRESH_TOKEN_EXPIRY');
+    const expiryTime = this.configService.get<string>("REFRESH_TOKEN_EXPIRY");
     const seconds = parseDuration(expiryTime);
     if (isNaN(seconds) || seconds <= 0) {
       throw new Error("유효하지 않은 블랙리스트 만료 시간 설정");
@@ -46,14 +46,13 @@ export class RefreshTokenService {
 
   async isBlacklisted(token: string): Promise<boolean> {
     if (!token) {
-      throw new Error('유효하지 않은 토큰');
+      throw new Error("유효하지 않은 토큰");
     }
     const key = `blacklist:${token}`;
     const result = await this.redisClient.get(key);
     return result === "1";
   }
 }
-
 
 function parseDuration(duration: string): number {
   const match = duration.match(/^(\d+)([smhd])$/);
@@ -63,10 +62,15 @@ function parseDuration(duration: string): number {
   const unit = match[2];
 
   switch (unit) {
-    case 's': return value;
-    case 'm': return value * 60;
-    case 'h': return value * 60 * 60;
-    case 'd': return value * 24 * 60 * 60;
-    default: return NaN;
+    case "s":
+      return value;
+    case "m":
+      return value * 60;
+    case "h":
+      return value * 60 * 60;
+    case "d":
+      return value * 24 * 60 * 60;
+    default:
+      return NaN;
   }
 }

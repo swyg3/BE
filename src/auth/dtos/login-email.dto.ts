@@ -7,6 +7,6 @@ export class LoginEmailDto {
   @IsString()
   password: string;
 
-  @IsIn(['user', 'seller'])
-  userType: 'user' | 'seller';
+  @IsIn(["user", "seller"])
+  userType: "user" | "seller";
 }

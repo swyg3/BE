@@ -17,7 +17,7 @@ export class SellerAggregate extends AggregateRoot {
     storeAddress: string,
     storePhoneNumber: string,
     isEmailVerified: boolean = false,
-    isBusinessNumberVerified: boolean = false
+    isBusinessNumberVerified: boolean = false,
   ) {
     this.version++;
     const event = new SellerRegisteredEvent(
@@ -30,9 +30,9 @@ export class SellerAggregate extends AggregateRoot {
         storeAddress,
         storePhoneNumber,
         isEmailVerified,
-        isBusinessNumberVerified: isBusinessNumberVerified, 
+        isBusinessNumberVerified: isBusinessNumberVerified,
       },
-      this.version
+      this.version,
     );
     this.apply(event);
     return event;

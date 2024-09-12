@@ -7,10 +7,10 @@ export class UserLoggedInEvent implements BaseEvent {
   constructor(
     public readonly aggregateId: string,
     public readonly data: {
-      email: string,
-      provider: string,
-      isNewUser: boolean,
-      timestamp: Date
+      email: string;
+      provider: string;
+      isNewUser: boolean;
+      timestamp: Date;
     },
     public readonly version: number,
   ) {}

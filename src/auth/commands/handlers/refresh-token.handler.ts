@@ -17,25 +17,35 @@ export class RefreshTokenCommandHandler
   async execute(command: RefreshTokenCommand) {
     const { refreshToken } = command;
 
-      const payload = await this.tokenService.verifyToken(refreshToken);
-      if (!payload) {
-        throw new UnauthorizedException("유효하지 않은 리프레시 토큰");
-      }
-      
-      const storedRefreshToken = await this.refreshTokenService.getRefreshToken(payload.sub);
-      if (storedRefreshToken !== refreshToken) {
-        throw new UnauthorizedException('Refresh token mismatch');
-      }
+    const payload = await this.tokenService.verifyToken(refreshToken);
+    if (!payload) {
+      throw new UnauthorizedException("유효하지 않은 리프레시 토큰");
+    }
 
-      const isBlacklisted = await this.refreshTokenService.isBlacklisted(refreshToken);
-      if (isBlacklisted) {
-        throw new UnauthorizedException('Refresh token has been revoked');
-      }
+    const storedRefreshToken = await this.refreshTokenService.getRefreshToken(
+      payload.sub,
+    );
+    if (storedRefreshToken !== refreshToken) {
+      throw new UnauthorizedException("Refresh token mismatch");
+    }
 
-      const newTokens = await this.tokenService.generateTokens(payload.sub, payload.email, payload.userType);
-      await this.refreshTokenService.storeRefreshToken(payload.sub, newTokens.refreshToken);
-      await this.refreshTokenService.deleteRefreshToken(payload.sub);
+    const isBlacklisted =
+      await this.refreshTokenService.isBlacklisted(refreshToken);
+    if (isBlacklisted) {
+      throw new UnauthorizedException("Refresh token has been revoked");
+    }
 
-      return newTokens;
+    const newTokens = await this.tokenService.generateTokens(
+      payload.sub,
+      payload.email,
+      payload.userType,
+    );
+    await this.refreshTokenService.storeRefreshToken(
+      payload.sub,
+      newTokens.refreshToken,
+    );
+    await this.refreshTokenService.deleteRefreshToken(payload.sub);
+
+    return newTokens;
   }
 }

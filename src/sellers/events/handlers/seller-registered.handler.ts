@@ -34,6 +34,5 @@ export class SellerRegisteredHandler
         error.stack,
       );
     }
-
   }
 }
