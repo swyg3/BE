@@ -45,7 +45,15 @@ export class LoginOAuthCallbackCommandHandler
           redirect_uri: redirectUri,
           grant_type: "authorization_code",
         },
+        validateStatus: () => true,
       });
+
+      if (tokenResponse.status !== 200) {
+        this.logger.error(
+          `OAuth 토큰 요청 실패: ${JSON.stringify(tokenResponse.data)}`,
+        );
+        throw new Error(`OAuth 토큰 요청 실패: ${tokenResponse.status}`);
+      }
 
       this.logger.log(
         `${provider}에서 ${tokenResponse.data.access_token}을 성공적으로 받았습니다.`,
@@ -59,7 +67,8 @@ export class LoginOAuthCallbackCommandHandler
       };
     } catch (error) {
       this.logger.error(`OAuth Callback 처리 중 오류 발생: ${error.message}`);
-      throw new Error("OAuth Callback 실패");
+      this.logger.error(`오류 상세: ${JSON.stringify(error.response?.data)}`);
+      throw new Error(`OAuth Callback 실패: ${error.message}`);
     }
   }
 }
