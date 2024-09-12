@@ -45,29 +45,40 @@ export class ProductController {
   }
 
   @Delete(':id')
-  async deleteProduct(@Body() deleteProductDto: DeleteProductDto) {
-    const { id } = deleteProductDto;
-    await this.commandBus.execute(new DeleteProductCommand(id));
+  async deleteProduct(@Param('id') id: string) {
+    const numberId = Number(id);
+    if (isNaN(numberId)) {
+      throw new Error('Invalid ID');
+    }
+    await this.commandBus.execute(new DeleteProductCommand(numberId));
     return { id, success: true }; 
   }
 
   @Get(':id')
-  async getProductById(@Param('id') id: number) {
-    return this.queryBus.execute(new GetProductByIdQuery(id));
+  async getProductById(@Param('id') id: string) {
+    const numberId = Number(id);
+    if (isNaN(numberId)) {
+      throw new Error('Invalid ID');
+    }    return this.queryBus.execute(new GetProductByIdQuery(numberId));
   }
 
   @Patch(':id')
   async updateProduct(
-    @Param('id') id: number,
+    @Param('id') id: string,
     @Body() updateProductDto: {
-      name: string;
+      name?: string;
       productImageUrl?: string;
       description?: string;
       originalPrice?: number;
       discountedPrice?: number;
     }
   ) {
-    const command = new UpdateProductCommand(id, updateProductDto);
+    const numberId = Number(id);
+    if (isNaN(numberId)) {
+      throw new Error('Invalid ID');
+    };
+
+    const command = new UpdateProductCommand(numberId, updateProductDto);
     return this.commandBus.execute(command);
   }
 }
