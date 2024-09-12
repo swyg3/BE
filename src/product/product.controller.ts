@@ -5,13 +5,11 @@ import { CreateProductDto } from './dtos/create-product.dto';
 import { DeleteProductCommand } from './commands/impl/delete-product.command';
 import { GetProductByIdQuery } from './queries/impl/get-product-by-id.query';
 import { UpdateProductCommand } from './commands/impl/update-product.command';
-import { ProductViewRepository } from './repositories/product-view.repository';
 
 @Controller('api/products')
 export class ProductController {
   constructor(private readonly commandBus: CommandBus,
-    private readonly queryBus: QueryBus,
-    private readonly productViewRepository: ProductViewRepository) { }
+    private readonly queryBus: QueryBus,) { }
 
   @Post()
   async createProduct(@Body() createProductDto: CreateProductDto) {
@@ -23,9 +21,6 @@ export class ProductController {
       // 기본 시간 00:00:00을 추가
       const formattedDate = `${expirationDate}T00:00:00Z`;
       const expirationDateObj = new Date(formattedDate);
-
-      console.log('expirationDateObj:', expirationDateObj);
-      console.log('expirationDate:', formattedDate);
 
 
       await this.commandBus.execute(new CreateProductCommand(
@@ -88,8 +83,6 @@ export class ProductController {
       const formattedDate = `${updateProductDto.expirationDate}T00:00:00Z`;
       expirationDateObj = new Date(formattedDate);
 
-      console.log('expirationDateObj:', expirationDateObj);
-      console.log('expirationDate:', formattedDate);
     }
 
     const command = new UpdateProductCommand(numberId, {

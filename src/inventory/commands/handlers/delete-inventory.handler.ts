@@ -12,10 +12,7 @@ export class DeleteInventoryHandler implements ICommandHandler<DeleteInventoryCo
 
   async execute(command: DeleteInventoryCommand) {
     const { productId } = command;
-    console.log("deleteinventcommand")
     // 인벤토리 삭제 로직
-    
-    console.log(productId)
     this.inventoryRepository.delete({productId : productId});
     
 }

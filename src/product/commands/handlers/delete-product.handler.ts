@@ -31,7 +31,7 @@ export class DeleteProductHandler implements ICommandHandler<DeleteProductComman
     const productAggregate = new ProductAggregate(id);
     const events = productAggregate.deleteProduct(id);
 
-    console.log("command success");
+    
     // 이벤트 저장소에 저장
     for (const event of events) {
       await this.eventStoreService.saveEvent({
@@ -41,7 +41,7 @@ export class DeleteProductHandler implements ICommandHandler<DeleteProductComman
         eventData: event,
         version: 1
       });
-      console.log("event success");
+      
     }
 
     this.productRepository.delete({ id: id });
