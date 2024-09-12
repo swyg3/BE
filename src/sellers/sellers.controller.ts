@@ -8,7 +8,7 @@ import {
   ForbiddenException,
 } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
-import { ApiResponse } from "../shared/interfaces/api-response.interface";
+import { IApiResponse } from "../shared/interfaces/api-response.interface";
 import { RegisterSellerDto } from "./dtos/register-seller.dto";
 import { RegisterSellerCommand } from "./commands/commands/register-seller.command";
 import { ValidateUUID } from "src/shared/decorators/validate-uuid.decorator";
@@ -18,7 +18,9 @@ import { UpdateSellerProfileCommand } from "./commands/commands/update-seller-pr
 import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
 import { GetUser } from "src/shared/decorators/get-user.decorator";
 import { JwtPayload } from "src/shared/interfaces/jwt-payload.interface";
+import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 
+@ApiTags("Sellers")
 @Controller("sellers")
 export class SellersController {
   constructor(
@@ -26,10 +28,12 @@ export class SellersController {
     private readonly queryBus: QueryBus,
   ) {}
 
+  @ApiOperation({ summary: "판매자 등록" })
+  @ApiResponse({ status: 201, description: "판매자 등록 성공" })
   @Post("register")
   async registerSeller(
     @Body() registerSellerDto: RegisterSellerDto,
-  ): Promise<ApiResponse<{ sellerId: string }>> {
+  ): Promise<IApiResponse<{ sellerId: string }>> {
     const {
       email,
       password,
@@ -62,12 +66,14 @@ export class SellersController {
     };
   }
 
+  @ApiOperation({ summary: "판매자 프로필 조회" })
+  @ApiResponse({ status: 200, description: "프로필 조회 성공" })
   @Get("profile/:id")
   @UseGuards(JwtAuthGuard)
   async getSellerProfile(
     @ValidateUUID("id") id: string,
     @GetUser() user: JwtPayload,
-  ): Promise<ApiResponse<any>> {
+  ): Promise<IApiResponse<any>> {
     if (user.userId !== id) {
       throw new ForbiddenException("자신의 프로필만 조회할 수 있습니다.");
     }
@@ -80,13 +86,15 @@ export class SellersController {
     };
   }
 
+  @ApiOperation({ summary: "판매자 프로필 수정" })
+  @ApiResponse({ status: 200, description: "프로필 수정 성공" })
   @Patch("profile/:id")
   @UseGuards(JwtAuthGuard)
   async updateSellerProfile(
     @ValidateUUID("id") id: string,
     @Body() updateData: UpdateSellerProfileDto,
     @GetUser() user: JwtPayload,
-  ): Promise<ApiResponse> {
+  ): Promise<IApiResponse> {
     if (user.userId !== id) {
       throw new ForbiddenException("자신의 프로필만 수정할 수 있습니다.");
     }

@@ -11,7 +11,7 @@ import {
 } from "@nestjs/common";
 import { CommandBus } from "@nestjs/cqrs";
 import { Throttle, ThrottlerGuard } from "@nestjs/throttler";
-import { ApiResponse } from "src/shared/interfaces/api-response.interface";
+import { IApiResponse } from "src/shared/interfaces/api-response.interface";
 import { RequestEmailVerificationCommand } from "./commands/commands/request-email-verification.command";
 import { VerifyEmailCommand } from "./commands/commands/verify-email.command";
 import { LoginEmailCommand } from "./commands/commands/login-email.command";
@@ -32,17 +32,21 @@ import { OAuthCallbackCommand } from "./commands/commands";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { JwtPayload } from "src/shared/interfaces/jwt-payload.interface";
 import { GetUser } from "src/shared/decorators/get-user.decorator";
+import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 
+@ApiTags("Auth")
 @Controller("auth")
 @UseGuards(ThrottlerGuard)
 export class AuthController {
   constructor(protected readonly commandBus: CommandBus) {}
 
+  @ApiOperation({ summary: "이메일 인증 요청" })
+  @ApiResponse({ status: 200, description: "인증 메일 발송 성공" })
   @Post("request-verification")
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   async requestEmailVerification(
     @Body() dto: RequestEmailVerificationDto,
-  ): Promise<ApiResponse> {
+  ): Promise<IApiResponse> {
     const result = await this.commandBus.execute(
       new RequestEmailVerificationCommand(dto.email),
     );
@@ -54,8 +58,10 @@ export class AuthController {
     };
   }
 
+  @ApiOperation({ summary: "이메일 인증 확인" })
+  @ApiResponse({ status: 200, description: "이메일 인증 성공" })
   @Post("verify-email")
-  async verifyEmail(@Body() dto: VerifyEmailDto): Promise<ApiResponse> {
+  async verifyEmail(@Body() dto: VerifyEmailDto): Promise<IApiResponse> {
     const result = await this.commandBus.execute(
       new VerifyEmailCommand(dto.email, dto.verificationCode),
     );
@@ -65,11 +71,13 @@ export class AuthController {
     };
   }
 
+  @ApiOperation({ summary: "이메일 로그인" })
+  @ApiResponse({ status: 200, description: "로그인 성공" })
   @Post("login-email")
   async loginEmail(
     @Body() loginDto: LoginEmailDto,
     @Req() req,
-  ): Promise<ApiResponse> {
+  ): Promise<IApiResponse> {
     const result = await this.commandBus.execute(
       new LoginEmailCommand(loginDto, req),
     );
@@ -81,6 +89,8 @@ export class AuthController {
   }
 
   // Authorization code를 OAuth Token으로 교환하는 과정
+  @ApiOperation({ summary: "OAuth 콜백 처리" })
+  @ApiResponse({ status: 200, description: "OAuth 콜백 처리 성공" })
   @Get("login/:provider/callback")
   async oauthCallback(
     @Param("provider") provider: string,
@@ -88,7 +98,7 @@ export class AuthController {
     @Res() res: Response,
     @Query("userType") userType?: string,
     @Query("state") state?: string,
-  ) {
+  ): Promise<IApiResponse> {
     const oauthCallbackDto: OAuthCallbackDto = { provider, code };
     const result = await this.commandBus.execute(
       new OAuthCallbackCommand(oauthCallbackDto),
@@ -118,8 +128,13 @@ export class AuthController {
    * (2) 데이터베이스와 이벤트 저장소에 저장
    * (3) 로그인 이벤트를 발행
    */
+
+  @ApiOperation({ summary: "OAuth 로그인" })
+  @ApiResponse({ status: 200, description: "OAuth 로그인 성공" })
   @Post("login-oauth")
-  async loginOAuth(@Body() loginOAuthDto: LoginOAuthDto): Promise<ApiResponse> {
+  async loginOAuth(
+    @Body() loginOAuthDto: LoginOAuthDto,
+  ): Promise<IApiResponse> {
     console.log("Received DTO:", loginOAuthDto);
     const result = await this.commandBus.execute(
       new LoginOAuthCommand(loginOAuthDto),
@@ -131,9 +146,11 @@ export class AuthController {
     };
   }
 
+  @ApiOperation({ summary: "로그아웃" })
+  @ApiResponse({ status: 200, description: "로그아웃 성공" })
   @Post("logout")
   @UseGuards(JwtAuthGuard)
-  async logout(@GetUser() user: JwtPayload): Promise<ApiResponse> {
+  async logout(@GetUser() user: JwtPayload): Promise<IApiResponse> {
     const { userId, accessToken, userType } = user;
     await this.commandBus.execute(
       new LogoutCommand(userId, accessToken, userType),
@@ -144,10 +161,12 @@ export class AuthController {
     };
   }
 
+  @ApiOperation({ summary: "AccessToken 재발급" })
+  @ApiResponse({ status: 200, description: "AccessToken 재발급 성공" })
   @Post("refresh-token")
   async refreshToken(
     @Body("refreshToken") refreshToken: string,
-  ): Promise<ApiResponse> {
+  ): Promise<IApiResponse> {
     const result = await this.commandBus.execute(
       new RefreshTokenCommand(refreshToken),
     );
@@ -158,12 +177,14 @@ export class AuthController {
     };
   }
 
+  @ApiOperation({ summary: "사업자등록번호 인증" })
+  @ApiResponse({ status: 200, description: "사업자등록번호 인증 성공" })
   @Post("verify-business-number")
   @UseGuards(JwtAuthGuard)
   async verifyBusinessNumber(
     @GetUser() user: JwtPayload,
     @Body() dto: VerifyBusinessNumberDto,
-  ): Promise<ApiResponse> {
+  ): Promise<IApiResponse> {
     const result = await this.commandBus.execute(
       new VerifyBusinessNumberCommand(user.userId, dto.businessNumber),
     );
@@ -174,12 +195,14 @@ export class AuthController {
     };
   }
 
+  @ApiOperation({ summary: "판매자 매장정보 추가" })
+  @ApiResponse({ status: 200, description: "판매자 매장정보 추가 성공" })
   @Post("complete-profile")
   @UseGuards(JwtAuthGuard)
   async completeProfile(
     @GetUser() user: JwtPayload,
     @Body() profileDto: CompleteSellerProfileDto,
-  ): Promise<ApiResponse> {
+  ): Promise<IApiResponse> {
     const result = await this.commandBus.execute(
       new CompleteSellerProfileCommand(user.userId, profileDto),
     );
