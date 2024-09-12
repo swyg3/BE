@@ -63,22 +63,39 @@ export class ProductController {
   }
 
   @Patch(':id')
-  async updateProduct(
-    @Param('id') id: string,
-    @Body() updateProductDto: {
-      name?: string;
-      productImageUrl?: string;
-      description?: string;
-      originalPrice?: number;
-      discountedPrice?: number;
-    }
-  ) {
-    const numberId = Number(id);
-    if (isNaN(numberId)) {
-      throw new Error('Invalid ID');
-    };
-
-    const command = new UpdateProductCommand(numberId, updateProductDto);
-    return this.commandBus.execute(command);
+async updateProduct(
+  @Param('id') id: string,
+  @Body() updateProductDto: {
+    name?: string;
+    productImageUrl?: string;
+    description?: string;
+    originalPrice?: number;
+    discountedPrice?: number;
+    quantity?: number;
+    expirationDate?: string; // 수정된 부분
   }
+) {
+  const numberId = Number(id);
+  if (isNaN(numberId)) {
+    throw new Error('Invalid ID');
+  }
+
+  // expirationDate를 처리하는 부분
+  let expirationDateObj: Date | undefined;
+  if (updateProductDto.expirationDate) {
+    const formattedDate = `${updateProductDto.expirationDate}T00:00:00Z`;
+    expirationDateObj = new Date(formattedDate);
+    
+    console.log('expirationDateObj:', expirationDateObj);
+    console.log('expirationDate:', formattedDate);
+  }
+
+  const command = new UpdateProductCommand(numberId, {
+    ...updateProductDto,
+    expirationDate: expirationDateObj
+  });
+
+  return this.commandBus.execute(command);
+}
+
 }

@@ -5,6 +5,7 @@ import { Product } from '../entities/product.entity';
 
 @Injectable()
 export class ProductRepository {
+  findOneBy: any;
     findByStoreId(stellerId: any) {
         throw new Error('Method not implemented.');
     }

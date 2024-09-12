@@ -11,7 +11,7 @@ export class ProductUpdatedEventHandler implements IEventHandler<ProductUpdatedE
   ) {}
 
   async handle(event: ProductUpdatedEvent): Promise<void> {
-    const { Id, name, productImageUrl, description, originalPrice, discountedPrice } = event;
+    const { id, name, productImageUrl, description, originalPrice, discountedPrice, availableStock, expirationDate } = event;
 
     const updates = {
       ...(name && { name }),
@@ -19,11 +19,12 @@ export class ProductUpdatedEventHandler implements IEventHandler<ProductUpdatedE
       ...(description && { description }),
       ...(originalPrice && { originalPrice }),
       ...(discountedPrice && { discountedPrice }),
+      ...(availableStock !== undefined && { availableStock }),    
+      ...(expirationDate && { expirationDate }),    
     };
 
-   
     await this.productViewModel.updateOne(
-      { productId: Id }, 
+      { id: id }, 
       { $set: updates },
     );
   }

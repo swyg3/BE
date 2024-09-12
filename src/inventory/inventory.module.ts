@@ -6,8 +6,9 @@ import { EventStoreModule } from 'src/shared/event-store/event-store.module';
 import { Inventory } from './inventory.entity';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DeleteInventoryHandler } from './commands/handlers/delete-inventory.handler';
+import { UpdateInventoryHandler } from './commands/handlers/update-inventory.handler';
 
-const CommandHandlers = [CreateInventoryHandler, DeleteInventoryHandler]
+const CommandHandlers = [CreateInventoryHandler, DeleteInventoryHandler, UpdateInventoryHandler]
 const EventsHandlers = [];
 
 @Module({
