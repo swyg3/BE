@@ -13,9 +13,16 @@ export class OrderController {
         private readonly orderService: OrderService,
     ) {}
 
+    @Get()
+    testGet(): string {
+        return "hello, world";
+    }
+
     @Post()
     createOrder(@Body() createOrderDto: CreateOrderDto) {
         const { userId, totalAmount, totalPrice, pickupTime, paymentMethod, status, items } = createOrderDto;
+
+        console.log(userId);
 
         return this.commandBus.execute(
             new CreateOrderCommand(userId, totalAmount, totalPrice, pickupTime, paymentMethod, status, items)
