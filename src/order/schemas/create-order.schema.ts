@@ -1,26 +1,34 @@
-import { Schema } from 'mongoose';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document } from 'mongoose';
 
-export const CreateOrderSchema = new Schema({
-    userId: { type: Number, required: true },
-    sellerId: { type: Number, required: true },
-    totalAmount: { type: Number, required: true },
-    pickupTime: { type: Date, required: true },
-    paymentMethod: { type: String, required: true },
-    status: { type: String, required: true },
-    // JSON 형태의 데이터 저장
-    items: { type: Schema.Types.Mixed, required: true },
-    createdAt: { type: Date, default: Date.now },
-    updatedAt: { type: Date, default: Date.now }
-});
+@Schema()
+export class CreateOrderSchema extends Document {
+    @Prop({ required: true })
+    id: string;
 
-export interface OrderCreate extends Document {
-    readonly userId: number;
-    readonly sellerId: number;
-    readonly totalAmount: number;
-    readonly pickupTime: Date;
-    readonly paymentMethod: string;
-    readonly status: string;
-    readonly items: any;
-    readonly createdAt: Date;
-    readonly updatedAt: Date;
+    @Prop({ required: true })
+    userId: number;
+
+    @Prop({ required: true })
+    totalAmount: number;
+
+    @Prop({ required: true })
+    totalPrice: number;
+
+    @Prop({ required: true })
+    paymentMethod: string;
+
+    @Prop({ required: true })
+    status: string;
+
+    @Prop({ type: [{ orderId: String, productId: Number, quantity: Number, price: Number }] })
+    items: { orderId: string; productId: number; quantity: number; price: number }[];
+
+    @Prop({ required: true })
+    pickupTime: Date;
+
+    @Prop({ required: true })
+    createdAt: Date;
 }
+
+export const CreateOrderEventSchema = SchemaFactory.createForClass(CreateOrderSchema);

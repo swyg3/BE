@@ -2,13 +2,14 @@ import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { CreateOrderCommand } from './commands/create-order.command';
 import { CreateOrderDto } from './dtos/create-order.dto';
-import { GetOrderQuery } from './queries/get-order.query';
+import { OrderService } from './services/order.service';
 
 @Controller('order')
 export class OrderController {
     constructor(
         private readonly commandBus: CommandBus,
-        private readonly queryBus: QueryBus
+        private readonly queryBus: QueryBus,
+        private readonly orderService: OrderService,
     ) {}
 
     /*
@@ -28,11 +29,20 @@ export class OrderController {
     요청: 마이페이지에서 주문 내역 조회
     결과: 사용자별 전체 주문 내역 보기(read) select * from Order;
     */
+
+    // // postgreSQL에서 가져오는 방법
+    // @Get(':userId')
+    // async getOrders(@Param('userId') userId: number) {
+    //     const query = new GetOrderQuery(userId);
+    //     const orders = await this.queryBus.execute(query);
+    //     return orders;
+    // }
+
+    // mongoDB에서 읽기
+    // 사용자별 전체 주문 목록
     @Get(':userId')
     async getOrders(@Param('userId') userId: number) {
-        const query = new GetOrderQuery(userId);
-        const orders = await this.queryBus.execute(query);
-        return orders;
+        return this.orderService.getOrdersByUserId(userId);
     }
 
     /*
