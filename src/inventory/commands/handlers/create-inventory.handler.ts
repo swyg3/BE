@@ -3,6 +3,7 @@ import { CreateInventoryCommand } from "../impl/create-inventory.command";
 import { InventoryRepository } from "../../repositories/inventory.repository";
 import { InventoryCreatedEvent } from "../../events/impl/inventory-created.event";
 import { Inject, Logger } from "@nestjs/common";
+import { EventBusService } from "src/shared/infrastructure/event-sourcing/event-bus.service";
 
 @CommandHandler(CreateInventoryCommand)
 export class CreateInventoryHandler
@@ -12,7 +13,7 @@ export class CreateInventoryHandler
 
   constructor(
     private readonly inventoryRepository: InventoryRepository,
-    @Inject(EventBus) private readonly eventBus: EventBus,
+    private readonly eventBusService: EventBusService
   ) {}
 
   async execute(command: CreateInventoryCommand): Promise<void> {
@@ -31,14 +32,17 @@ export class CreateInventoryHandler
 
       // InventoryCreatedEvent 발행
       const inventoryCreatedEvent = new InventoryCreatedEvent(
-        savedInventory.id,
-        savedInventory.productId,
-        savedInventory.quantity,
-        savedInventory.expirationDate,
-        savedInventory.updatedAt,
+        savedInventory.id, // aggregateId (number)
+        {
+          productId: savedInventory.productId,
+          quantity: savedInventory.quantity,
+          expirationDate: savedInventory.expirationDate,
+          updatedAt: new Date(), // 현재 시간
+        },
+        1 // version
       );
-
-      this.eventBus.publish(inventoryCreatedEvent);
+      
+      await this.eventBusService.publishAndSave(inventoryCreatedEvent);
     } catch (error) {
       this.logger.error(
         `Failed to create inventory for product: ${id}. Error: ${error.message}`,

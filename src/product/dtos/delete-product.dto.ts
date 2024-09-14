@@ -1,3 +1,3 @@
 export class DeleteProductDto {
-  id: number;
+  id: string;
 }

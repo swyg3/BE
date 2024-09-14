@@ -1,11 +1,13 @@
 import {
-  Controller,
   Post,
   Body,
   Delete,
   Get,
   Param,
   Patch,
+  Controller,
+  Logger,
+  UseGuards
 } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { CreateProductCommand } from "./commands/impl/create-product.command";
@@ -13,16 +15,25 @@ import { CreateProductDto } from "./dtos/create-product.dto";
 import { DeleteProductCommand } from "./commands/impl/delete-product.command";
 import { GetProductByIdQuery } from "./queries/impl/get-product-by-id.query";
 import { UpdateProductCommand } from "./commands/impl/update-product.command";
+import { CustomResponse } from "src/shared/interfaces/api-response.interface";
+import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
+import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 
-@Controller("api/products")
+@ApiTags("Products")
+@Controller("products")
 export class ProductController {
+  private readonly logger = new Logger(ProductController.name);
+
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
-  ) {}
+  ) { }
 
+  @ApiOperation({ summary: "상품 등록" })
+  @ApiResponse({ status: 201, description: "상품 생성 성공" })
+  @ApiResponse({ status: 400, description: "상품 생성 실패" }) 
   @Post()
-  async createProduct(@Body() createProductDto: CreateProductDto) {
+  async createProduct(@Body() createProductDto: CreateProductDto): Promise<CustomResponse> {
     const {
       sellerId,
       category,
@@ -35,83 +46,101 @@ export class ProductController {
       expirationDate,
     } = createProductDto;
 
-    if (expirationDate) {
-      // 기본 시간 00:00:00을 추가
-      const formattedDate = `${expirationDate}T00:00:00Z`;
-      const expirationDateObj = new Date(formattedDate);
+    // 필요 시 문자열을 Date 객체로 변환
+    const expirationDateObj = new Date(expirationDate);
+    this.logger.log(`Creating product with expiration date: ${expirationDateObj}`);
 
-      await this.commandBus.execute(
-        new CreateProductCommand(
-          sellerId,
-          category,
-          name,
-          productImageUrl,
-          description,
-          originalPrice,
-          discountedPrice,
-          quantity,
-          expirationDateObj,
-        ),
-      );
-    } else {
-      console.log("No expiration date provided");
-    }
+    const result = await this.commandBus.execute(
+      new CreateProductCommand(
+        sellerId,
+        category,
+        name,
+        productImageUrl,
+        description,
+        originalPrice,
+        discountedPrice,
+        quantity,
+        expirationDateObj
+      ),
+    );
 
-    return { name, success: true };
+    return {
+      success: !!result,
+      message: result
+        ? "상품 등록에 성공했습니다."
+        : "상품 등록에 실패했습니다.",
+    };
+
   }
-
+  @ApiOperation({ summary: "상품 삭제" })
+  @ApiResponse({ status: 200, description: "상품 삭제 성공" })
+  @ApiResponse({ status: 404, description: "상품을 찾을 수 없습니다." }) 
+  @ApiResponse({ status: 400, description: "상품 삭제 실패" }) 
   @Delete(":id")
-  async deleteProduct(@Param("id") id: string) {
-    const numberId = Number(id);
-    if (isNaN(numberId)) {
-      throw new Error("Invalid ID");
-    }
-    await this.commandBus.execute(new DeleteProductCommand(numberId));
-    return { id, success: true };
+  async deleteProduct(@Param("id") id: string): Promise<CustomResponse> {
+    const result = await this.commandBus.execute(new DeleteProductCommand(id));
+    
+    return {
+      success: !!result,
+      message: result 
+      ? "상품 삭제를 성공했습니다."
+      : "상품 삭제를 실패했습니다.",
+    };
+
   }
 
+  @ApiOperation({ summary: "상품 상세 조회" })
+  @ApiResponse({ status: 200, description: "상품 상세 조회 성공" })
   @Get(":id")
-  async getProductById(@Param("id") id: string) {
-    const numberId = Number(id);
-    if (isNaN(numberId)) {
-      throw new Error("Invalid ID");
-    }
-    return this.queryBus.execute(new GetProductByIdQuery(numberId));
+  @UseGuards(JwtAuthGuard)
+  async getProductById(@Param("id") id: string): Promise<CustomResponse> {
+    const product = await this.queryBus.execute(new GetProductByIdQuery(id));
+
+    return {
+      success: !!product,
+      message: product
+        ? "해당 상품 상세 조회를 성공했습니다."
+        : "상품을 찾을 수 없습니다.",
+      data: product,
+    };
+
   }
 
+  @ApiOperation({ summary: "상품 수정" })
+  @ApiResponse({ status: 200, description: "상품 수정 성공" })
+  @ApiResponse({ status: 404, description: "상품을 찾을 수 없습니다." }) 
+  @ApiResponse({ status: 400, description: "상품 수정 실패" }) 
   @Patch(":id")
   async updateProduct(
     @Param("id") id: string,
-    @Body()
-    updateProductDto: {
+    @Body() updateProductDto: {
       name?: string;
       productImageUrl?: string;
       description?: string;
       originalPrice?: number;
       discountedPrice?: number;
       quantity?: number;
-      expirationDate?: string; // 수정된 부분
+      expirationDate?: string;
     },
-  ) {
-    const numberId = Number(id);
-    if (isNaN(numberId)) {
-      throw new Error("Invalid ID");
-    }
+  ): Promise<CustomResponse> {
+    
 
-    // expirationDate를 처리하는 부분
-    let expirationDateObj: Date | undefined;
-    if (updateProductDto.expirationDate) {
-      const formattedDate = `${updateProductDto.expirationDate}T00:00:00Z`;
-      expirationDateObj = new Date(formattedDate);
-    }
+    const expirationDateObj = updateProductDto.expirationDate ? new Date(updateProductDto.expirationDate) : undefined;
+    this.logger.log(`Updating product with expiration date: ${expirationDateObj}`);
 
-    const command = new UpdateProductCommand(numberId, {
+    const command = new UpdateProductCommand(id, {
       ...updateProductDto,
       expirationDate: expirationDateObj,
     });
-    this.commandBus.execute(command);
 
-    const productView = await this.commandBus.execute(command);
-    return productView;
+    const result = await this.commandBus.execute(command);
+
+    return {
+      success: !!result,
+      message: result
+        ? "상품 수정을 성공했습니다."
+        : "상품 수정을 실패했습니다.",
+      data: result,
+    };
   }
 }

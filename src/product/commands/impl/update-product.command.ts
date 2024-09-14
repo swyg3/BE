@@ -1,6 +1,6 @@
 export class UpdateProductCommand {
   constructor(
-    public readonly id: number,
+    public readonly id: string,
     public readonly updates: {
       name?: string;
       productImageUrl?: string;

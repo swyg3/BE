@@ -1,15 +1,23 @@
-export class ProductUpdatedEvent {
+import { BaseEvent } from "src/shared/infrastructure/event-sourcing/interfaces/base-event.interface";
+
+export class ProductUpdatedEvent implements BaseEvent {
+  readonly eventType = "ProductUpdated";
+  readonly aggregateType = "Product";
+
   constructor(
-    public readonly id: number,
-    public readonly name?: string,
-    public readonly productImageUrl?: string,
-    public readonly description?: string,
-    public readonly originalPrice?: number,
-    public readonly discountedPrice?: number,
-    public readonly discountRate?: number,
-    public readonly availableStock?: number,
-    public readonly expirationDate?: Date,
-    public readonly createdAt?: Date,
-    public readonly updatedAt?: Date,
+    public readonly aggregateId: string, 
+    public readonly data: {
+      name?: string;
+      productImageUrl?: string;
+      description?: string;
+      originalPrice?: number;
+      discountedPrice?: number;
+      discountRate?: number;
+      availableStock?: number;
+      expirationDate?: Date;
+      createdAt?: Date;
+      updatedAt?: Date;
+    },
+    public readonly version: number,
   ) {}
 }

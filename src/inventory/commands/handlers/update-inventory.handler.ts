@@ -1,9 +1,11 @@
-import { CommandHandler, ICommandHandler } from "@nestjs/cqrs";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
-import { NotFoundException, Logger } from "@nestjs/common";
-import { UpdateInventoryCommand } from "../impl/update-inventory.command";
-import { Inventory } from "src/inventory/inventory.entity";
+import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { NotFoundException, Logger } from '@nestjs/common';
+import { UpdateInventoryCommand } from '../impl/update-inventory.command';
+import { Inventory } from 'src/inventory/inventory.entity';
+import { InventoryUpdatedEvent } from 'src/inventory/events/impl/inventory-updated.event';
+import { EventBusService } from 'src/shared/infrastructure/event-sourcing/event-bus.service';
 
 @CommandHandler(UpdateInventoryCommand)
 export class UpdateInventoryHandler
@@ -14,6 +16,7 @@ export class UpdateInventoryHandler
   constructor(
     @InjectRepository(Inventory)
     private readonly inventoryRepository: Repository<Inventory>,
+    private readonly eventBusService: EventBusService, // 이벤트 버스 서비스 주입
   ) {}
 
   async execute(command: UpdateInventoryCommand): Promise<void> {
@@ -42,5 +45,20 @@ export class UpdateInventoryHandler
     this.logger.log(
       `Inventory for product ID ${productId} updated successfully`,
     );
+
+    // 이벤트 생성
+    const inventoryUpdatedEvent = new InventoryUpdatedEvent(
+      inventory.id, // aggregateId (number)
+      {
+        productId,
+        quantity,
+        expirationDate,
+        updatedAt: new Date(), // 현재 시각
+      },
+      1 // version
+    );
+
+    // 이벤트 발행 및 저장
+    await this.eventBusService.publishAndSave(inventoryUpdatedEvent);
   }
 }

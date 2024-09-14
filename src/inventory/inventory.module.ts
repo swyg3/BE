@@ -2,11 +2,11 @@ import { Module } from "@nestjs/common";
 import { CqrsModule } from "@nestjs/cqrs";
 import { CreateInventoryHandler } from "./commands/handlers/create-inventory.handler";
 import { InventoryRepository } from "./repositories/inventory.repository";
-import { EventStoreModule } from "src/shared/event-store/event-store.module";
 import { Inventory } from "./inventory.entity";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { DeleteInventoryHandler } from "./commands/handlers/delete-inventory.handler";
 import { UpdateInventoryHandler } from "./commands/handlers/update-inventory.handler";
+import { EventSourcingModule } from "src/shared/infrastructure/event-sourcing";
 
 const CommandHandlers = [
   CreateInventoryHandler,
@@ -19,7 +19,8 @@ const EventsHandlers = [];
   imports: [
     TypeOrmModule.forFeature([Inventory]),
     CqrsModule,
-    EventStoreModule,
+    EventSourcingModule,
+
   ],
   providers: [...CommandHandlers, ...EventsHandlers, InventoryRepository],
 })

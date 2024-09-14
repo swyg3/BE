@@ -4,13 +4,15 @@ import { AppService } from "./app.service";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { MongooseModule } from "@nestjs/mongoose";
 import { ConfigModule, ConfigService } from "@nestjs/config";
+import { ThrottlerModule } from "@nestjs/throttler";
 import { MetricsModule } from "./metrics/metrics.module";
-import { configValidationSchema } from "./common/config/config.validation";
-import { getTypeOrmConfig } from "./common/config/typeorm.config";
-import { getMongoConfig } from "./common/config/mongodb.config";
-import { createRedisClient, REDIS_CLIENT } from "./common/config/redis.config";
+import { UsersModule } from "./users/users.module";
+import { AuthModule } from "./auth/auth.module";
+import { SellersModule } from "./sellers/sellers.module";
+import { configValidationSchema } from "./shared/infrastructure/config/config.validation";
+import { getTypeOrmConfig } from "./shared/infrastructure/database/typeorm.config";
+import { getMongoConfig } from "./shared/infrastructure/database/mongodb.config";
 import { ProductModule } from "./product/product.module";
-import { EventStoreModule } from "./shared/event-store/event-store.module";
 import { InventoryModule } from "./inventory/inventory.module";
 
 @Module({
@@ -23,6 +25,16 @@ import { InventoryModule } from "./inventory/inventory.module";
         abortEarly: false,
       },
     }),
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => [
+        {
+          ttl: config.get<number>("THROTTLE_TTL"),
+          limit: config.get<number>("THROTTLE_LIMIT"),
+        },
+      ],
+    }),
     TypeOrmModule.forRootAsync({
       useFactory: getTypeOrmConfig,
       inject: [ConfigService],
@@ -32,18 +44,13 @@ import { InventoryModule } from "./inventory/inventory.module";
       inject: [ConfigService],
     }),
     MetricsModule,
+    AuthModule,
+    UsersModule,
+    SellersModule,
     ProductModule,
-    EventStoreModule,
-    InventoryModule,
+    InventoryModule
   ],
   controllers: [AppController],
-  providers: [
-    {
-      provide: REDIS_CLIENT,
-      useFactory: createRedisClient,
-      inject: [ConfigService],
-    },
-    AppService,
-  ],
+  providers: [AppService],
 })
 export class AppModule {}

@@ -30,7 +30,7 @@ export class ProductRepository {
     originalPrice,
     discountedPrice,
   }: {
-    sellerId: number;
+    sellerId: string;
     category: string;
     name: string;
     productImageUrl: string;

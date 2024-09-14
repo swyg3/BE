@@ -8,11 +8,11 @@ import {
 
 @Entity("inventory")
 export class Inventory {
-  @PrimaryGeneratedColumn("increment", { type: "bigint" })
-  id: number;
+  @PrimaryGeneratedColumn("uuid")
+  id: string;
 
-  @Column({ type: "bigint", name: "product_id", nullable: false })
-  productId: number;
+  @Column({ name: "product_id", nullable: false })
+  productId: string;
 
   @Column({ type: "bigint", nullable: false })
   quantity: number;

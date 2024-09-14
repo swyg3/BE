@@ -13,7 +13,7 @@ import { Category } from "../product.category";
 
 export class CreateProductDto {
   @IsNumber()
-  sellerId: number;
+  sellerId: string;
 
   @IsEnum(Category, {
     message: "카테고리는 유효한 값이어야 합니다.",

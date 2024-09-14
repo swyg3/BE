@@ -12,29 +12,30 @@ export class ProductCreatedHandler
   constructor(private readonly productViewRepository: ProductViewRepository) {}
 
   async handle(event: ProductCreatedEvent) {
-    this.logger.log(`Handling ProductCreatedEvent for product: ${event.id}`);
+    this.logger.log(`Handling ProductCreatedEvent for product: ${event.aggregateId}`);
 
     try {
+      this.logger.log(event.data.expirationDate);
       await this.productViewRepository.createProduct({
-        id: event.id,
-        sellerId: event.sellerId,
-        category: event.category,
-        name: event.name,
-        productImageUrl: event.productImageUrl,
-        description: event.description,
-        originalPrice: event.originalPrice,
-        discountedPrice: event.discountedPrice,
-        discountRate: event.discountRate,
-        availableStock: event.availableStock,
-        expirationDate: event.expirationDate,
-        createdAt: event.created_at,
-        updatedAt: event.updated_at,
+        id: event.aggregateId,
+        sellerId: event.data.sellerId,
+        category: event.data.category,
+        name: event.data.name,
+        productImageUrl: event.data.productImageUrl,
+        description: event.data.description,
+        originalPrice: event.data.originalPrice,
+        discountedPrice: event.data.discountedPrice,
+        discountRate: event.data.discountRate,
+        availableStock: event.data.availableStock,
+        expirationDate: event.data.expirationDate,
+        createdAt: event.data.createdAt,
+        updatedAt: event.data.updatedAt,
       });
 
-      this.logger.log(`Product view successfully updated: ${event.id}`);
+      this.logger.log(`Product view successfully updated: ${event.aggregateId}`);
     } catch (error) {
       this.logger.error(
-        `Failed to update product view: ${event.id}, ${error.message}`,
+        `Failed to update product view: ${event.aggregateId}, ${error.message}`,
         error.stack,
       );
     }

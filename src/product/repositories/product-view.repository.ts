@@ -12,10 +12,10 @@ export class ProductViewRepository {
     const createProductView = new this.productViewModel(productView);
     return createProductView.save();
   }
-  async deleteProduct({ id }: { id: number }): Promise<void> {
+  async deleteProduct({ id }: { id: string }): Promise<void> {
     await this.productViewModel.deleteOne({ id: id }).exec();
   }
-  async findById(id: number): Promise<ProductView | null> {
+  async findById(id: string): Promise<ProductView | null> {
     return this.productViewModel.findOne({ id }).exec();
   }
 }

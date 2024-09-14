@@ -5,6 +5,7 @@ import { Inventory } from "../inventory.entity";
 
 @Injectable()
 export class InventoryRepository {
+ 
   delete: any;
   deleteone: any;
   create: any;
@@ -20,7 +21,7 @@ export class InventoryRepository {
     quantity,
     expirationDate,
   }: {
-    productId: number;
+    productId: string;
     quantity: number;
     expirationDate: Date;
   }): Promise<Inventory | undefined> {
@@ -33,9 +34,19 @@ export class InventoryRepository {
     return await this.repository.save(inventory);
   }
 
-  async findById(productId: number): Promise<Inventory | null> {
+  async findById(productId: string): Promise<Inventory | null> {
     return this.repository.findOneBy({
       id: productId,
     });
+  }
+
+  async findOneByProductId(productId: string): Promise<Inventory | null> {
+    return this.repository.findOne({
+      where: { productId },
+    });
+  }
+
+  async deleteByProductId(productId: string): Promise<void> {
+    await this.repository.delete({ productId });
   }
 }

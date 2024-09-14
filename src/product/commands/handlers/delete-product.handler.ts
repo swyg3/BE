@@ -1,77 +1,58 @@
 import {
   CommandBus,
   CommandHandler,
-  EventBus,
   ICommandHandler,
 } from "@nestjs/cqrs";
 import { DeleteProductCommand } from "../impl/delete-product.command";
 import { ProductRepository } from "../../repositories/product.repository";
 import { Product } from "src/product/entities/product.entity";
 import { DeleteInventoryCommand } from "src/inventory/commands/impl/delete-inventory.command";
-import { EventStoreService } from "src/shared/event-store/event-store.service";
-import { ProductDeletedEvent } from "src/product/events/impl/product-deleted.event"; // Product 삭제 이벤트
 import { Logger, Inject, NotFoundException } from "@nestjs/common";
 import { DeleteResult } from "typeorm";
 import { InjectRepository } from "@nestjs/typeorm";
-import { NOTFOUND } from "dns";
-import { ProductAggregate } from "src/product/aggregates/product.aggregate";
+import { ProductDeletedEvent } from "src/product/events/impl/product-deleted.event";
+import { EventBusService } from "src/shared/infrastructure/event-sourcing/event-bus.service";
 
 @CommandHandler(DeleteProductCommand)
-export class DeleteProductHandler
-  implements ICommandHandler<DeleteProductCommand>
-{
+export class DeleteProductHandler implements ICommandHandler<DeleteProductCommand> {
   private readonly logger = new Logger(DeleteProductHandler.name);
 
   constructor(
     @InjectRepository(Product)
     private readonly productRepository: ProductRepository,
-    private readonly eventStoreService: EventStoreService,
-    @Inject(EventBus) private readonly eventBus: EventBus,
-    @Inject(CommandBus) private readonly commandbus: CommandBus,
+    private readonly eventBusService: EventBusService,
+    @Inject(CommandBus) private readonly commandBus: CommandBus,
   ) {}
 
-  async execute(command: DeleteProductCommand) {
+  async execute(command: DeleteProductCommand): Promise<boolean> {
     const { id } = command;
 
-    const productAggregate = new ProductAggregate(id);
-    const events = productAggregate.deleteProduct(id);
-
-    // 이벤트 저장소에 저장
-    for (const event of events) {
-      await this.eventStoreService.saveEvent({
-        aggregateId: id.toString(),
-        aggregateType: "Product",
-        eventType: event.constructor.name,
-        eventData: event,
-        version: 1,
-      });
+    // 1. 제품 존재 여부 확인
+    const product = await this.productRepository.findOne({ where: { id } });
+    if (!product) {
+      this.logger.error(`Product with ID ${id} not found`);
+      throw new NotFoundException('Product not found');
     }
 
-    this.productRepository.delete({ id: id });
-
-    const productViewDeletedEvent = new ProductDeletedEvent(id);
-    await this.eventBus.publish(productViewDeletedEvent);
+    // 2. 제품 삭제
+    const deleteResult: DeleteResult = await this.productRepository.delete(id);
+    if (deleteResult.affected === 0) {
+      this.logger.error(`Failed to delete product with ID ${id}`);
+      return false; // 삭제 실패 시 false 반환
+    }
 
     this.logger.log(`Product with ID ${id} has been deleted`);
 
-    const productId = id;
+    // 3. 이벤트 발행
+    const productDeletedEvent = new ProductDeletedEvent(id, { updatedAt: new Date() }, 1);
+    await this.eventBusService.publishAndSave(productDeletedEvent);
+    this.logger.log(`ProductDeletedEvent for product ID ${id} published and saved`);
 
-    // Inventory 삭제 명령어 발행
-    const deleteInventoryCommand = new DeleteInventoryCommand(productId); // Product ID를 Inventory 삭제 명령에 사용
-    await this.commandbus.execute(deleteInventoryCommand);
-
+    // 4. 인벤토리 삭제 명령어 발행
+    const deleteInventoryCommand = new DeleteInventoryCommand(id);
+    await this.commandBus.execute(deleteInventoryCommand);
     this.logger.log(`DeleteInventoryCommand for product ID ${id} published`);
 
-    // Event 저장소에 Product 삭제 이벤트 저장
-    const productDeletedEvent = new ProductDeletedEvent(id);
-    await this.eventStoreService.saveEvent({
-      aggregateId: id.toString(),
-      aggregateType: "Product",
-      eventType: productDeletedEvent.constructor.name,
-      eventData: productDeletedEvent,
-      version: 1,
-    });
-
-    this.logger.log(`ProductDeletedEvent for product ID ${id} saved`);
+    return true; // 모든 작업이 성공적으로 완료되면 true 반환
   }
 }

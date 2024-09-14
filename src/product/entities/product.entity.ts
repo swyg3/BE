@@ -10,11 +10,11 @@ import { Category } from "../product.category";
 
 @Entity("product")
 export class Product {
-  @PrimaryGeneratedColumn("increment", { type: "bigint" })
-  id: number;
+  @PrimaryGeneratedColumn("uuid")
+  id: string;
 
-  @Column({ type: "bigint", name: "seller_id", nullable: false })
-  sellerId: number;
+  @Column({ length: 255 })
+  sellerId: string;
 
   @Column({
     type: "enum",
