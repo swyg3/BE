@@ -19,11 +19,14 @@ import { UpdateProductCommand } from "./commands/impl/update-product.command";
 import { CustomResponse } from "src/shared/interfaces/api-response.interface";
 import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
 import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
-import { query } from "express";
 import { GetProductByDiscountRate } from "./dtos/get-products-by-discountRate.dto";
+import { ThrottlerGuard } from "@nestjs/throttler";
+import { GetUser } from "src/shared/decorators/get-user.decorator";
+import { JwtPayload } from "src/shared/interfaces/jwt-payload.interface";
 
 @ApiTags("Products")
 @Controller("products")
+@UseGuards(ThrottlerGuard)
 export class ProductController {
   private readonly logger = new Logger(ProductController.name);
 
@@ -148,6 +151,9 @@ export class ProductController {
   }
 
 
+  @ApiOperation({ summary: "상품 할인률 순 조회" })
+  @ApiResponse({ status: 200, description: "상품 할인률 순 조회 성공" })
+  @UseGuards(JwtAuthGuard)
   @Get()
   async getProducts(@Query() query: GetProductByDiscountRate) {
     const productQuery = new GetProductByDiscountRate();

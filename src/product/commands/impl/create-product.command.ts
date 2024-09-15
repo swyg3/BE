@@ -1,8 +1,9 @@
 import { Category } from "src/product/product.category";
+import { Seller } from "src/sellers/entities/seller.entity";
 
 export class CreateProductCommand {
   constructor(
-    public readonly sellerId: string,
+    public readonly sellerId: Seller,
     public readonly category: Category,
     public readonly name: string,
     public readonly productImageUrl: string,

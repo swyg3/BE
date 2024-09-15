@@ -18,6 +18,7 @@ import { ProductCreatedHandler } from "./events/handlers/product-created.handler
 import { EventSourcingModule } from "src/shared/infrastructure/event-sourcing";
 import { RedisModule } from "src/shared/infrastructure/redis/redis.config";
 import { GetProductByDiscountRateHandler } from "./queries/handlers/get-products-by-discountRate.handler";
+import { Seller } from "src/sellers/entities/seller.entity";
 
 const CommandHandlers = [
   CreateProductHandler,
@@ -39,7 +40,7 @@ const EventsHandlers = [
     MongooseModule.forFeature([
       { name: ProductView.name, schema: ProductViewSchema },
     ]),
-    TypeOrmModule.forFeature([Product]),
+    TypeOrmModule.forFeature([Product, Seller]),
   ],
   providers: [
     ...CommandHandlers,

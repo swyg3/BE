@@ -10,10 +10,11 @@ import {
   IsDateString,
 } from "class-validator";
 import { Category } from "../product.category";
+import { Seller } from "src/sellers/entities/seller.entity";
 
 export class CreateProductDto {
   @IsNumber()
-  sellerId: string;
+  sellerId: Seller;;
 
   @IsEnum(Category, {
     message: "카테고리는 유효한 값이어야 합니다.",

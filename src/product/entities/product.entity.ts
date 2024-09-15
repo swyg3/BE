@@ -7,14 +7,17 @@ import {
   JoinColumn,
 } from "typeorm";
 import { Category } from "../product.category";
+import { Seller } from "src/sellers/entities/seller.entity";
 
 @Entity("product")
 export class Product {
   @PrimaryGeneratedColumn("uuid")
   id: string;
 
-  @Column({ length: 255 })
-  sellerId: string;
+  // ManyToOne 관계 설정
+  @ManyToOne(() => Seller, (seller) => seller.products, { nullable: false, onDelete: 'CASCADE' })
+  @JoinColumn({ name: "seller_id" }) // 외래키 컬럼 명시
+  sellerId: Seller;
 
   @Column({
     type: "enum",

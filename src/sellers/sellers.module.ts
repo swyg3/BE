@@ -13,13 +13,14 @@ import { SellersController } from "./sellers.controller";
 import { CqrsModule } from "@nestjs/cqrs";
 import { RedisModule } from "src/shared/infrastructure/redis/redis.config";
 import { PasswordService } from "src/shared/services/password.service";
+import { Product } from "src/product/entities/product.entity";
 
 @Module({
   imports: [
     CqrsModule,
     EventSourcingModule,
     RedisModule,
-    TypeOrmModule.forFeature([Seller]),
+    TypeOrmModule.forFeature([Seller, Product]),
     MongooseModule.forFeature([
       { name: SellerView.name, schema: SellerViewSchema },
     ]),
