@@ -7,7 +7,8 @@ import {
   Patch,
   Controller,
   Logger,
-  UseGuards
+  UseGuards,
+  Query
 } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { CreateProductCommand } from "./commands/impl/create-product.command";
@@ -18,6 +19,8 @@ import { UpdateProductCommand } from "./commands/impl/update-product.command";
 import { CustomResponse } from "src/shared/interfaces/api-response.interface";
 import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
 import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { query } from "express";
+import { GetProductByDiscountRate } from "./dtos/get-products-by-discountRate.dto";
 
 @ApiTags("Products")
 @Controller("products")
@@ -31,7 +34,7 @@ export class ProductController {
 
   @ApiOperation({ summary: "상품 등록" })
   @ApiResponse({ status: 201, description: "상품 생성 성공" })
-  @ApiResponse({ status: 400, description: "상품 생성 실패" }) 
+  @ApiResponse({ status: 400, description: "상품 생성 실패" })
   @Post()
   async createProduct(@Body() createProductDto: CreateProductDto): Promise<CustomResponse> {
     const {
@@ -74,17 +77,17 @@ export class ProductController {
   }
   @ApiOperation({ summary: "상품 삭제" })
   @ApiResponse({ status: 200, description: "상품 삭제 성공" })
-  @ApiResponse({ status: 404, description: "상품을 찾을 수 없습니다." }) 
-  @ApiResponse({ status: 400, description: "상품 삭제 실패" }) 
+  @ApiResponse({ status: 404, description: "상품을 찾을 수 없습니다." })
+  @ApiResponse({ status: 400, description: "상품 삭제 실패" })
   @Delete(":id")
   async deleteProduct(@Param("id") id: string): Promise<CustomResponse> {
     const result = await this.commandBus.execute(new DeleteProductCommand(id));
-    
+
     return {
       success: !!result,
-      message: result 
-      ? "상품 삭제를 성공했습니다."
-      : "상품 삭제를 실패했습니다.",
+      message: result
+        ? "상품 삭제를 성공했습니다."
+        : "상품 삭제를 실패했습니다.",
     };
 
   }
@@ -108,8 +111,8 @@ export class ProductController {
 
   @ApiOperation({ summary: "상품 수정" })
   @ApiResponse({ status: 200, description: "상품 수정 성공" })
-  @ApiResponse({ status: 404, description: "상품을 찾을 수 없습니다." }) 
-  @ApiResponse({ status: 400, description: "상품 수정 실패" }) 
+  @ApiResponse({ status: 404, description: "상품을 찾을 수 없습니다." })
+  @ApiResponse({ status: 400, description: "상품 수정 실패" })
   @Patch(":id")
   async updateProduct(
     @Param("id") id: string,
@@ -123,7 +126,7 @@ export class ProductController {
       expirationDate?: string;
     },
   ): Promise<CustomResponse> {
-    
+
 
     const expirationDateObj = updateProductDto.expirationDate ? new Date(updateProductDto.expirationDate) : undefined;
     this.logger.log(`Updating product with expiration date: ${expirationDateObj}`);
@@ -143,4 +146,24 @@ export class ProductController {
       data: result,
     };
   }
+
+
+  @Get()
+  async getProducts(@Query() query: GetProductByDiscountRate) {
+    const productQuery = new GetProductByDiscountRate();
+    productQuery.where__id_more_than = query.where__id_more_than;
+    productQuery.order__discountRate = query.order__discountRate;
+    productQuery.take = query.take;
+
+    const product = await this.queryBus.execute(productQuery);
+
+    return {
+      success: !!product,
+      message: product
+        ? "해당 상품리스트 조회를 성공했습니다."
+        : "상품을 찾을 수 없습니다.",
+      data: product,
+    };
+  }
+
 }

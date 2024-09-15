@@ -17,6 +17,7 @@ import { InventoryCreatedEvent } from "src/inventory/events/impl/inventory-creat
 import { ProductCreatedHandler } from "./events/handlers/product-created.handler";
 import { EventSourcingModule } from "src/shared/infrastructure/event-sourcing";
 import { RedisModule } from "src/shared/infrastructure/redis/redis.config";
+import { GetProductByDiscountRateHandler } from "./queries/handlers/get-products-by-discountRate.handler";
 
 const CommandHandlers = [
   CreateProductHandler,
@@ -46,6 +47,7 @@ const EventsHandlers = [
     ProductRepository,
     ProductViewRepository,
     GetProductByIdHandler,
+    GetProductByDiscountRateHandler
   ],
   controllers: [ProductController],
   exports: [ProductRepository],
