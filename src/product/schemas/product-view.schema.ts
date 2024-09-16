@@ -2,6 +2,7 @@ import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Document } from "mongoose";
 import { Category } from "src/product/product.category";
 import { Seller } from "src/sellers/entities/seller.entity";
+import { SellerView } from "src/sellers/schemas/seller-view.schema";
 
 @Schema()
 export class ProductView extends Document {
@@ -9,7 +10,7 @@ export class ProductView extends Document {
   id: string;
 
   @Prop({ required: true })
-  sellerId: Seller;
+  sellerId: Seller; // Seller를 참조하는 외래 키
 
   @Prop({ required: true, enum: Category })
   category: Category;
@@ -43,6 +44,8 @@ export class ProductView extends Document {
 
   @Prop({ required: true })
   updatedAt: Date;
+  
+  
 }
 
 export const ProductViewSchema = SchemaFactory.createForClass(ProductView);

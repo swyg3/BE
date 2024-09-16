@@ -30,13 +30,13 @@ export class SellerView extends Document {
   @Prop({ required: true, default: false })
   isEmailVerified: boolean;
 
-  @Prop({ required: true })
+  @Prop({ required: false, default: null })
   lastLoginAt: Date;
 
-  @Prop({ required: true })
+  @Prop({ required: true, default: Date.now })
   createdAt: Date;
 
-  @Prop({ required: true })
+  @Prop({ required: true, default: Date.now })
   updatedAt: Date;
 }
 

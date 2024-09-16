@@ -14,7 +14,7 @@ import { Seller } from "src/sellers/entities/seller.entity";
 
 export class CreateProductDto {
   @IsNumber()
-  sellerId: Seller;
+  sellerId: string;
 
   @IsEnum(Category, {
     message: "카테고리는 유효한 값이어야 합니다.",

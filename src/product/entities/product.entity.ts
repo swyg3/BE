@@ -14,13 +14,10 @@ export class Product {
   @PrimaryGeneratedColumn("uuid")
   id: string;
 
-  // ManyToOne 관계 설정
-  @ManyToOne(() => Seller, (seller) => seller.products, {
-    nullable: false,
-    onDelete: "CASCADE",
-  })
-  @JoinColumn({ name: "seller_id" }) // 외래키 컬럼 명시
-  sellerId: Seller;
+  @ManyToOne(() => Seller, (seller) => seller.products, { eager: true })
+  @JoinColumn({ name: 'seller_id', referencedColumnName: 'id' })
+  sellerId: Seller; // Seller를 참조하는 외래 키
+
 
   @Column({
     type: "enum",

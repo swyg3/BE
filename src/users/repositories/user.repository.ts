@@ -17,6 +17,14 @@ export class UserRepository {
   async findByEmail(email: string): Promise<User | undefined> {
     return this.userRepository.findOne({ where: { email } });
   }
+  
+  create(userData: Partial<User>): User {
+    return this.userRepository.create(userData);
+  }
+
+  async save(user: User): Promise<User> {
+    return this.userRepository.save(user);
+  }
 
   async upsert(
     email: string,
@@ -37,7 +45,4 @@ export class UserRepository {
     }
   }
 
-  async updateAccessToken(userId: string, accessToken: string): Promise<void> {
-    await this.userRepository.update(userId, { accessToken });
-  }
 }

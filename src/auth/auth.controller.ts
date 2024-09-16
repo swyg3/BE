@@ -78,6 +78,7 @@ export class AuthController {
     @Body() loginDto: LoginEmailDto,
     @Req() req,
   ): Promise<CustomResponse> {
+    req.body.userType = loginDto.userType;
     const result = await this.commandBus.execute(
       new LoginEmailCommand(loginDto, req),
     );
@@ -180,31 +181,23 @@ export class AuthController {
   @ApiOperation({ summary: "사업자등록번호 인증" })
   @ApiResponse({ status: 200, description: "사업자등록번호 인증 성공" })
   @Post("verify-business-number")
-  @UseGuards(JwtAuthGuard)
   async verifyBusinessNumber(
-    @GetUser() user: JwtPayload,
     @Body() dto: VerifyBusinessNumberDto,
   ): Promise<CustomResponse> {
     const result = await this.commandBus.execute(
-      new VerifyBusinessNumberCommand(user.userId, dto.businessNumber),
+      new VerifyBusinessNumberCommand(dto.email, dto.businessNumber),
     );
-    return {
-      success: true,
-      message: "사업자 등록번호가 성공적으로 검증되었습니다.",
-      data: result,
-    };
+    return result;
   }
 
   @ApiOperation({ summary: "판매자 매장정보 추가" })
   @ApiResponse({ status: 200, description: "판매자 매장정보 추가 성공" })
   @Post("complete-profile")
-  @UseGuards(JwtAuthGuard)
   async completeProfile(
-    @GetUser() user: JwtPayload,
     @Body() profileDto: CompleteSellerProfileDto,
   ): Promise<CustomResponse> {
     const result = await this.commandBus.execute(
-      new CompleteSellerProfileCommand(user.userId, profileDto),
+      new CompleteSellerProfileCommand(profileDto),
     );
     return {
       success: true,

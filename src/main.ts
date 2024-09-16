@@ -8,15 +8,6 @@ import { HttpExceptionFilter } from "./shared/filters/http-exception.filter";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  // //페이지네이션 처리 설정
-  // app.useGlobalPipes(
-  //   new ValidationPipe({
-  //     transform: true,
-  //     transformOptions: {
-  //       enableImplicitConversion: true,
-  //     },
-  //   }),
-  // );
 
   // 메트릭스 인터셉터 설정
   app.useGlobalInterceptors(
@@ -35,7 +26,7 @@ async function bootstrap() {
   const corsOptions =
     process.env.NODE_ENV === "production"
       ? {
-          origin: ["https://your-production-frontend.com"],
+          origin: ["*"],
           methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
           allowedHeaders: ["Content-Type", "Authorization"],
         }

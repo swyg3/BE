@@ -7,6 +7,8 @@ import { ProductCreatedEvent } from "src/product/events/impl/product-created.eve
 import { CommandBus, CommandHandler, ICommandHandler } from "@nestjs/cqrs";
 import { BadRequestException, Inject, Logger } from "@nestjs/common";
 import { EventBusService } from "src/shared/infrastructure/event-sourcing/event-bus.service";
+import { SellerRepository } from "src/sellers/repositories/seller.repository";
+import { Seller } from "src/sellers/entities/seller.entity";
 
 @CommandHandler(CreateProductCommand)
 export class CreateProductHandler
@@ -17,6 +19,7 @@ export class CreateProductHandler
   constructor(
     @InjectRepository(Product)
     private readonly productRepository: ProductRepository,
+    private readonly sellerRepository: SellerRepository,
     private readonly eventBusService: EventBusService,
     @Inject(CommandBus) private readonly commandBus: CommandBus,
   ) {}
@@ -33,6 +36,11 @@ export class CreateProductHandler
       quantity,
       expirationDate,
     } = command;
+
+    const seller = await this.sellerRepository.findBySellerId(sellerId);
+    if (!seller) {
+      throw new Error("존재하지 않는 판매자입니다.");
+    }
 
     let savedProduct: Product | null = null;
 

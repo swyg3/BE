@@ -3,7 +3,7 @@ import { Seller } from "src/sellers/entities/seller.entity";
 
 export class CreateProductCommand {
   constructor(
-    public readonly sellerId: Seller,
+    public readonly sellerId: string,
     public readonly category: Category,
     public readonly name: string,
     public readonly productImageUrl: string,

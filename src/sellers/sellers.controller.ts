@@ -34,36 +34,22 @@ export class SellersController {
   async registerSeller(
     @Body() registerSellerDto: RegisterSellerDto,
   ): Promise<CustomResponse<{ sellerId: string }>> {
-    const {
-      email,
-      password,
-      pwConfirm,
-      name,
-      phoneNumber,
-      storeName,
-      storeAddress,
-      storePhoneNumber,
-    } = registerSellerDto;
+    try {
+      const result = await this.commandBus.execute(
+        new RegisterSellerCommand(registerSellerDto)
+      );
 
-    const sellerId = await this.commandBus.execute(
-      new RegisterSellerCommand(
-        email,
-        password,
-        pwConfirm,
-        name,
-        phoneNumber,
-        storeName,
-        storeAddress,
-        storePhoneNumber,
-      ),
-    );
-
-    return {
-      success: true,
-      data: {
-        sellerId,
-      },
-    };
+      return {
+        success: true,
+        message: "판매자 등록이 성공적으로 완료되었습니다.",
+        data: result
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || "판매자 등록 중 오류가 발생했습니다.",
+      };
+    }
   }
 
   @ApiOperation({ summary: "판매자 프로필 조회" })

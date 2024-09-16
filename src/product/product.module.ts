@@ -19,6 +19,7 @@ import { EventSourcingModule } from "src/shared/infrastructure/event-sourcing";
 import { RedisModule } from "src/shared/infrastructure/redis/redis.config";
 import { GetProductByDiscountRateHandler } from "./queries/handlers/get-products-by-discountRate.handler";
 import { Seller } from "src/sellers/entities/seller.entity";
+import { SellerRepository } from "src/sellers/repositories/seller.repository";
 
 const CommandHandlers = [
   CreateProductHandler,
@@ -46,11 +47,12 @@ const EventsHandlers = [
     ...CommandHandlers,
     ...EventsHandlers,
     ProductRepository,
+    SellerRepository,
     ProductViewRepository,
     GetProductByIdHandler,
     GetProductByDiscountRateHandler,
   ],
   controllers: [ProductController],
-  exports: [ProductRepository],
+  exports: [ProductRepository,SellerRepository],
 })
 export class ProductModule {}

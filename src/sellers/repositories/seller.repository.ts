@@ -18,6 +18,14 @@ export class SellerRepository {
     return this.sellerRepository.findOne({ where: { email } });
   }
 
+  create(sellerData: Partial<Seller>): Seller {
+    return this.sellerRepository.create(sellerData);
+  }
+
+  async save(seller: Seller): Promise<Seller> {
+    return this.sellerRepository.save(seller);
+  }
+
   async upsert(
     email: string,
     sellerData: Partial<Seller>,
@@ -35,17 +43,6 @@ export class SellerRepository {
       const savedSeller = await this.sellerRepository.save(newSeller);
       return { seller: savedSeller, isNewSeller: true };
     }
-  }
-
-  async save(seller: Seller): Promise<Seller> {
-    return this.sellerRepository.save(seller);
-  }
-
-  async updateAccessToken(
-    sellerId: string,
-    accessToken: string,
-  ): Promise<void> {
-    await this.sellerRepository.update(sellerId, { accessToken });
   }
 
   async updateBusinessNumberVerification(

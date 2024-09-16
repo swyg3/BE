@@ -10,6 +10,7 @@ export class SellerLoggedInEvent implements BaseEvent {
       email: string;
       provider: string;
       isNewSeller: boolean;
+      isEmailVerified: boolean;
       isBusinessNumberVerified: boolean;
       timestamp: Date;
     },
