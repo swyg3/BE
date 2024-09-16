@@ -1,11 +1,11 @@
-import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { NotFoundException, Logger } from '@nestjs/common';
-import { UpdateInventoryCommand } from '../impl/update-inventory.command';
-import { Inventory } from 'src/inventory/inventory.entity';
-import { InventoryUpdatedEvent } from 'src/inventory/events/impl/inventory-updated.event';
-import { EventBusService } from 'src/shared/infrastructure/event-sourcing/event-bus.service';
+import { CommandHandler, ICommandHandler } from "@nestjs/cqrs";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { NotFoundException, Logger } from "@nestjs/common";
+import { UpdateInventoryCommand } from "../impl/update-inventory.command";
+import { Inventory } from "src/inventory/inventory.entity";
+import { InventoryUpdatedEvent } from "src/inventory/events/impl/inventory-updated.event";
+import { EventBusService } from "src/shared/infrastructure/event-sourcing/event-bus.service";
 
 @CommandHandler(UpdateInventoryCommand)
 export class UpdateInventoryHandler
@@ -55,7 +55,7 @@ export class UpdateInventoryHandler
         expirationDate,
         updatedAt: new Date(), // 현재 시각
       },
-      1 // version
+      1, // version
     );
 
     // 이벤트 발행 및 저장

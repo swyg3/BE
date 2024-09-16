@@ -1,16 +1,17 @@
-import { QueryHandler, IQueryHandler } from '@nestjs/cqrs';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { GetProductByDiscountRate } from 'src/product/dtos/get-products-by-discountRate.dto';
-import { ProductView } from 'src/product/schemas/product-view.schema';
-
+import { QueryHandler, IQueryHandler } from "@nestjs/cqrs";
+import { InjectModel } from "@nestjs/mongoose";
+import { Model } from "mongoose";
+import { GetProductByDiscountRate } from "src/product/dtos/get-products-by-discountRate.dto";
+import { ProductView } from "src/product/schemas/product-view.schema";
 
 @QueryHandler(GetProductByDiscountRate)
-export class GetProductByDiscountRateHandler implements IQueryHandler<GetProductByDiscountRate> {
-    constructor(
-        @InjectModel(ProductView.name) private readonly productViewModel: Model<ProductView>,
-      ) {}
-    
+export class GetProductByDiscountRateHandler
+  implements IQueryHandler<GetProductByDiscountRate>
+{
+  constructor(
+    @InjectModel(ProductView.name)
+    private readonly productViewModel: Model<ProductView>,
+  ) {}
 
   async execute(query: GetProductByDiscountRate) {
     const { where__id_more_than, take, order__discountRate } = query;
@@ -30,7 +31,10 @@ export class GetProductByDiscountRateHandler implements IQueryHandler<GetProduct
 
     let nextUrl = null;
     if (last) {
-      const nextPageQuery = { ...query, where__id_more_than: last._id.toString() };
+      const nextPageQuery = {
+        ...query,
+        where__id_more_than: last._id.toString(),
+      };
       nextUrl = new URL("http://localhost:3000/api/products");
       for (const [key, value] of Object.entries(nextPageQuery)) {
         if (value !== undefined) {

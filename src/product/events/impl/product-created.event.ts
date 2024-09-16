@@ -2,7 +2,7 @@ import { BaseEvent } from "src/shared/infrastructure/event-sourcing";
 import { Category } from "src/product/product.category";
 import { Seller } from "src/sellers/entities/seller.entity";
 
-export class ProductCreatedEvent implements BaseEvent{
+export class ProductCreatedEvent implements BaseEvent {
   readonly eventType = "ProductCreated";
   readonly aggregateType = "Product";
 
@@ -19,10 +19,9 @@ export class ProductCreatedEvent implements BaseEvent{
       discountRate: number;
       availableStock: number;
       expirationDate: Date;
-      createdAt: Date,
-      updatedAt: Date,
+      createdAt: Date;
+      updatedAt: Date;
     },
     public readonly version: number,
-    
   ) {}
 }

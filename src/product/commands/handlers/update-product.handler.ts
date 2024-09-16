@@ -1,8 +1,4 @@
-import {
-  CommandBus,
-  CommandHandler,
-  ICommandHandler,
-} from "@nestjs/cqrs";
+import { CommandBus, CommandHandler, ICommandHandler } from "@nestjs/cqrs";
 import { ProductRepository } from "../../repositories/product.repository";
 import { Product } from "../../entities/product.entity";
 import { NotFoundException } from "@nestjs/common";
@@ -17,7 +13,8 @@ import { EventBusService } from "src/shared/infrastructure/event-sourcing/event-
 
 @CommandHandler(UpdateProductCommand)
 export class UpdateProductHandler
-  implements ICommandHandler<UpdateProductCommand> {
+  implements ICommandHandler<UpdateProductCommand>
+{
   private readonly logger = new Logger(UpdateProductHandler.name);
 
   constructor(
@@ -26,7 +23,7 @@ export class UpdateProductHandler
     private readonly productViewRepository: ProductViewRepository,
     private readonly eventBusService: EventBusService,
     @Inject(CommandBus) private readonly commandBus: CommandBus,
-  ) { }
+  ) {}
 
   async execute(command: UpdateProductCommand): Promise<Product> {
     const { id, updates } = command;
@@ -39,17 +36,28 @@ export class UpdateProductHandler
 
     // 업데이트 적용
     if (updates.name) product.name = updates.name;
-    if (updates.productImageUrl) product.productImageUrl = updates.productImageUrl;
+    if (updates.productImageUrl)
+      product.productImageUrl = updates.productImageUrl;
     if (updates.description) product.description = updates.description;
     if (updates.originalPrice) product.originalPrice = updates.originalPrice;
-    if (updates.discountedPrice) product.discountedPrice = updates.discountedPrice;
+    if (updates.discountedPrice)
+      product.discountedPrice = updates.discountedPrice;
     if (updates.quantity) product.quantity = updates.quantity;
     if (updates.expirationDate) product.expirationDate = updates.expirationDate;
 
     // Inventory 업데이트
-    if (updates.quantity !== undefined || updates.expirationDate !== undefined) {
-      const expirationDate = updates.expirationDate ? new Date(updates.expirationDate) : undefined;
-      const updateInventoryCommand = new UpdateInventoryCommand(id, updates.quantity, expirationDate);
+    if (
+      updates.quantity !== undefined ||
+      updates.expirationDate !== undefined
+    ) {
+      const expirationDate = updates.expirationDate
+        ? new Date(updates.expirationDate)
+        : undefined;
+      const updateInventoryCommand = new UpdateInventoryCommand(
+        id,
+        updates.quantity,
+        expirationDate,
+      );
       await this.commandBus.execute(updateInventoryCommand);
     }
 
@@ -60,7 +68,9 @@ export class UpdateProductHandler
     // 할인율 계산
     const discountRate =
       updates.originalPrice && updates.discountedPrice
-        ? ((updates.originalPrice - updates.discountedPrice) / updates.originalPrice) * 100
+        ? ((updates.originalPrice - updates.discountedPrice) /
+            updates.originalPrice) *
+          100
         : 0;
 
     // 이벤트 생성
@@ -78,11 +88,10 @@ export class UpdateProductHandler
         createdAt: product.createdAt, // optional
         updatedAt: new Date(), // 업데이트 시 현재 시간
       },
-      1 // version
+      1, // version
     );
 
     await this.eventBusService.publishAndSave(productUpdatedEvent);
-
 
     // 이벤트 버스에 이벤트 게시
     this.logger.log(`Publishing productUpdatedEvent for product ID: ${id}`);

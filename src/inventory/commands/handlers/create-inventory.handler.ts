@@ -13,7 +13,7 @@ export class CreateInventoryHandler
 
   constructor(
     private readonly inventoryRepository: InventoryRepository,
-    private readonly eventBusService: EventBusService
+    private readonly eventBusService: EventBusService,
   ) {}
 
   async execute(command: CreateInventoryCommand): Promise<void> {
@@ -39,9 +39,9 @@ export class CreateInventoryHandler
           expirationDate: savedInventory.expirationDate,
           updatedAt: new Date(), // 현재 시간
         },
-        1 // version
+        1, // version
       );
-      
+
       await this.eventBusService.publishAndSave(inventoryCreatedEvent);
     } catch (error) {
       this.logger.error(

@@ -48,7 +48,7 @@ const EventsHandlers = [
     ProductRepository,
     ProductViewRepository,
     GetProductByIdHandler,
-    GetProductByDiscountRateHandler
+    GetProductByDiscountRateHandler,
   ],
   controllers: [ProductController],
   exports: [ProductRepository],

@@ -5,7 +5,6 @@ import { Inventory } from "../inventory.entity";
 
 @Injectable()
 export class InventoryRepository {
- 
   delete: any;
   deleteone: any;
   create: any;

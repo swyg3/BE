@@ -1,8 +1,4 @@
-import {
-  CommandBus,
-  CommandHandler,
-  ICommandHandler,
-} from "@nestjs/cqrs";
+import { CommandBus, CommandHandler, ICommandHandler } from "@nestjs/cqrs";
 import { DeleteProductCommand } from "../impl/delete-product.command";
 import { ProductRepository } from "../../repositories/product.repository";
 import { Product } from "src/product/entities/product.entity";
@@ -14,7 +10,9 @@ import { ProductDeletedEvent } from "src/product/events/impl/product-deleted.eve
 import { EventBusService } from "src/shared/infrastructure/event-sourcing/event-bus.service";
 
 @CommandHandler(DeleteProductCommand)
-export class DeleteProductHandler implements ICommandHandler<DeleteProductCommand> {
+export class DeleteProductHandler
+  implements ICommandHandler<DeleteProductCommand>
+{
   private readonly logger = new Logger(DeleteProductHandler.name);
 
   constructor(
@@ -31,7 +29,7 @@ export class DeleteProductHandler implements ICommandHandler<DeleteProductComman
     const product = await this.productRepository.findOne({ where: { id } });
     if (!product) {
       this.logger.error(`Product with ID ${id} not found`);
-      throw new NotFoundException('Product not found');
+      throw new NotFoundException("Product not found");
     }
 
     // 2. 제품 삭제
@@ -44,9 +42,15 @@ export class DeleteProductHandler implements ICommandHandler<DeleteProductComman
     this.logger.log(`Product with ID ${id} has been deleted`);
 
     // 3. 이벤트 발행
-    const productDeletedEvent = new ProductDeletedEvent(id, { updatedAt: new Date() }, 1);
+    const productDeletedEvent = new ProductDeletedEvent(
+      id,
+      { updatedAt: new Date() },
+      1,
+    );
     await this.eventBusService.publishAndSave(productDeletedEvent);
-    this.logger.log(`ProductDeletedEvent for product ID ${id} published and saved`);
+    this.logger.log(
+      `ProductDeletedEvent for product ID ${id} published and saved`,
+    );
 
     // 4. 인벤토리 삭제 명령어 발행
     const deleteInventoryCommand = new DeleteInventoryCommand(id);

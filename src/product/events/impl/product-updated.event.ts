@@ -5,7 +5,7 @@ export class ProductUpdatedEvent implements BaseEvent {
   readonly aggregateType = "Product";
 
   constructor(
-    public readonly aggregateId: string, 
+    public readonly aggregateId: string,
     public readonly data: {
       name?: string;
       productImageUrl?: string;

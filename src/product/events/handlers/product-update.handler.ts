@@ -48,9 +48,13 @@ export class ProductUpdatedEventHandler
       );
 
       if (result.matchedCount === 0) {
-        this.logger.warn(`Product view with id ${event.aggregateId} not found.`);
+        this.logger.warn(
+          `Product view with id ${event.aggregateId} not found.`,
+        );
       } else {
-        this.logger.log(`Product view with id ${event.aggregateId} updated successfully.`);
+        this.logger.log(
+          `Product view with id ${event.aggregateId} updated successfully.`,
+        );
       }
     } catch (error) {
       this.logger.error(

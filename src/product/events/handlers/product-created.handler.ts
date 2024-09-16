@@ -12,7 +12,9 @@ export class ProductCreatedHandler
   constructor(private readonly productViewRepository: ProductViewRepository) {}
 
   async handle(event: ProductCreatedEvent) {
-    this.logger.log(`Handling ProductCreatedEvent for product: ${event.aggregateId}`);
+    this.logger.log(
+      `Handling ProductCreatedEvent for product: ${event.aggregateId}`,
+    );
 
     try {
       this.logger.log(event.data.expirationDate);
@@ -32,7 +34,9 @@ export class ProductCreatedHandler
         updatedAt: event.data.updatedAt,
       });
 
-      this.logger.log(`Product view successfully updated: ${event.aggregateId}`);
+      this.logger.log(
+        `Product view successfully updated: ${event.aggregateId}`,
+      );
     } catch (error) {
       this.logger.error(
         `Failed to update product view: ${event.aggregateId}, ${error.message}`,

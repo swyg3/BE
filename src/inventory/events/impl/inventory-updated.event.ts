@@ -1,6 +1,6 @@
-import { BaseEvent } from 'src/shared/infrastructure/event-sourcing';
+import { BaseEvent } from "src/shared/infrastructure/event-sourcing";
 
-export class InventoryUpdatedEvent implements BaseEvent{
+export class InventoryUpdatedEvent implements BaseEvent {
   readonly eventType = "InventoryUpdated";
   readonly aggregateType = "Inventory";
 

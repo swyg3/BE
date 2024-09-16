@@ -8,13 +8,15 @@ import { HttpExceptionFilter } from "./shared/filters/http-exception.filter";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  //페이지네이션 처리 설정
-  app.useGlobalPipes(new ValidationPipe({
-    transform: true,
-    transformOptions:{
-      enableImplicitConversion: true
-    }
-  }))
+  // //페이지네이션 처리 설정
+  // app.useGlobalPipes(
+  //   new ValidationPipe({
+  //     transform: true,
+  //     transformOptions: {
+  //       enableImplicitConversion: true,
+  //     },
+  //   }),
+  // );
 
   // 메트릭스 인터셉터 설정
   app.useGlobalInterceptors(

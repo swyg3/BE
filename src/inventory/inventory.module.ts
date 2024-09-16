@@ -20,7 +20,6 @@ const EventsHandlers = [];
     TypeOrmModule.forFeature([Inventory]),
     CqrsModule,
     EventSourcingModule,
-
   ],
   providers: [...CommandHandlers, ...EventsHandlers, InventoryRepository],
 })

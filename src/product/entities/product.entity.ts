@@ -15,7 +15,10 @@ export class Product {
   id: string;
 
   // ManyToOne 관계 설정
-  @ManyToOne(() => Seller, (seller) => seller.products, { nullable: false, onDelete: 'CASCADE' })
+  @ManyToOne(() => Seller, (seller) => seller.products, {
+    nullable: false,
+    onDelete: "CASCADE",
+  })
   @JoinColumn({ name: "seller_id" }) // 외래키 컬럼 명시
   sellerId: Seller;
 

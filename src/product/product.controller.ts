@@ -8,7 +8,7 @@ import {
   Controller,
   Logger,
   UseGuards,
-  Query
+  Query,
 } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { CreateProductCommand } from "./commands/impl/create-product.command";
@@ -21,8 +21,7 @@ import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
 import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { GetProductByDiscountRate } from "./dtos/get-products-by-discountRate.dto";
 import { ThrottlerGuard } from "@nestjs/throttler";
-import { GetUser } from "src/shared/decorators/get-user.decorator";
-import { JwtPayload } from "src/shared/interfaces/jwt-payload.interface";
+
 
 @ApiTags("Products")
 @Controller("products")
@@ -33,13 +32,15 @@ export class ProductController {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
-  ) { }
+  ) {}
 
   @ApiOperation({ summary: "상품 등록" })
   @ApiResponse({ status: 201, description: "상품 생성 성공" })
   @ApiResponse({ status: 400, description: "상품 생성 실패" })
   @Post()
-  async createProduct(@Body() createProductDto: CreateProductDto): Promise<CustomResponse> {
+  async createProduct(
+    @Body() createProductDto: CreateProductDto,
+  ): Promise<CustomResponse> {
     const {
       sellerId,
       category,
@@ -54,7 +55,9 @@ export class ProductController {
 
     // 필요 시 문자열을 Date 객체로 변환
     const expirationDateObj = new Date(expirationDate);
-    this.logger.log(`Creating product with expiration date: ${expirationDateObj}`);
+    this.logger.log(
+      `Creating product with expiration date: ${expirationDateObj}`,
+    );
 
     const result = await this.commandBus.execute(
       new CreateProductCommand(
@@ -66,7 +69,7 @@ export class ProductController {
         originalPrice,
         discountedPrice,
         quantity,
-        expirationDateObj
+        expirationDateObj,
       ),
     );
 
@@ -76,7 +79,6 @@ export class ProductController {
         ? "상품 등록에 성공했습니다."
         : "상품 등록에 실패했습니다.",
     };
-
   }
   @ApiOperation({ summary: "상품 삭제" })
   @ApiResponse({ status: 200, description: "상품 삭제 성공" })
@@ -92,7 +94,6 @@ export class ProductController {
         ? "상품 삭제를 성공했습니다."
         : "상품 삭제를 실패했습니다.",
     };
-
   }
 
   @ApiOperation({ summary: "상품 상세 조회" })
@@ -109,7 +110,6 @@ export class ProductController {
         : "상품을 찾을 수 없습니다.",
       data: product,
     };
-
   }
 
   @ApiOperation({ summary: "상품 수정" })
@@ -119,7 +119,8 @@ export class ProductController {
   @Patch(":id")
   async updateProduct(
     @Param("id") id: string,
-    @Body() updateProductDto: {
+    @Body()
+    updateProductDto: {
       name?: string;
       productImageUrl?: string;
       description?: string;
@@ -129,10 +130,12 @@ export class ProductController {
       expirationDate?: string;
     },
   ): Promise<CustomResponse> {
-
-
-    const expirationDateObj = updateProductDto.expirationDate ? new Date(updateProductDto.expirationDate) : undefined;
-    this.logger.log(`Updating product with expiration date: ${expirationDateObj}`);
+    const expirationDateObj = updateProductDto.expirationDate
+      ? new Date(updateProductDto.expirationDate)
+      : undefined;
+    this.logger.log(
+      `Updating product with expiration date: ${expirationDateObj}`,
+    );
 
     const command = new UpdateProductCommand(id, {
       ...updateProductDto,
@@ -149,7 +152,6 @@ export class ProductController {
       data: result,
     };
   }
-
 
   @ApiOperation({ summary: "상품 할인률 순 조회" })
   @ApiResponse({ status: 200, description: "상품 할인률 순 조회 성공" })
@@ -170,6 +172,5 @@ export class ProductController {
         : "상품을 찾을 수 없습니다.",
       data: product,
     };
-  }
-
+  } 
 }

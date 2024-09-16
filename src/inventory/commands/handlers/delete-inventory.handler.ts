@@ -1,10 +1,10 @@
-import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { InventoryRepository } from '../../repositories/inventory.repository';
-import { DeleteInventoryCommand } from '../impl/delete-inventory.command';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Inventory } from 'src/inventory/inventory.entity';
-import { InventoryDeletedEvent } from 'src/inventory/events/impl/inventory-deleted.event';
-import { EventBusService } from 'src/shared/infrastructure/event-sourcing/event-bus.service';
+import { CommandHandler, ICommandHandler } from "@nestjs/cqrs";
+import { InventoryRepository } from "../../repositories/inventory.repository";
+import { DeleteInventoryCommand } from "../impl/delete-inventory.command";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Inventory } from "src/inventory/inventory.entity";
+import { InventoryDeletedEvent } from "src/inventory/events/impl/inventory-deleted.event";
+import { EventBusService } from "src/shared/infrastructure/event-sourcing/event-bus.service";
 
 @CommandHandler(DeleteInventoryCommand)
 export class DeleteInventoryHandler
@@ -19,7 +19,8 @@ export class DeleteInventoryHandler
     const { productId } = command;
 
     // productId로 인벤토리 조회
-    const inventory = await this.inventoryRepository.findOneByProductId(productId);
+    const inventory =
+      await this.inventoryRepository.findOneByProductId(productId);
 
     if (!inventory) {
       // 인벤토리를 찾을 수 없는 경우 처리
@@ -36,7 +37,7 @@ export class DeleteInventoryHandler
         productId,
         deletedAt: new Date(), // 현재 시간
       },
-      1 // version
+      1, // version
     );
 
     await this.eventBusService.publishAndSave(inventoryDeletedEvent);

@@ -5,9 +5,9 @@ export class ProductDeletedEvent implements BaseEvent {
   readonly aggregateType = "Product";
 
   constructor(
-    public readonly aggregateId: string, 
+    public readonly aggregateId: string,
     public readonly data: {
-      updatedAt :Date,
+      updatedAt: Date;
     },
     public readonly version: number,
   ) {}

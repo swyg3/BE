@@ -48,7 +48,7 @@ import { InventoryModule } from "./inventory/inventory.module";
     UsersModule,
     SellersModule,
     ProductModule,
-    InventoryModule
+    InventoryModule,
   ],
   controllers: [AppController],
   providers: [AppService],

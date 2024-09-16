@@ -12,14 +12,16 @@ export class ProductDeletedHandler
   constructor(private readonly productViewRepository: ProductViewRepository) {}
 
   async handle(event: ProductDeletedEvent) {
-    const id = event.aggregateId; 
-    try{
-    this.logger.log(`Handling ProductDeletedEvent for product: ${id}`);
+    const id = event.aggregateId;
+    try {
+      this.logger.log(`Handling ProductDeletedEvent for product: ${id}`);
 
-    // MongoDB에서 제품 삭제
-    await this.productViewRepository.deleteProduct({ id });}
-    catch{
-      this.logger.log(`Handling ProductDeletedEvent can not find product view: ${id}`);
+      // MongoDB에서 제품 삭제
+      await this.productViewRepository.deleteProduct({ id });
+    } catch {
+      this.logger.log(
+        `Handling ProductDeletedEvent can not find product view: ${id}`,
+      );
     }
   }
 }
