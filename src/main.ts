@@ -26,7 +26,7 @@ async function bootstrap() {
   const corsOptions =
     process.env.NODE_ENV === "production"
       ? {
-          origin: ["https://your-production-frontend.com"],
+          origin: ["*"],
           methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
           allowedHeaders: ["Content-Type", "Authorization"],
         }

@@ -3,39 +3,38 @@ import { CompleteSellerProfileCommand } from "../commands/complete-seller-profil
 import { SellerRepository } from "src/sellers/repositories/seller.repository";
 import { EventBusService } from "src/shared/infrastructure/event-sourcing/event-bus.service";
 import { SellerProfileCompletedEvent } from "../../events/events/seller-profile-completed.event";
+import { Inject } from "@nestjs/common";
+import { REDIS_CLIENT } from "src/shared/infrastructure/redis/redis.config";
+import Redis from "ioredis";
 
 @CommandHandler(CompleteSellerProfileCommand)
 export class CompleteSellerProfileHandler
   implements ICommandHandler<CompleteSellerProfileCommand>
 {
-  constructor(
-    private readonly sellerRepository: SellerRepository,
-    private readonly eventBusService: EventBusService,
-  ) {}
+  constructor(@Inject(REDIS_CLIENT) private readonly redisClient: Redis) {}
 
   async execute(command: CompleteSellerProfileCommand) {
-    const { sellerId, profileData } = command;
+    const { email, storeName, storeAddress, storePhoneNumber } =
+      command.profileData;
 
-    const seller = await this.sellerRepository.findBySellerId(sellerId);
-    if (!seller) {
-      return { success: false, message: "판매자를 찾을 수 없습니다." };
-    }
-
-    // 프로필 정보 업데이트
-    seller.storeName = profileData.storeName;
-    seller.storeAddress = profileData.storeAddress;
-    seller.storePhoneNumber = profileData.storePhoneNumber;
-
-    await this.sellerRepository.save(seller);
-
-    // 이벤트 발행 및 저장
-    const event = new SellerProfileCompletedEvent(sellerId, profileData, 1);
-    await this.eventBusService.publishAndSave(event);
+    // Redis에 프로필 정보 저장
+    await this.storeProfileInRedis(email, {
+      storeName,
+      storeAddress,
+      storePhoneNumber,
+    });
 
     return {
-      success: true,
-      message: "판매자 프로필이 완성되었습니다.",
-      data: seller,
+      email,
+      message: "판매자 프로필이 성공적으로 저장되었습니다.",
     };
+  }
+  private async storeProfileInRedis(
+    email: string,
+    profileData: any,
+  ): Promise<void> {
+    const key = `seller_profile:${email}`;
+    await this.redisClient.hmset(key, profileData);
+    await this.redisClient.expire(key, 3600); // 1시간 후 만료
   }
 }

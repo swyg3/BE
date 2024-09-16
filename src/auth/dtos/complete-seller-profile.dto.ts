@@ -2,6 +2,11 @@ import { ApiProperty } from "@nestjs/swagger";
 import { IsEmail, IsString, MinLength } from "class-validator";
 
 export class CompleteSellerProfileDto {
+  @ApiProperty({ description: "판매자 이메일" })
+  @IsEmail()
+  @IsString()
+  email: string;
+
   @ApiProperty({ description: "매장명" })
   @IsString()
   storeName: string;
