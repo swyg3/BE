@@ -10,6 +10,7 @@ export class UserLoggedInEvent implements BaseEvent {
       email: string;
       provider: string;
       isNewUser: boolean;
+      isEmailVerified: boolean;
       timestamp: Date;
     },
     public readonly version: number,

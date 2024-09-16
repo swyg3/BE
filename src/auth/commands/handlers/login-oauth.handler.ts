@@ -159,6 +159,7 @@ export class LoginOAuthCommandHandler
           email: user.email,
           provider,
           isNewUser: isNew,
+          isEmailVerified: true,
           timestamp: new Date(),
         },
         user.version || 1,
@@ -168,6 +169,7 @@ export class LoginOAuthCommandHandler
         name: userInfo.name,
         phoneNumber: userInfo.phoneNumber || "",
         password: "",
+        isEmailVerified: true,
       });
       user = result.seller;
       isNew = result.isNewSeller;
@@ -177,6 +179,7 @@ export class LoginOAuthCommandHandler
           email: user.email,
           provider,
           isNewSeller: isNew,
+          isEmailVerified: true,
           isBusinessNumberVerified: user.isBusinessNumberVerified,
           timestamp: new Date(),
         },

@@ -5,10 +5,7 @@ import {
   Logger,
   UnauthorizedException,
 } from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
 import { RegisterUserCommand } from "../commands/register-user.command";
-import { UserAggregate } from "../../aggregates/user.aggregate";
 import { User } from "../../entities/user.entity";
 import { v4 as uuidv4 } from "uuid";
 import { UserRegisteredEvent } from "src/users/events/events/user-registered.event";
@@ -16,6 +13,7 @@ import { REDIS_CLIENT } from "src/shared/infrastructure/redis/redis.config";
 import Redis from "ioredis";
 import { EventBusService } from "src/shared/infrastructure/event-sourcing/event-bus.service";
 import { PasswordService } from "src/shared/services/password.service";
+import { UserRepository } from "src/users/repositories/user.repository";
 
 @CommandHandler(RegisterUserCommand)
 export class RegisterUserHandler
@@ -24,84 +22,86 @@ export class RegisterUserHandler
   private readonly logger = new Logger(RegisterUserHandler.name);
 
   constructor(
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
+    private readonly userRepository: UserRepository,
     private readonly passwordService: PasswordService,
     private readonly eventBusService: EventBusService,
     @Inject(REDIS_CLIENT) private readonly redisClient: Redis,
   ) {}
 
-  async execute(command: RegisterUserCommand) {
+  async execute(command: RegisterUserCommand): Promise<string> {
     const { email, password, pwConfirm, name, phoneNumber } = command;
 
-    // Redis에서 이메일 인증 상태 확인
-    const isEmailVerified = await this.redisClient.get(
-      `email_verified:${email}`,
-    );
-    if (isEmailVerified !== "true") {
+    this.logger.log(`사용자 등록 시도: ${email}`);
+
+    // 이메일 인증 상태 확인
+    await this.validateVerificationStatus(email);
+    
+    // 비밀번호 확인 및 생성
+    this.validatePassword(password, pwConfirm);
+    
+    // 중복 가입 확인
+    await this.checkExistingUser(email);
+    
+    // 사용자 생성 또는 업데이트
+    const hashedPassword = await this.passwordService.hashPassword(password);
+    const userId = uuidv4();
+    const user = await this.createUser(userId, email, hashedPassword, name, phoneNumber);
+    await this.publishUserRegisteredEvent(user);
+    await this.cleanupRedisData(email);
+
+    this.logger.log(`사용자 등록 완료: ${user.id}`);
+    return user.id;
+  }
+
+
+  private async validateVerificationStatus(email: string): Promise<void> {
+    const emailVerified = await this.redisClient.get(`email_verified:${email}`);
+    if (emailVerified !== "true") {
       throw new UnauthorizedException("이메일 인증이 완료되지 않았습니다.");
     }
+  }
 
-    // 비밀번호 확인 검증
+  private validatePassword(password: string, pwConfirm: string): void {
     if (password !== pwConfirm) {
-      throw new BadRequestException(
-        "비밀번호와 비밀번호 확인이 일치하지 않습니다.",
-      );
+      throw new BadRequestException("비밀번호와 비밀번호 확인이 일치하지 않습니다.");
     }
+  }
 
-    // 중복 이메일 검증
-    const existingUser = await this.userRepository.findOne({
-      where: { email },
-    });
+  private async checkExistingUser(email: string): Promise<void> {
+    const existingUser = await this.userRepository.findByEmail(email);
     if (existingUser) {
       throw new BadRequestException("이미 가입한 이메일입니다.");
     }
+  }
 
-    const userId = uuidv4();
-
-    // Argon2를 사용한 비밀번호 해싱
-    const hashedPassword = await this.passwordService.hashPassword(password);
-
-    const userAggregate = new UserAggregate(userId);
-    const events = userAggregate.register(email, name, phoneNumber);
-
-    // 데이터베이스에 저장
-    const user = this.userRepository.create({
+  private async createUser(userId: string, email: string, hashedPassword: string, name: string, phoneNumber: string): Promise<User> {
+    const newUser = this.userRepository.create({
       id: userId,
       email,
       password: hashedPassword,
       name,
       phoneNumber,
+      isEmailVerified: true,
     });
-    await this.userRepository.save(user);
+    return this.userRepository.save(newUser);
+  }
 
-    // 이벤트 저장 및 발행
-    for (const event of events) {
-      await this.eventBusService.publishAndSave({
-        ...event,
-        aggregateId: userId,
-        aggregateType: "User",
-      });
-    }
-
-    // UserRegisteredEvent 발행
+  private async publishUserRegisteredEvent(user: User): Promise<void> {
     const userRegisteredEvent = new UserRegisteredEvent(
-      userId,
+      user.id,
       {
-        email,
-        name,
-        phoneNumber,
+        email: user.email,
+        name: user.name,
+        phoneNumber: user.phoneNumber,
         isEmailVerified: true,
       },
-      events.length + 1, // 버전을 이벤트 수 + 1로 설정
+      1
     );
-    this.logger.log(`UserRegisteredEvent 이벤트 발행: ${userId}`);
     await this.eventBusService.publishAndSave(userRegisteredEvent);
+    this.logger.log(`사용자 등록 이벤트 발행: ${user.id}`);
+  }
 
-    // Redis에서 이메일 인증 상태 삭제
+  private async cleanupRedisData(email: string): Promise<void> {
     await this.redisClient.del(`email_verified:${email}`);
-
-    // 컨트롤러에 응답 반환
-    return userId;
   }
 }
