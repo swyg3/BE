@@ -78,6 +78,7 @@ export class AuthController {
     @Body() loginDto: LoginEmailDto,
     @Req() req,
   ): Promise<CustomResponse> {
+    req.body.userType = loginDto.userType;
     const result = await this.commandBus.execute(
       new LoginEmailCommand(loginDto, req),
     );

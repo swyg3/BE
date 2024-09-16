@@ -24,6 +24,7 @@ export class SellerRegisteredHandler
         storeAddress: event.data.storeAddress,
         storePhoneNumber: event.data.storePhoneNumber,
         isEmailVerified: event.data.isEmailVerified,
+        isBusinessNumberVerified: event.data.isBusinessNumberVerified,
         createdAt: new Date(),
         updatedAt: new Date(),
       });

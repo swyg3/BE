@@ -41,13 +41,6 @@ export class SellerRepository {
     return this.sellerRepository.save(seller);
   }
 
-  async updateAccessToken(
-    sellerId: string,
-    accessToken: string,
-  ): Promise<void> {
-    await this.sellerRepository.update(sellerId, { accessToken });
-  }
-
   async updateBusinessNumberVerification(
     sellerId: string,
     isVerified: boolean,
