@@ -126,6 +126,7 @@ export class LoginEmailCommandHandler
       email: user.email,
       provider,
       isNewUser: false,
+      isEmailVerified: user.isEmailVerified,
       timestamp,
     };
 

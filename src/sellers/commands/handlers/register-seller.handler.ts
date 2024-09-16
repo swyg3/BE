@@ -13,6 +13,7 @@ import { v4 as uuidv4 } from "uuid";
 import { SellerRegisteredEvent } from "src/sellers/events/events/register-seller.event";
 import { SellerRepository } from "src/sellers/repositories/seller.repository";
 import { PasswordService } from "src/shared/services/password.service";
+import { Seller } from "src/sellers/entities/seller.entity";
 
 @CommandHandler(RegisterSellerCommand)
 export class RegisterSellerHandler
@@ -30,6 +31,8 @@ export class RegisterSellerHandler
   async execute(command: RegisterSellerCommand): Promise<string> {
     const { email, password, pwConfirm, name, phoneNumber } = command.registerSellerDto;
 
+    this.logger.log(`판매자 등록 시도: ${email}`);
+
     // 이메일 및 사업자 등록번호 인증 상태 확인
     await this.validateVerificationStatus(email);
 
@@ -38,11 +41,14 @@ export class RegisterSellerHandler
     
     // 비밀번호 확인
     this.validatePassword(password, pwConfirm);
-
+    
+    // 중복 가입 확인
+    await this.checkExistingSeller(email);
+    
     // 판매자 생성 또는 업데이트
-    const sellerId = uuidv4();
     const hashedPassword = await this.passwordService.hashPassword(password);
-    const seller = await this.createSeller(email, sellerId, hashedPassword, name, phoneNumber, additionalInfo);
+    const sellerId = uuidv4();
+    const seller = await this.createSeller(sellerId, email, hashedPassword, name, phoneNumber, additionalInfo);
     await this.publishSellerRegisteredEvent(seller);
     await this.cleanupRedisData(email);
 
@@ -78,9 +84,17 @@ export class RegisterSellerHandler
     }
   }
 
-  private async createSeller(email: string, sellerId: string, hashedPassword: string, name: string, phoneNumber: string, additionalInfo: any): Promise<any> {
-    const { seller, isNewSeller } = await this.sellerRepository.upsert(email, {
+  private async checkExistingSeller(email: string): Promise<void> {
+    const existingUser = await this.sellerRepository.findByEmail(email);
+    if (existingUser) {
+      throw new BadRequestException("이미 가입한 이메일입니다.");
+    }
+  }
+
+  private async createSeller(sellerId: string, email: string, hashedPassword: string, name: string, phoneNumber: string, additionalInfo: any): Promise<Seller> {
+    const newSeller = this.sellerRepository.create({
       id: sellerId,
+      email,
       password: hashedPassword,
       name,
       phoneNumber,
@@ -88,15 +102,10 @@ export class RegisterSellerHandler
       isEmailVerified: true,
       isBusinessNumberVerified: true,
     });
-
-    if (!isNewSeller) {
-      throw new BadRequestException("이미 가입한 이메일입니다.");
-    }
-
-    return seller;
+    return this.sellerRepository.save(newSeller);
   }
 
-  private async publishSellerRegisteredEvent(seller: any): Promise<void> {
+  private async publishSellerRegisteredEvent(seller: Seller): Promise<void> {
     const sellerRegisteredEvent = new SellerRegisteredEvent(
       seller.id,
       {
@@ -113,6 +122,7 @@ export class RegisterSellerHandler
     );
 
     await this.eventBusService.publishAndSave(sellerRegisteredEvent);
+    this.logger.log(`판매자 등록 이벤트 발행: ${seller.id}`);
   }
 
   private async cleanupRedisData(email: string): Promise<void> {
