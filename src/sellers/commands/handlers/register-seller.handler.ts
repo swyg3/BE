@@ -28,54 +28,63 @@ export class RegisterSellerHandler
   ) {}
 
   async execute(command: RegisterSellerCommand): Promise<string> {
-    const {
-      email,
-      password,
-      pwConfirm,
-      name,
-      phoneNumber,
-      storeName,
-      storeAddress,
-      storePhoneNumber,
-    } = command;
+    const { email, password, pwConfirm, name, phoneNumber } = command.registerSellerDto;
 
-    // 이메일 인증 상태 확인
-    const isVerifiedEmail = await this.redisClient.get(
-      `email_verified:${email}`,
-    );
-    if (isVerifiedEmail !== "true") {
-      throw new UnauthorizedException("이메일 인증이 완료되지 않았습니다.");
-    }
+    // 이메일 및 사업자 등록번호 인증 상태 확인
+    await this.validateVerificationStatus(email);
 
-    // 사업자등록번호 인증 상태 확인
-    const isVerifiedBusinessNumber = await this.redisClient.get(
-      `business_number_verified:${email}`,
-    );
-    if (isVerifiedBusinessNumber !== "true") {
-      throw new UnauthorizedException(
-        "사업자 등록번호 인증이 완료되지 않았습니다.",
-      );
-    }
-
+    // 추가 매장 정보 가져오기
+    const additionalInfo = await this.getAdditionalInfo(email);
+    
     // 비밀번호 확인
-    if (password !== pwConfirm) {
-      throw new BadRequestException(
-        "비밀번호와 비밀번호 확인이 일치하지 않습니다.",
-      );
-    }
-
-    const sellerId = uuidv4();
-    const hashedPassword = await this.passwordService.hashPassword(password);
+    this.validatePassword(password, pwConfirm);
 
     // 판매자 생성 또는 업데이트
+    const sellerId = uuidv4();
+    const hashedPassword = await this.passwordService.hashPassword(password);
+    const seller = await this.createSeller(email, sellerId, hashedPassword, name, phoneNumber, additionalInfo);
+    await this.publishSellerRegisteredEvent(seller);
+    await this.cleanupRedisData(email);
+
+    this.logger.log(`판매자 등록 완료: ${seller.id}`);
+    return seller.id;
+  }
+
+  private async validateVerificationStatus(email: string): Promise<void> {
+    const [emailVerified, businessNumberVerified] = await Promise.all([
+      this.redisClient.get(`email_verified:${email}`),
+      this.redisClient.get(`business_number_verified:${email}`),
+    ]);
+
+    if (emailVerified !== "true") {
+      throw new UnauthorizedException("이메일 인증이 완료되지 않았습니다.");
+    }
+    if (businessNumberVerified !== "true") {
+      throw new UnauthorizedException("사업자 등록번호 인증이 완료되지 않았습니다.");
+    }
+  }
+
+  private async getAdditionalInfo(email: string): Promise<any> {
+    const additionalInfo = await this.redisClient.hgetall(`seller_profile:${email}`);
+    if (!additionalInfo) {
+      throw new BadRequestException('추가 정보가 입력되지 않았습니다.');
+    }
+    return additionalInfo;
+  }
+
+  private validatePassword(password: string, pwConfirm: string): void {
+    if (password !== pwConfirm) {
+      throw new BadRequestException("비밀번호와 비밀번호 확인이 일치하지 않습니다.");
+    }
+  }
+
+  private async createSeller(email: string, sellerId: string, hashedPassword: string, name: string, phoneNumber: string, additionalInfo: any): Promise<any> {
     const { seller, isNewSeller } = await this.sellerRepository.upsert(email, {
       id: sellerId,
       password: hashedPassword,
       name,
       phoneNumber,
-      storeName,
-      storeAddress,
-      storePhoneNumber,
+      ...additionalInfo,
       isEmailVerified: true,
       isBusinessNumberVerified: true,
     });
@@ -84,7 +93,10 @@ export class RegisterSellerHandler
       throw new BadRequestException("이미 가입한 이메일입니다.");
     }
 
-    // 이벤트 생성 및 발행
+    return seller;
+  }
+
+  private async publishSellerRegisteredEvent(seller: any): Promise<void> {
     const sellerRegisteredEvent = new SellerRegisteredEvent(
       seller.id,
       {
@@ -94,19 +106,20 @@ export class RegisterSellerHandler
         storeName: seller.storeName,
         storeAddress: seller.storeAddress,
         storePhoneNumber: seller.storePhoneNumber,
-        isEmailVerified: seller.isEmailVerified,
-        isBusinessNumberVerified: seller.isBusinessNumberVerified,
+        isEmailVerified: true,
+        isBusinessNumberVerified: true,
       },
       1,
     );
 
     await this.eventBusService.publishAndSave(sellerRegisteredEvent);
+  }
 
-    // Redis에서 인증 상태 삭제
-    await this.redisClient.del(`email_verified:${email}`);
-    await this.redisClient.del(`business_number_verified:${email}`);
-
-    this.logger.log(`판매자 등록 완료: ${seller.id}`);
-    return seller.id;
+  private async cleanupRedisData(email: string): Promise<void> {
+    await Promise.all([
+      this.redisClient.del(`email_verified:${email}`),
+      this.redisClient.del(`business_number_verified:${email}`),
+      this.redisClient.del(`seller_profile:${email}`),
+    ]);
   }
 }

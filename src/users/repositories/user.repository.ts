@@ -37,7 +37,4 @@ export class UserRepository {
     }
   }
 
-  async updateAccessToken(userId: string, accessToken: string): Promise<void> {
-    await this.userRepository.update(userId, { accessToken });
-  }
 }
