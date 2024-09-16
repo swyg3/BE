@@ -3,6 +3,15 @@ import { IsEmail, IsNotEmpty, IsString, Matches, MaxLength, MinLength } from "cl
 
 export class CompleteSellerProfileDto {
   @ApiProperty({
+    description: "판매자 이메일",
+    example: "seller@example.com",
+    format: "email",
+  })
+  @IsEmail({}, { message: "유효한 이메일 주소를 입력해주세요." })
+  @IsNotEmpty({ message: "이메일은 필수 입력 항목입니다." })
+  email: string;
+  
+  @ApiProperty({
     description: "매장명",
     example: "지코바",
     minLength: 2,
