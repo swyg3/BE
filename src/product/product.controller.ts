@@ -9,6 +9,8 @@ import {
   Logger,
   UseGuards,
   Query,
+  UseInterceptors,
+  UploadedFile,
 } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { CreateProductCommand } from "./commands/impl/create-product.command";
@@ -21,7 +23,8 @@ import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
 import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { GetProductByDiscountRate } from "./dtos/get-products-by-discountRate.dto";
 import { ThrottlerGuard } from "@nestjs/throttler";
-
+import { FileInterceptor } from "@nestjs/platform-express";
+import { Express } from 'express';
 
 @ApiTags("Products")
 @Controller("products")
@@ -173,4 +176,15 @@ export class ProductController {
       data: product,
     };
   } 
+
+  @Post('image')
+  @UseInterceptors(FileInterceptor('image'))
+  @UseGuards(JwtAuthGuard)
+  postImage(
+    @UploadedFile() file: Express.Multer.File,
+  ){
+    return {
+      fileName: file.filename,
+    }
+  }
 }
