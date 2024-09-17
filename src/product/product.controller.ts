@@ -41,14 +41,15 @@ export class ProductController {
   @ApiResponse({ status: 201, description: "상품 생성 성공" })
   @ApiResponse({ status: 400, description: "상품 생성 실패" })
   @Post()
+  @UseInterceptors(FileInterceptor('image'))
   async createProduct(
     @Body() createProductDto: CreateProductDto,
+    @UploadedFile() file: Express.Multer.File,
   ): Promise<CustomResponse> {
     const {
       sellerId,
       category,
       name,
-      productImageUrl,
       description,
       originalPrice,
       discountedPrice,
@@ -61,6 +62,7 @@ export class ProductController {
     this.logger.log(
       `Creating product with expiration date: ${expirationDateObj}`,
     );
+    const productImageUrl = file.filename;
 
     const result = await this.commandBus.execute(
       new CreateProductCommand(
@@ -184,7 +186,7 @@ export class ProductController {
     @UploadedFile() file: Express.Multer.File,
   ){
     return {
-      fileName: file.filename,
+      productImageUrl: file.filename,
     }
   }
 }

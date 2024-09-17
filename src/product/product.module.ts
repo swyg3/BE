@@ -24,7 +24,7 @@ import { MulterModule } from "@nestjs/platform-express";
 import { extname } from "path";
 import {v4 as uuid} from 'uuid';
 import * as multer from 'multer';
-import { TEMP_FOLDER_PATH } from "./const/path.const";
+import { PRODUCTS_IMAGE_PATH, TEMP_FOLDER_PATH } from "./const/path.const";
 
 const CommandHandlers = [
   CreateProductHandler,
@@ -73,7 +73,7 @@ const EventsHandlers = [
       },
       storage: multer.diskStorage({
         destination: function(req, res, cb){
-          cb(null, TEMP_FOLDER_PATH);
+          cb(null, PRODUCTS_IMAGE_PATH);
         },
         filename: function(req, file, cb){
           // 123123-123-123123-123123.png
