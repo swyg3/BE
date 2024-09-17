@@ -8,6 +8,9 @@ import {
 } from "typeorm";
 import { Category } from "../product.category";
 import { Seller } from "src/sellers/entities/seller.entity";
+import { PRODUCTS_PUBLIC_IMAGE_PATH } from './../const/path.const';
+import { join } from "path";
+import { Transform } from "class-transformer";
 
 @Entity("product")
 export class Product {
@@ -35,6 +38,7 @@ export class Product {
     length: 255,
     nullable: true,
   })
+  @Transform(({value})=> value && `/${join(PRODUCTS_PUBLIC_IMAGE_PATH ,value)}`)
   productImageUrl: string;
 
   @Column({ type: "text", nullable: true })

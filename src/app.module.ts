@@ -14,6 +14,8 @@ import { getTypeOrmConfig } from "./shared/infrastructure/database/typeorm.confi
 import { getMongoConfig } from "./shared/infrastructure/database/mongodb.config";
 import { ProductModule } from "./product/product.module";
 import { InventoryModule } from "./inventory/inventory.module";
+import { ServeStaticModule } from "@nestjs/serve-static";
+import { PUBLIC_FOLDER_PATH } from "./product/const/path.const";
 
 @Module({
   imports: [
@@ -42,6 +44,11 @@ import { InventoryModule } from "./inventory/inventory.module";
     MongooseModule.forRootAsync({
       useFactory: getMongoConfig,
       inject: [ConfigService],
+    }),
+    ServeStaticModule.forRoot({
+      rootPath:PUBLIC_FOLDER_PATH,
+      serveRoot:'/public'
+
     }),
     MetricsModule,
     AuthModule,

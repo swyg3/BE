@@ -1,8 +1,10 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
+import { Transform } from "class-transformer";
 import { Document } from "mongoose";
 import { Category } from "src/product/product.category";
 import { Seller } from "src/sellers/entities/seller.entity";
-import { SellerView } from "src/sellers/schemas/seller-view.schema";
+import { PRODUCTS_PUBLIC_IMAGE_PATH } from "../const/path.const";
+import { join } from "path";
 
 @Schema()
 export class ProductView extends Document {
@@ -18,7 +20,8 @@ export class ProductView extends Document {
   @Prop({ required: true })
   name: string;
 
-  @Prop({ required: true })
+  @Prop({ required: true }) 
+  @Transform(({value})=> value && `/${join(PRODUCTS_PUBLIC_IMAGE_PATH ,value)}`)
   productImageUrl: string;
 
   @Prop({ required: true })
