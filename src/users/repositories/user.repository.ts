@@ -17,7 +17,7 @@ export class UserRepository {
   async findByEmail(email: string): Promise<User | undefined> {
     return this.userRepository.findOne({ where: { email } });
   }
-  
+
   create(userData: Partial<User>): User {
     return this.userRepository.create(userData);
   }
@@ -44,5 +44,4 @@ export class UserRepository {
       return { user: savedUser, isNewUser: true };
     }
   }
-
 }

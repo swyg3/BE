@@ -36,13 +36,13 @@ export class SellersController {
   ): Promise<CustomResponse<{ sellerId: string }>> {
     try {
       const result = await this.commandBus.execute(
-        new RegisterSellerCommand(registerSellerDto)
+        new RegisterSellerCommand(registerSellerDto),
       );
 
       return {
         success: true,
         message: "판매자 등록이 성공적으로 완료되었습니다.",
-        data: result
+        data: result,
       };
     } catch (error) {
       return {

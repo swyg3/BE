@@ -46,9 +46,8 @@ import { PUBLIC_FOLDER_PATH } from "./product/const/path.const";
       inject: [ConfigService],
     }),
     ServeStaticModule.forRoot({
-      rootPath:PUBLIC_FOLDER_PATH,
-      serveRoot:'/public'
-
+      rootPath: PUBLIC_FOLDER_PATH,
+      serveRoot: "/public",
     }),
     MetricsModule,
     AuthModule,

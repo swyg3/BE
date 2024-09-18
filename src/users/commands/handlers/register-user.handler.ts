@@ -35,24 +35,29 @@ export class RegisterUserHandler
 
     // 이메일 인증 상태 확인
     await this.validateVerificationStatus(email);
-    
+
     // 비밀번호 확인 및 생성
     this.validatePassword(password, pwConfirm);
-    
+
     // 중복 가입 확인
     await this.checkExistingUser(email);
-    
+
     // 사용자 생성 또는 업데이트
     const hashedPassword = await this.passwordService.hashPassword(password);
     const userId = uuidv4();
-    const user = await this.createUser(userId, email, hashedPassword, name, phoneNumber);
+    const user = await this.createUser(
+      userId,
+      email,
+      hashedPassword,
+      name,
+      phoneNumber,
+    );
     await this.publishUserRegisteredEvent(user);
     await this.cleanupRedisData(email);
 
     this.logger.log(`사용자 등록 완료: ${user.id}`);
     return user.id;
   }
-
 
   private async validateVerificationStatus(email: string): Promise<void> {
     const emailVerified = await this.redisClient.get(`email_verified:${email}`);
@@ -63,7 +68,9 @@ export class RegisterUserHandler
 
   private validatePassword(password: string, pwConfirm: string): void {
     if (password !== pwConfirm) {
-      throw new BadRequestException("비밀번호와 비밀번호 확인이 일치하지 않습니다.");
+      throw new BadRequestException(
+        "비밀번호와 비밀번호 확인이 일치하지 않습니다.",
+      );
     }
   }
 
@@ -74,7 +81,13 @@ export class RegisterUserHandler
     }
   }
 
-  private async createUser(userId: string, email: string, hashedPassword: string, name: string, phoneNumber: string): Promise<User> {
+  private async createUser(
+    userId: string,
+    email: string,
+    hashedPassword: string,
+    name: string,
+    phoneNumber: string,
+  ): Promise<User> {
     const newUser = this.userRepository.create({
       id: userId,
       email,
@@ -95,7 +108,7 @@ export class RegisterUserHandler
         phoneNumber: user.phoneNumber,
         isEmailVerified: true,
       },
-      1
+      1,
     );
     await this.eventBusService.publishAndSave(userRegisteredEvent);
     this.logger.log(`사용자 등록 이벤트 발행: ${user.id}`);

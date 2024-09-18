@@ -8,7 +8,7 @@ import {
 } from "typeorm";
 import { Category } from "../product.category";
 import { Seller } from "src/sellers/entities/seller.entity";
-import { PRODUCTS_PUBLIC_IMAGE_PATH } from './../const/path.const';
+import { PRODUCTS_PUBLIC_IMAGE_PATH } from "./../const/path.const";
 import { join } from "path";
 import { Transform } from "class-transformer";
 
@@ -18,9 +18,8 @@ export class Product {
   id: string;
 
   @ManyToOne(() => Seller, (seller) => seller.products, { eager: true })
-  @JoinColumn({ name: 'seller_id', referencedColumnName: 'id' })
+  @JoinColumn({ name: "seller_id", referencedColumnName: "id" })
   sellerId: Seller; // Seller를 참조하는 외래 키
-
 
   @Column({
     type: "enum",
@@ -38,7 +37,9 @@ export class Product {
     length: 255,
     nullable: true,
   })
-  @Transform(({value})=> value && `/${join(PRODUCTS_PUBLIC_IMAGE_PATH ,value)}`)
+  @Transform(
+    ({ value }) => value && `/${join(PRODUCTS_PUBLIC_IMAGE_PATH, value)}`,
+  )
   productImageUrl: string;
 
   @Column({ type: "text", nullable: true })

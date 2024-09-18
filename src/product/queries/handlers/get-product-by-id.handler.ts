@@ -1,10 +1,10 @@
-import { QueryHandler, IQueryHandler } from '@nestjs/cqrs';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { ProductView } from '../../schemas/product-view.schema';
-import { GetProductByIdQuery } from '../impl/get-product-by-id.query';
-import { NotFoundException } from '@nestjs/common';
-import { PRODUCTS_PUBLIC_IMAGE_PATH } from '../../const/path.const';
+import { QueryHandler, IQueryHandler } from "@nestjs/cqrs";
+import { InjectModel } from "@nestjs/mongoose";
+import { Model } from "mongoose";
+import { ProductView } from "../../schemas/product-view.schema";
+import { GetProductByIdQuery } from "../impl/get-product-by-id.query";
+import { NotFoundException } from "@nestjs/common";
+import { PRODUCTS_PUBLIC_IMAGE_PATH } from "../../const/path.const";
 
 @QueryHandler(GetProductByIdQuery)
 export class GetProductByIdHandler
@@ -33,7 +33,7 @@ export class GetProductByIdHandler
 
     return {
       success: true,
-      message: '해당 상품 상세 조회를 성공했습니다.',
+      message: "해당 상품 상세 조회를 성공했습니다.",
       data: transformedProduct,
     };
   }

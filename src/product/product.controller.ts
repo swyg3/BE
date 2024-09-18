@@ -24,7 +24,7 @@ import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { GetProductByDiscountRate } from "./dtos/get-products-by-discountRate.dto";
 import { ThrottlerGuard } from "@nestjs/throttler";
 import { FileInterceptor } from "@nestjs/platform-express";
-import { Express } from 'express';
+import { Express } from "express";
 
 @ApiTags("Products")
 @Controller("products")
@@ -41,7 +41,7 @@ export class ProductController {
   @ApiResponse({ status: 201, description: "상품 생성 성공" })
   @ApiResponse({ status: 400, description: "상품 생성 실패" })
   @Post()
-  @UseInterceptors(FileInterceptor('image'))
+  @UseInterceptors(FileInterceptor("image"))
   async createProduct(
     @Body() createProductDto: CreateProductDto,
     @UploadedFile() file: Express.Multer.File,
@@ -177,16 +177,14 @@ export class ProductController {
         : "상품을 찾을 수 없습니다.",
       data: product,
     };
-  } 
+  }
 
-  @Post('image')
-  @UseInterceptors(FileInterceptor('image'))
+  @Post("image")
+  @UseInterceptors(FileInterceptor("image"))
   @UseGuards(JwtAuthGuard)
-  postImage(
-    @UploadedFile() file: Express.Multer.File,
-  ){
+  postImage(@UploadedFile() file: Express.Multer.File) {
     return {
       productImageUrl: file.filename,
-    }
+    };
   }
 }

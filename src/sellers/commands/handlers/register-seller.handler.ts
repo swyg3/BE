@@ -29,7 +29,8 @@ export class RegisterSellerHandler
   ) {}
 
   async execute(command: RegisterSellerCommand): Promise<string> {
-    const { email, password, pwConfirm, name, phoneNumber } = command.registerSellerDto;
+    const { email, password, pwConfirm, name, phoneNumber } =
+      command.registerSellerDto;
 
     this.logger.log(`판매자 등록 시도: ${email}`);
 
@@ -38,17 +39,24 @@ export class RegisterSellerHandler
 
     // 추가 매장 정보 가져오기
     const additionalInfo = await this.getAdditionalInfo(email);
-    
+
     // 비밀번호 확인
     this.validatePassword(password, pwConfirm);
-    
+
     // 중복 가입 확인
     await this.checkExistingSeller(email);
-    
+
     // 판매자 생성 또는 업데이트
     const hashedPassword = await this.passwordService.hashPassword(password);
     const sellerId = uuidv4();
-    const seller = await this.createSeller(sellerId, email, hashedPassword, name, phoneNumber, additionalInfo);
+    const seller = await this.createSeller(
+      sellerId,
+      email,
+      hashedPassword,
+      name,
+      phoneNumber,
+      additionalInfo,
+    );
     await this.publishSellerRegisteredEvent(seller);
     await this.cleanupRedisData(email);
 
@@ -66,21 +74,27 @@ export class RegisterSellerHandler
       throw new UnauthorizedException("이메일 인증이 완료되지 않았습니다.");
     }
     if (businessNumberVerified !== "true") {
-      throw new UnauthorizedException("사업자 등록번호 인증이 완료되지 않았습니다.");
+      throw new UnauthorizedException(
+        "사업자 등록번호 인증이 완료되지 않았습니다.",
+      );
     }
   }
 
   private async getAdditionalInfo(email: string): Promise<any> {
-    const additionalInfo = await this.redisClient.hgetall(`seller_profile:${email}`);
+    const additionalInfo = await this.redisClient.hgetall(
+      `seller_profile:${email}`,
+    );
     if (!additionalInfo) {
-      throw new BadRequestException('추가 정보가 입력되지 않았습니다.');
+      throw new BadRequestException("추가 정보가 입력되지 않았습니다.");
     }
     return additionalInfo;
   }
 
   private validatePassword(password: string, pwConfirm: string): void {
     if (password !== pwConfirm) {
-      throw new BadRequestException("비밀번호와 비밀번호 확인이 일치하지 않습니다.");
+      throw new BadRequestException(
+        "비밀번호와 비밀번호 확인이 일치하지 않습니다.",
+      );
     }
   }
 
@@ -91,7 +105,14 @@ export class RegisterSellerHandler
     }
   }
 
-  private async createSeller(sellerId: string, email: string, hashedPassword: string, name: string, phoneNumber: string, additionalInfo: any): Promise<Seller> {
+  private async createSeller(
+    sellerId: string,
+    email: string,
+    hashedPassword: string,
+    name: string,
+    phoneNumber: string,
+    additionalInfo: any,
+  ): Promise<Seller> {
     const newSeller = this.sellerRepository.create({
       id: sellerId,
       email,
