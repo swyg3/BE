@@ -38,7 +38,9 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             mkdir -p ~/app
-            touch ~/app/.env.prod
+            if [ ! -f ~/app/.env.prod ]; then
+              touch ~/app/.env.prod
+            fi
 
       - name: Copy files to EC2
         uses: appleboy/scp-action@master
