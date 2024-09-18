@@ -38,6 +38,10 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           source: "docker-compose.prod.yml,nginx.conf,.env.prod"
           target: "~/app"
+          port: 22
+          timeout: 30s
+          command_timeout: 10m
+          debug: true
 
       - name: Deploy to EC2
         uses: appleboy/ssh-action@master
