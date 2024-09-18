@@ -66,6 +66,29 @@ services:
           cpus: "0.2"
           memory: 300M
 
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    restart: unless-stopped
+    env_file:
+      - .env.dev
+    environment:
+      - NODE_EXPORTER_PORT=${NODE_EXPORTER_PORT}
+    ports:
+      - "${NODE_EXPORTER_PORT}:${NODE_EXPORTER_PORT}"
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.rootfs=/rootfs"
+      - "--path.sysfs=/host/sys"
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
+      - "--collector.loadavg"
+      - "--collector.meminfo"
+      - "--collector.cpu"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+
   grafana:
     image: grafana/grafana:8.2.2
     container_name: grafana_prod
