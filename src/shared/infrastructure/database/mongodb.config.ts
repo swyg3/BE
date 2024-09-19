@@ -1,44 +1,43 @@
 // import { MongooseModuleOptions } from "@nestjs/mongoose";
 // import { ConfigService } from "@nestjs/config";
-
-// export const getMongoConfig = (
-//   configService: ConfigService,
-// ): MongooseModuleOptions => ({
-//   uri: configService.get<string>("MONGODB_URI"),
-// });
-
-// import { MongooseModuleOptions } from "@nestjs/mongoose";
-// import { ConfigService } from "@nestjs/config";
 // import * as fs from "fs";
-// import * as path from "path";
 
-// export const getMongoConfig = (
+// export const getMongoConfig = async (
 //   configService: ConfigService,
-// ): MongooseModuleOptions => {
-//   const uri = configService.get<string>("MONGODB_URI");
+// ): Promise<MongooseModuleOptions> => {
+//   const baseUri = configService.get<string>("MONGODB_URI");
+//   const sslCertPath = configService.get<string>("MONGODB_SSL_CERT_PATH");
 
-//   if (!uri) {
-//     throw new Error("MONGODB_URI is not defined in the environment variables");
+//   let uri = baseUri;
+//   if (sslCertPath) {
+//     try {
+//       await fs.promises.access(sslCertPath, fs.constants.R_OK);
+//       uri += `&ssl=true&sslValidate=true&sslCA=${encodeURIComponent(sslCertPath)}`;
+//       console.log("SSL certificate found and added to URI");
+//     } catch (error) {
+//       console.warn(`Failed to access SSL certificate: ${error.message}`);
+//     }
+//   } else {
+//     console.warn("SSL certificate path not provided, connecting without SSL");
 //   }
-
-//   // 인증서 파일 경로 설정
-//   const tlsCAFilePath = path.resolve("/home/ubuntu/app", "global-bundle.pem");
 
 //   return {
 //     uri,
-//     tlsCAFile: fs.readFileSync(tlsCAFilePath, "utf-8"), // 'utf-8'을 지정하여 string으로 변환
 //   };
 // };
 
+import { MongooseModuleOptions } from "@nestjs/mongoose";
 import { ConfigService } from "@nestjs/config";
-import * as fs from "fs";
 
-export const getMongoConfig = (configService: ConfigService) => {
-  const caFilePath = configService.get<string>("MONGO_TLS_CA_FILE_PATH");
-  console.log("Using CA file path:", caFilePath);
+export const getMongoConfig = (
+  configService: ConfigService,
+): MongooseModuleOptions => {
+  const uri = configService.get<string>("MONGODB_URI");
+  const sslCertPath = configService.get<string>("MONGODB_SSL_CERT_PATH");
+
   return {
-    uri: configService.get<string>("MONGO_URI"),
+    uri,
     tls: true,
-    tlsCAFile: caFilePath ? fs.readFileSync(caFilePath, "utf-8") : null,
+    tlsCAFile: sslCertPath,
   };
 };

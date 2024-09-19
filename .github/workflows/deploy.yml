@@ -7,9 +7,8 @@ on:
     branches: [main]
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -27,8 +26,15 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: .
-          push: true
+          push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/moonco:${{ github.sha }}
+  deploy:
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
 
       - name: Prepare EC2 environment
         uses: appleboy/ssh-action@master
@@ -62,6 +68,6 @@ jobs:
             cd ~/app
             sed -i '/IMAGE_TAG/d' .env.prod
             echo "IMAGE_TAG=${{ github.sha }}" >> .env.prod
-            docker-compose -f docker-compose.prod.yml --env-file .env.prod pull
-            docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d
+            docker-compose -f docker-compose.prod.yml --env-file .env.prod down
+            docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
             docker image prune -af

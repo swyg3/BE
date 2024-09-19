@@ -42,7 +42,9 @@ import { PUBLIC_FOLDER_PATH } from "./product/const/path.const";
       inject: [ConfigService],
     }),
     MongooseModule.forRootAsync({
-      useFactory: getMongoConfig,
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) =>
+        await getMongoConfig(configService),
       inject: [ConfigService],
     }),
     ServeStaticModule.forRoot({
