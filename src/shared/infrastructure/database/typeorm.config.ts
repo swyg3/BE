@@ -1,25 +1,3 @@
-// import { TypeOrmModuleOptions } from "@nestjs/typeorm";
-// import { ConfigService } from "@nestjs/config";
-// import { join } from "path";
-
-// export const getTypeOrmConfig = (
-//   configService: ConfigService,
-// ): TypeOrmModuleOptions => ({
-//   type: "postgres",
-//   host: configService.get("DB_HOST"),
-//   port: configService.get("DB_PORT"),
-//   username: configService.get("DB_USERNAME"),
-//   password: configService.get("DB_PASSWORD"),
-//   database: configService.get("DB_DATABASE"),
-//   entities: [join(__dirname, "..", "..", "**", "*.entity.{ts,js}")],
-//   autoLoadEntities: true,
-//   synchronize: configService.get("NODE_ENV") === "development",
-//   logging:
-//     configService.get("NODE_ENV") === "development"
-//       ? ["error", "warn", "query"] // 개발환경
-//       : ["error"], // 운영환경
-// });
-
 import { TypeOrmModuleOptions } from "@nestjs/typeorm";
 import { ConfigService } from "@nestjs/config";
 import { join } from "path";
@@ -32,9 +10,10 @@ export const getTypeOrmConfig = async (
   const baseConfig: TypeOrmModuleOptions = {
     type: "postgres",
     host: configService.get("DB_HOST"),
-    port: configService.get("DB_PORT"),
+    port: configService.get<number>("DB_PORT"),
     username: configService.get("DB_USERNAME"),
     password: configService.get("DB_PASSWORD"),
+    database: dbName,
     entities: [join(__dirname, "..", "..", "**", "*.entity.{ts,js}")],
     synchronize: configService.get("NODE_ENV") === "development",
     logging:
@@ -47,7 +26,7 @@ export const getTypeOrmConfig = async (
   const { Client } = require("pg");
   const client = new Client({
     ...baseConfig,
-    database: "moonco-rds", // 기본 데이터베이스에 연결
+    database: "postgres", // 기본 데이터베이스에 연결
   });
 
   try {
