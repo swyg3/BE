@@ -15,7 +15,11 @@ export const getTypeOrmConfig = async (
     password: configService.get("DB_PASSWORD"),
     database: "postgres", // 기본 데이터베이스에 연결
     entities: [join(__dirname, "..", "..", "**", "*.entity.{ts,js}")],
-    synchronize: true,
+    synchronize: false,
+    logging: true,
+    ssl: {
+      rejectUnauthorized: false,
+    },
   };
   return baseConfig;
 };
