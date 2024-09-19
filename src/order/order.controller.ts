@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Logger, Param, Post } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { CreateOrderCommand } from './commands/create-order.command';
 import { DeleteOrderCommand } from './commands/delete-order.command';
@@ -7,22 +7,17 @@ import { OrderService } from './services/order.service';
 
 @Controller('order')
 export class OrderController {
+    private readonly logger = new Logger(OrderController.name);
+
     constructor(
         private readonly commandBus: CommandBus,
         private readonly queryBus: QueryBus,
         private readonly orderService: OrderService,
     ) {}
 
-    @Get()
-    testGet(): string {
-        return "hello, world";
-    }
-
     @Post()
     createOrder(@Body() createOrderDto: CreateOrderDto) {
         const { userId, totalAmount, totalPrice, pickupTime, paymentMethod, status, items } = createOrderDto;
-
-        console.log(userId);
 
         return this.commandBus.execute(
             new CreateOrderCommand(userId, totalAmount, totalPrice, pickupTime, paymentMethod, status, items)

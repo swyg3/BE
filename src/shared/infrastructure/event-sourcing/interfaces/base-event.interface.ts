@@ -1,6 +1,6 @@
-export interface BaseEvent {
+export interface BaseEvent<T = string> {
   eventType: string;
-  aggregateId: string;
+  aggregateId: T;
   aggregateType: string;
   data: any;
   version: number;

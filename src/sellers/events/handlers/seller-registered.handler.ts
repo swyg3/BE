@@ -1,7 +1,7 @@
-import { EventsHandler, IEventHandler } from "@nestjs/cqrs";
 import { Logger } from "@nestjs/common";
-import { SellerRegisteredEvent } from "../events/register-seller.event";
+import { EventsHandler, IEventHandler } from "@nestjs/cqrs";
 import { SellerViewRepository } from "src/sellers/repositories/seller-view.repository";
+import { SellerRegisteredEvent } from "../events/register-seller.event";
 
 @EventsHandler(SellerRegisteredEvent)
 export class SellerRegisteredHandler

@@ -3,7 +3,6 @@ import { CommandHandler, EventBus, ICommandHandler } from "@nestjs/cqrs";
 import { InjectRepository } from "@nestjs/typeorm";
 import { OrderItems } from "src/order-itmes/entities/order-items.entity";
 import { Order } from "src/order/entities/order.entity";
-import { CreateOrderEvent } from "src/order/events/create-order.event";
 import { Repository } from 'typeorm';
 import { CreateOrderCommand } from "../create-order.command";
 
@@ -17,7 +16,7 @@ export class CreateOrderCommandHandler implements ICommandHandler<CreateOrderCom
         private readonly orderRepository: Repository<Order>,
         @InjectRepository(OrderItems)
         private readonly orderItemsRepository: Repository<OrderItems>,
-        private readonly eventBus: EventBus
+        private readonly eventBus: EventBus,
     ) {}
 
     async execute(command: CreateOrderCommand): Promise<any> {
@@ -39,30 +38,14 @@ export class CreateOrderCommandHandler implements ICommandHandler<CreateOrderCom
         // 2. 주문 내역 생성
         const orderItems = items.map(item => {
             const orderItem = new OrderItems();
-            orderItem.orderId = savedOrder.id;
+            orderItem.orderId = newOrder.id;
             orderItem.productId = item.productId;
             orderItem.quantity = item.quantity;
             orderItem.price = item.price;
             return orderItem;
         });
-        await this.orderItemsRepository.save(orderItems);
+        this.orderItemsRepository.save(orderItems);
 
         // 3. 주문 수량 만큼 재고 삭제
-
-        // 4. 이벤트 발생
-        const updatedAt = new Date();
-        const createOrderEvent = new CreateOrderEvent(
-            savedOrder.id,
-            userId,
-            totalAmount,
-            totalPrice,
-            newOrder.paymentMethod,
-            newOrder.status,
-            orderItems,
-            pickupTime,
-            newOrder.createdAt,
-            updatedAt,
-        );
-        this.eventBus.publish(createOrderEvent);
     }
 }

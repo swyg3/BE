@@ -1,16 +1,17 @@
+import { Logger } from "@nestjs/common";
 import { EventsHandler, IEventHandler } from "@nestjs/cqrs";
 import { EventRepository } from "src/order/repositories/create-order.repository";
 import { CreateOrderEvent } from "../create-order.event";
 
 @EventsHandler(CreateOrderEvent)
 export class CreateOrderEventHandler implements IEventHandler<CreateOrderEvent> {
+    private readonly logger = new Logger(CreateOrderEventHandler.name);
+    
     constructor(
         private readonly eventRepository: EventRepository
     ) {}
 
     async handle(event: CreateOrderEvent) {
-        const { id, userId, totalAmount, totalPrice, paymentMethod, status, items, pickupTime, createdAt } = event;
-        // 주문 이벤트 받아오기
-        await this.eventRepository.saveEvent(event);
+        this.logger.log('주문 event 처리중');
     }
 }
