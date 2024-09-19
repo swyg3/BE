@@ -13,39 +13,36 @@ export const getTypeOrmConfig = async (
     port: configService.get<number>("DB_PORT"),
     username: configService.get("DB_USERNAME"),
     password: configService.get("DB_PASSWORD"),
-    database: dbName,
-    entities: [join(__dirname, "..", "..", "**", "*.entity.{ts,js}")],
-    synchronize: configService.get("NODE_ENV") === "development",
-    logging:
-      configService.get("NODE_ENV") === "development"
-        ? ["error", "warn", "query"]
-        : ["error"],
-  };
-
-  // 데이터베이스 존재 여부 확인 및 생성
-  const { Client } = require("pg");
-  const client = new Client({
-    ...baseConfig,
     database: "postgres", // 기본 데이터베이스에 연결
-  });
-
-  try {
-    await client.connect();
-    const result = await client.query(
-      `SELECT 1 FROM pg_database WHERE datname='${dbName}'`,
-    );
-    if (result.rows.length === 0) {
-      await client.query(`CREATE DATABASE "${dbName}"`);
-      console.log(`Database ${dbName} created.`);
-    }
-  } catch (error) {
-    console.error("Error checking/creating database:", error);
-  } finally {
-    await client.end();
-  }
-
-  return {
-    ...baseConfig,
-    database: dbName,
+    entities: [join(__dirname, "..", "..", "**", "*.entity.{ts,js}")],
+    synchronize: true,
   };
+  return baseConfig;
 };
+//   // 데이터베이스 존재 여부 확인 및 생성
+//   const { Client } = require("pg");
+//   const client = new Client({
+//     ...baseConfig,
+//     database: "postgres", // 기본 데이터베이스에 연결
+//   });
+
+//   try {
+//     await client.connect();
+//     const result = await client.query(
+//       `SELECT 1 FROM pg_database WHERE datname='${dbName}'`,
+//     );
+//     if (result.rows.length === 0) {
+//       await client.query(`CREATE DATABASE "${dbName}"`);
+//       console.log(`Database ${dbName} created.`);
+//     }
+//   } catch (error) {
+//     console.error("Error checking/creating database:", error);
+//   } finally {
+//     await client.end();
+//   }
+
+//   return {
+//     ...baseConfig,
+//     database: dbName,
+//   };
+// };
