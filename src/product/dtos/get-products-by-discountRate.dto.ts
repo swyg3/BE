@@ -6,9 +6,9 @@ export class GetProductByDiscountRateDto {
   @IsOptional()
   where__id_more_than?: string;
 
-  @IsIn(["asc", "desc"])
+  @IsIn(["desc"])
   @IsOptional()
-  order__discountRate: "asc" | "desc" = "desc";
+  order__discountRate: "desc" = "desc";
 
   @IsNumber()
   @IsOptional()

@@ -7,8 +7,7 @@ import { ConfigService } from '@nestjs/config';
 
 @QueryHandler(GetProductByDiscountRateDto)
 export class GetProductByDiscountRateHandler
-  implements IQueryHandler<GetProductByDiscountRateDto>
-{
+  implements IQueryHandler<GetProductByDiscountRateDto> {
   constructor(
     @InjectModel(ProductView.name)
     private readonly productViewModel: Model<ProductView>,
@@ -16,54 +15,70 @@ export class GetProductByDiscountRateHandler
   ) {}
 
   async execute(query: GetProductByDiscountRateDto) {
-    const { where__id_more_than, take, order__discountRate } = query;
-    const filter: any = {};
+    const { where__id_more_than, take = 5 } = query;
 
-    // where__id_more_than 필터 적용
+    // 정렬 기준 필드와 마지막으로 반환된 문서의 정렬 기준 값
+    const sortField = 'discountRate';
+    let lastDiscountRate: number | undefined;
+
     if (where__id_more_than) {
-      filter._id = { $gt: where__id_more_than };
+      const lastProduct = await this.productViewModel.findById(where__id_more_than);
+      if (lastProduct) {
+        lastDiscountRate = lastProduct.discountRate;
+      }
     }
 
-    // 제품 조회 및 정렬, 페이징 처리
+    // 쿼리 조건 설정
+    let queryCondition: any = {};
+    if (lastDiscountRate !== undefined) {
+      queryCondition = {
+        $or: [
+          { [sortField]: { $lt: lastDiscountRate } },
+          { 
+            [sortField]: lastDiscountRate,
+            _id: { $gt: where__id_more_than }
+          }
+        ]
+      };
+    }
+
+    // 데이터베이스에서 정렬 및 페이지네이션 적용
     const products = await this.productViewModel
-      .find(filter)
-      .sort({ discountRate: order__discountRate })
-      .limit(take || 10)
+      .find(queryCondition)
+      .sort({ [sortField]: -1, _id: 1 })
+      .limit(take + 1)
       .exec();
 
-    const last = products.length > 0 ? products[products.length - 1] : null;
+    const hasNextPage = products.length > take;
+    const paginatedProducts = products.slice(0, take);
+
+    const last = paginatedProducts[paginatedProducts.length - 1];
 
     // 다음 페이지 URL 생성
     let nextUrl: string | null = null;
-
-    if (last) {
+    if (hasNextPage && last) {
       const nextPageQuery = {
-        ...query,
         where__id_more_than: last._id.toString(),
+        take: take.toString(),
       };
 
       const appUrl = this.configService.get<string>('APP_URL');
       if (appUrl) {
-        // appUrl과 경로를 합쳐 URL 객체 생성
         const baseUrl = new URL("/api/products", appUrl);
-
-        for (const [key, value] of Object.entries(nextPageQuery)) {
-          if (value !== undefined) {
-            baseUrl.searchParams.append(key, value.toString());
-          }
-        }
-        
+        const searchParams = new URLSearchParams(nextPageQuery as any);
+        baseUrl.search = searchParams.toString();
         nextUrl = baseUrl.toString();
       }
     }
 
     return {
-      data: products,
+      data: paginatedProducts,
       cursor: {
-        after: last ? last._id.toString() : null, //다음 페이지 첫 상품
+        after: last ? last._id.toString() : null,
       },
-      count: products.length, //현재 보여진 상품갯수
+      count: paginatedProducts.length,
       next: nextUrl,
+      hasNextPage,
     };
   }
 }

@@ -21,7 +21,7 @@ import { UpdateProductCommand } from "./commands/impl/update-product.command";
 import { CustomResponse } from "src/shared/interfaces/api-response.interface";
 import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
 import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
-import { GetProductByDiscountRate, GetProductByDiscountRateDto } from "./dtos/get-products-by-discountRate.dto";
+import { GetProductByDiscountRateDto } from "./dtos/get-products-by-discountRate.dto";
 import { ThrottlerGuard } from "@nestjs/throttler";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { Express } from 'express';
@@ -36,7 +36,7 @@ export class ProductController {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
-  ) {}
+  ) { }
 
   @ApiOperation({ summary: "상품 등록" })
   @ApiResponse({ status: 201, description: "상품 생성 성공" })
@@ -166,7 +166,7 @@ export class ProductController {
     const productQuery = new GetProductByDiscountRateDto();
     productQuery.where__id_more_than = query.where__id_more_than;
     productQuery.order__discountRate = query.order__discountRate;
-    productQuery.take = query.take;
+    productQuery.take = query.take||100;
 
     const product = await this.queryBus.execute(productQuery);
 
@@ -177,33 +177,36 @@ export class ProductController {
         : "상품을 찾을 수 없습니다.",
       data: product,
     };
-  } 
+  }
 
-  @ApiOperation({ summary: "카테고리 조회" })
-  @ApiResponse({ status: 200, description: "카테고리 조회 성공" })
-  @Get()
+  @ApiOperation({ summary: "카테고리별 상품 조회" })
+  @ApiResponse({ description: "카테고리별 상품 조회 성공"})
+  @Get("category")
   async getCategoryProducts(@Query() query: GetProductByCategoryDto) {
     const productQuery = new GetProductByCategoryDto();
+    productQuery.where__id_more_than = query.where__id_more_than;
+    productQuery.category = query.category;  
     productQuery.order__discountRate = query.order__discountRate;
+    productQuery.order__createdAt = query.order__createdAt;  
     productQuery.take = query.take;
-
+    console.log(query);
+  
     const product = await this.queryBus.execute(productQuery);
-
+  
     return {
       success: !!product,
-      message: product
+      message: product.data.length > 0
         ? "해당 상품리스트 조회를 성공했습니다."
-        : "상품을 찾을 수 없습니다.",
+        : "조건에 맞는 상품을 찾을 수 없습니다.",
       data: product,
     };
-  } 
+  }
 
   @Post('image')
   @UseInterceptors(FileInterceptor('image'))
-  @UseGuards(JwtAuthGuard)
   postImage(
     @UploadedFile() file: Express.Multer.File,
-  ){
+  ) {
     return {
       productImageUrl: file.filename,
     }
