@@ -21,10 +21,11 @@ import { UpdateProductCommand } from "./commands/impl/update-product.command";
 import { CustomResponse } from "src/shared/interfaces/api-response.interface";
 import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
 import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
-import { GetProductByDiscountRate } from "./dtos/get-products-by-discountRate.dto";
+import { GetProductByDiscountRate, GetProductByDiscountRateDto } from "./dtos/get-products-by-discountRate.dto";
 import { ThrottlerGuard } from "@nestjs/throttler";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { Express } from 'express';
+import { GetProductByCategoryDto } from "./dtos/get-product-by-category.dto";
 
 @ApiTags("Products")
 @Controller("products")
@@ -160,11 +161,29 @@ export class ProductController {
 
   @ApiOperation({ summary: "상품 할인률 순 조회" })
   @ApiResponse({ status: 200, description: "상품 할인률 순 조회 성공" })
-  @UseGuards(JwtAuthGuard)
   @Get()
-  async getProducts(@Query() query: GetProductByDiscountRate) {
-    const productQuery = new GetProductByDiscountRate();
+  async getProducts(@Query() query: GetProductByDiscountRateDto) {
+    const productQuery = new GetProductByDiscountRateDto();
     productQuery.where__id_more_than = query.where__id_more_than;
+    productQuery.order__discountRate = query.order__discountRate;
+    productQuery.take = query.take;
+
+    const product = await this.queryBus.execute(productQuery);
+
+    return {
+      success: !!product,
+      message: product
+        ? "해당 상품리스트 조회를 성공했습니다."
+        : "상품을 찾을 수 없습니다.",
+      data: product,
+    };
+  } 
+
+  @ApiOperation({ summary: "카테고리 조회" })
+  @ApiResponse({ status: 200, description: "카테고리 조회 성공" })
+  @Get()
+  async getCategoryProducts(@Query() query: GetProductByCategoryDto) {
+    const productQuery = new GetProductByCategoryDto();
     productQuery.order__discountRate = query.order__discountRate;
     productQuery.take = query.take;
 
@@ -189,4 +208,6 @@ export class ProductController {
       productImageUrl: file.filename,
     }
   }
+
+
 }
