@@ -20,12 +20,15 @@ import { GetProductByIdQuery } from "./queries/impl/get-product-by-id.query";
 import { UpdateProductCommand } from "./commands/impl/update-product.command";
 import { CustomResponse } from "src/shared/interfaces/api-response.interface";
 import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
-import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { GetProductByDiscountRateDto } from "./dtos/get-products-by-discountRate.dto";
 import { ThrottlerGuard } from "@nestjs/throttler";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { Express } from 'express';
 import { GetProductByCategoryDto } from "./dtos/get-product-by-category.dto";
+import { Category } from "./product.category";
+import { GetCategoryDto } from "./dtos/get-category.dto";
+
 
 @ApiTags("Products")
 @Controller("products")
@@ -41,7 +44,7 @@ export class ProductController {
   @ApiOperation({ summary: "상품 등록" })
   @ApiResponse({ status: 201, description: "상품 생성 성공" })
   @ApiResponse({ status: 400, description: "상품 생성 실패" })
-  @Post()
+  @Post("create")
   @UseInterceptors(FileInterceptor('image'))
   async createProduct(
     @Body() createProductDto: CreateProductDto,
@@ -90,7 +93,7 @@ export class ProductController {
   @ApiResponse({ status: 200, description: "상품 삭제 성공" })
   @ApiResponse({ status: 404, description: "상품을 찾을 수 없습니다." })
   @ApiResponse({ status: 400, description: "상품 삭제 실패" })
-  @Delete(":id")
+  @Delete("delete/:id")
   async deleteProduct(@Param("id") id: string): Promise<CustomResponse> {
     const result = await this.commandBus.execute(new DeleteProductCommand(id));
 
@@ -104,7 +107,7 @@ export class ProductController {
 
   @ApiOperation({ summary: "상품 상세 조회" })
   @ApiResponse({ status: 200, description: "상품 상세 조회 성공" })
-  @Get(":id")
+  @Get("get/:id")
   @UseGuards(JwtAuthGuard)
   async getProductById(@Param("id") id: string): Promise<CustomResponse> {
     const product = await this.queryBus.execute(new GetProductByIdQuery(id));
@@ -122,7 +125,7 @@ export class ProductController {
   @ApiResponse({ status: 200, description: "상품 수정 성공" })
   @ApiResponse({ status: 404, description: "상품을 찾을 수 없습니다." })
   @ApiResponse({ status: 400, description: "상품 수정 실패" })
-  @Patch(":id")
+  @Patch("update/:id")
   async updateProduct(
     @Param("id") id: string,
     @Body()
@@ -179,20 +182,41 @@ export class ProductController {
     };
   }
 
-  @ApiOperation({ summary: "카테고리별 상품 조회" })
-  @ApiResponse({ description: "카테고리별 상품 조회 성공"})
+
+  // @Get("category")
+  // async getCategoryProducts(@Query() query: GetProductByCategoryDto) {
+  //   console.log('Received query:', query);
+  //   const productQuery = new GetProductByCategoryDto();
+  //   productQuery.where__id_more_than = query.where__id_more_than;
+  //   productQuery.category = query.category as Category;
+  //   productQuery.take = query.take||100;
+  //   productQuery.order__discountRate = query.order__discountRate;
+
+  //   console.log('Processed query:', productQuery);
+
+  //   const product = await this.queryBus.execute(productQuery);
+  //   return this.queryBus.execute(query);
+   
+
+  // }
+
+  @ApiOperation({ summary: "상품 카테고리 조회" })
+  @ApiResponse({ status: 200, description: "상품 카테고리 조회 성공" })
   @Get("category")
-  async getCategoryProducts(@Query() query: GetProductByCategoryDto) {
-    const productQuery = new GetProductByCategoryDto();
+  async getKoreanCategory(@Query() query: GetCategoryDto) {
+    console.log('Received query:', query);
+
+    const productQuery = new GetCategoryDto();
     productQuery.where__id_more_than = query.where__id_more_than;
-    productQuery.category = query.category;  
+    productQuery.category = query.category;
+    productQuery.take = query.take||100;
     productQuery.order__discountRate = query.order__discountRate;
-    productQuery.order__createdAt = query.order__createdAt;  
-    productQuery.take = query.take;
-    console.log(query);
-  
+    productQuery.order__createdAt=query.order__createdAt;
+
+    console.log('Processed query:', productQuery);
+
     const product = await this.queryBus.execute(productQuery);
-  
+
     return {
       success: !!product,
       message: product.data.length > 0
@@ -202,6 +226,8 @@ export class ProductController {
     };
   }
 
+ 
+  
   @Post('image')
   @UseInterceptors(FileInterceptor('image'))
   postImage(

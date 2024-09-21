@@ -26,6 +26,8 @@ import {v4 as uuid} from 'uuid';
 import * as multer from 'multer';
 import { PRODUCTS_IMAGE_PATH, TEMP_FOLDER_PATH } from "./const/path.const";
 import { APP_PIPE } from "@nestjs/core";
+import { GetProductByCategoryHandler } from "./queries/handlers/get-product-by-category.handler";
+import { GetCategoryHandler } from "./queries/handlers/get-category.handler";
 
 const CommandHandlers = [
   CreateProductHandler,
@@ -91,16 +93,18 @@ const EventsHandlers = [
     ProductViewRepository,
     GetProductByIdHandler,
     GetProductByDiscountRateHandler,
+    GetCategoryHandler,
+    GetProductByCategoryHandler,
     //페이지네이션을 위한 transform 설정 
-    {
-      provide: APP_PIPE,
-      useValue: new ValidationPipe({
-        transform: true,
-        transformOptions: {
-          enableImplicitConversion: true
-        }
-      }),
-    },
+    // {
+    //   provide: APP_PIPE,
+    //   useValue: new ValidationPipe({
+    //     transform: true,
+    //     transformOptions: {
+    //       enableImplicitConversion: true
+    //     }
+    //   }),
+    // },
   ],
   controllers: [ProductController],
   exports: [ProductRepository,SellerRepository],
