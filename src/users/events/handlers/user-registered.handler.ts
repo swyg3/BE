@@ -25,7 +25,7 @@ export class UserRegisteredHandler
       this.logger.log(`Users-View 업데이트 성공: ${event.aggregateId}`);
     } catch (error) {
       this.logger.error(
-        `---Users-View 업데이트 실패: ${event.aggregateId}, ${error.message}`,
+        `Users-View 업데이트 실패: ${event.aggregateId}, ${error.message}`,
         error.stack,
       );
     }

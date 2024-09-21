@@ -1,9 +1,5 @@
 import { EventsHandler, IEventHandler } from "@nestjs/cqrs";
 import { UserLoggedInEvent } from "../events/user-logged-in.event";
-import { InjectRepository } from "@nestjs/typeorm";
-import { User } from "src/users/entities/user.entity";
-import { Repository } from "typeorm";
-import { UserViewRepository } from "src/users/repositories/user-view.repository";
 import { Logger } from "@nestjs/common";
 import { DyUserViewRepository } from "src/users/repositories/dy-user-view.repository";
 
