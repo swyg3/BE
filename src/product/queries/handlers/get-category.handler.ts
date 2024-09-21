@@ -15,64 +15,30 @@ export class GetCategoryHandler implements IQueryHandler<GetCategoryDto> {
   ) {}
 
   async execute(query: GetCategoryDto) {
-    const { where__id_more_than, category, take = 5 } = query;
+    const {
+      where__id_more_than,
+      category,
+      order__discountRate,
+      order__createdAt,
+      take = 5
+    } = query;
 
-   
-    // 정렬 기준 필드와 마지막으로 반환된 문서의 정렬 기준 값
-    const sortField = 'discountRate';
-    let lastDiscountRate: number | undefined;
+    const sortField = order__discountRate ? 'discountRate' : 'createdAt';
+    const sortOrder = order__discountRate === 'desc' || order__createdAt === 'desc' ? -1 : 1;
 
-    if (where__id_more_than) {
-      const lastProduct = await this.productViewModel.findById(where__id_more_than);
-      if (lastProduct) {
-        lastDiscountRate = lastProduct.discountRate;
-      }
-    }
+    const queryCondition = await this.buildQueryCondition(category, where__id_more_than, sortField);
 
-    // 카테고리와 조건 적용
-    let queryCondition: any = {};
-    if (category) queryCondition.category = category;
-    if (lastDiscountRate !== undefined) {
-        queryCondition = {
-          $or: [
-            { [sortField]: { $lt: lastDiscountRate } },
-            { 
-              [sortField]: lastDiscountRate,
-              _id: { $gt: where__id_more_than }
-            }
-          ]
-        };
-      }
-
-    
-    // 데이터베이스에서 정렬 및 페이지네이션 적용
     const products = await this.productViewModel
       .find(queryCondition)
-      .sort({ [sortField]: -1, _id: 1 })
-      .limit(take + 1)
+      .sort({ [sortField]: sortOrder, _id: 1 })
+      .limit(Number(take) + 1)
       .exec();
 
-    const hasNextPage = products.length > take;
-    const paginatedProducts = products.slice(0, take);
-
+    const hasNextPage = products.length > Number(take);
+    const paginatedProducts = products.slice(0, Number(take));
     const last = paginatedProducts[paginatedProducts.length - 1];
 
-    // 다음 페이지 URL 생성
-    let nextUrl: string | null = null;
-    if (hasNextPage && last) {
-      const nextPageQuery = {
-        where__id_more_than: last._id.toString(),
-        take: take.toString(),
-      };
-
-      const appUrl = this.configService.get<string>('APP_URL');
-      if (appUrl) {
-        const baseUrl = new URL("/api/products/category", appUrl);
-        const searchParams = new URLSearchParams(nextPageQuery as any);
-        baseUrl.search = searchParams.toString();
-        nextUrl = baseUrl.toString();
-      }
-    }
+    const nextUrl = this.buildNextUrl(hasNextPage, last, query);
 
     return {
       data: paginatedProducts,
@@ -83,5 +49,57 @@ export class GetCategoryHandler implements IQueryHandler<GetCategoryDto> {
       next: nextUrl,
       hasNextPage,
     };
+  }
+
+  private async buildQueryCondition(category: Category | undefined, where__id_more_than: string | undefined, sortField: string) {
+    let queryCondition: any = {};
+    if (category) queryCondition.category = category;
+
+    if (where__id_more_than) {
+      const lastProduct = await this.productViewModel.findById(where__id_more_than);
+      if (lastProduct) {
+        const lastSortFieldValue = lastProduct[sortField];
+        queryCondition = {
+          ...queryCondition,
+          $or: [
+            { [sortField]: { $lt: lastSortFieldValue } },
+            {
+              [sortField]: lastSortFieldValue,
+              _id: { $gt: where__id_more_than }
+            }
+          ]
+        };
+      }
+    }
+
+    return queryCondition;
+  }
+
+  private buildNextUrl(hasNextPage: boolean, last: any, query: GetCategoryDto): string | null {
+    if (!hasNextPage || !last) return null;
+
+    const { category, take, order__discountRate, order__createdAt } = query;
+    const appUrl = this.configService.get<string>('APP_URL');
+    if (!appUrl) return null;
+
+    const nextPageQuery = {
+      where__id_more_than: last._id.toString(),
+      category: category ? Category[category] : undefined,
+      take: take?.toString(),
+      order__discountRate,
+      order__createdAt,
+    };
+
+    const baseUrl = new URL("/api/products/category", appUrl);
+    const searchParams = new URLSearchParams();
+
+    for (const [key, value] of Object.entries(nextPageQuery)) {
+      if (value !== undefined) {
+        searchParams.append(key, value.toString());
+      }
+    }
+
+    baseUrl.search = searchParams.toString();
+    return baseUrl.toString();
   }
 }
