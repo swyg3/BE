@@ -1,7 +1,7 @@
 import { IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 import { GetUserProfileQuery } from "../queries/get-user-profile.query";
-import { UserViewRepository } from "src/users/repositories/user-view.repository";
 import { NotFoundException } from "@nestjs/common";
+import { UserViewRepository } from "src/users/repositories/user-view.repository";
 
 @QueryHandler(GetUserProfileQuery)
 export class GetUserProfileHandler

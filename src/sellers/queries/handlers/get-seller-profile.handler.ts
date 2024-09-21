@@ -1,7 +1,7 @@
 import { NotFoundException } from "@nestjs/common";
 import { IQueryHandler, QueryHandler } from "@nestjs/cqrs";
-import { SellerViewRepository } from "src/sellers/repositories/seller-view.repository";
 import { GetSellerProfileQuery } from "../queries/get-seller-profile.query";
+import { SellerViewRepository } from "src/sellers/repositories/seller-view.repository";
 
 @QueryHandler(GetSellerProfileQuery)
 export class GetSellerProfileHandler

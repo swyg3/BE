@@ -50,14 +50,14 @@ export class UpdateSellerProfileDto {
   @ApiProperty({ description: "수정할 매장명", required: false })
   @IsOptional()
   @IsString()
-  @MinLength(2, { message: "상점 이름은 최소 2자 이상이어야 합니다." })
+  @MinLength(2, { message: "매장 이름은 최소 2자 이상이어야 합니다." })
   @MaxLength(100, { message: "매장 이름은 최대 100자까지 가능합니다." })
   storeName?: string;
 
   @ApiProperty({ description: "수정할 매장 주소", required: false })
   @IsOptional()
   @IsString()
-  @MinLength(5, { message: "상점 주소는 최소 5자 이상이어야 합니다." })
+  @MinLength(5, { message: "매장 주소는 최소 5자 이상이어야 합니다." })
   @MaxLength(200, { message: "매장 주소는 최대 200자까지 가능합니다." })
   storeAddress?: string;
 
@@ -68,10 +68,5 @@ export class UpdateSellerProfileDto {
     message: "유효한 매장 전화번호 형식이 아닙니다.",
   })
   storePhoneNumber?: string;
-
-  @IsBoolean()
-  isBusinessNumberVerified?: boolean;
-
-  @IsBoolean()
-  isEmailVerified?: boolean;
+  
 }
