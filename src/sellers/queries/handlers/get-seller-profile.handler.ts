@@ -1,16 +1,16 @@
 import { NotFoundException } from "@nestjs/common";
 import { IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 import { GetSellerProfileQuery } from "../queries/get-seller-profile.query";
-import { DySellerViewRepository } from "src/sellers/repositories/dy-seller-view.repository";
+import { SellerViewRepository } from "src/sellers/repositories/seller-view.repository";
 
 @QueryHandler(GetSellerProfileQuery)
 export class GetSellerProfileHandler
   implements IQueryHandler<GetSellerProfileQuery>
 {
-  constructor(private readonly dySellerViewRepository: DySellerViewRepository) {}
+  constructor(private readonly sellerViewRepository: SellerViewRepository) {}
 
   async execute(query: GetSellerProfileQuery) {
-    const seller = await this.dySellerViewRepository.findBySellerId(
+    const seller = await this.sellerViewRepository.findBySellerId(
       query.sellerId,
     );
     if (!seller) {

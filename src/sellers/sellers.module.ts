@@ -12,8 +12,8 @@ import { RedisModule } from "src/shared/infrastructure/redis/redis.config";
 import { PasswordService } from "src/shared/services/password.service";
 import { Product } from "src/product/entities/product.entity";
 import { DynamooseModule } from "nestjs-dynamoose";
-import { DySellerSchema } from "./schemas/dy-seller-view.schema";
-import { DySellerViewRepository } from "./repositories/dy-seller-view.repository";
+import { SellerSchema } from "./schemas/seller-view.schema";
+import { SellerViewRepository } from "./repositories/seller-view.repository";
 
 @Module({
   imports: [
@@ -21,17 +21,17 @@ import { DySellerViewRepository } from "./repositories/dy-seller-view.repository
     EventSourcingModule,
     RedisModule,
     TypeOrmModule.forFeature([Seller, Product]),
-    DynamooseModule.forFeature([{ name: 'SellerView', schema: DySellerSchema }]),
+    DynamooseModule.forFeature([{ name: 'SellerView', schema: SellerSchema }]),
   ],
   controllers: [SellersController],
   providers: [
     ...Object.values(CommandHandlers),
     ...Object.values(QueryHandlers),
     ...Object.values(EventHandlers),
-    DySellerViewRepository,
+    SellerViewRepository,
     SellerRepository,
     PasswordService,
   ],
-  exports: [SellerRepository, DySellerViewRepository],
+  exports: [SellerRepository, SellerViewRepository],
 })
 export class SellersModule {}

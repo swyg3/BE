@@ -1,7 +1,7 @@
 import { EventsHandler, IEventHandler } from "@nestjs/cqrs";
 import { UserRegisteredEvent } from "../events/user-registered.event";
 import { Logger } from "@nestjs/common";
-import { DyUserViewRepository } from "src/users/repositories/dy-user-view.repository";
+import { UserViewRepository } from "src/users/repositories/user-view.repository";
 
 @EventsHandler(UserRegisteredEvent)
 export class UserRegisteredHandler
@@ -9,13 +9,13 @@ export class UserRegisteredHandler
 {
   private readonly logger = new Logger(UserRegisteredHandler.name);
 
-  constructor(private readonly dyUserViewRepository: DyUserViewRepository) {}
+  constructor(private readonly userViewRepository: UserViewRepository) {}
 
   async handle(event: UserRegisteredEvent) {
     this.logger.log(`UserRegisteredEvent 처리중: ${event.aggregateId}`);
 
     try {
-      await this.dyUserViewRepository.create({
+      await this.userViewRepository.create({
         userId: event.aggregateId,
         email: event.data.email,
         name: event.data.name,

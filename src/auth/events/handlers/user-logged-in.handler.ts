@@ -1,7 +1,7 @@
 import { EventsHandler, IEventHandler } from "@nestjs/cqrs";
 import { UserLoggedInEvent } from "../events/user-logged-in.event";
 import { Logger } from "@nestjs/common";
-import { DyUserViewRepository } from "src/users/repositories/dy-user-view.repository";
+import { UserViewRepository } from "src/users/repositories/user-view.repository";
 
 @EventsHandler(UserLoggedInEvent)
 export class UserLoggedInEventHandler
@@ -10,14 +10,14 @@ export class UserLoggedInEventHandler
   private readonly logger = new Logger(UserLoggedInEventHandler.name);
 
   constructor(
-    private dyUserViewRepository: DyUserViewRepository,
+    private userViewRepository: UserViewRepository,
   ) {}
 
   async handle(event: UserLoggedInEvent) {
     this.logger.log(`사용자 로그인 이벤트 처리: userId=${event.aggregateId}`);
 
     // DynamoDB에서 로그인 시간 업데이트
-      const updatedUser = await this.dyUserViewRepository.update(event.aggregateId, {
+      const updatedUser = await this.userViewRepository.update(event.aggregateId, {
         lastLoginAt: new Date()
       });
       

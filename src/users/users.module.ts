@@ -11,8 +11,8 @@ import { CqrsModule } from "@nestjs/cqrs";
 import { RedisModule } from "src/shared/infrastructure/redis/redis.config";
 import { PasswordService } from "src/shared/services/password.service";
 import { DynamooseModule } from "nestjs-dynamoose";
-import { DyUserSchema } from "./schemas/dy-user-view.schema";
-import { DyUserViewRepository } from "./repositories/dy-user-view.repository";
+import { UserSchema } from "./schemas/user-view.schema";
+import { UserViewRepository } from "./repositories/user-view.repository";
 
 @Module({
   imports: [
@@ -20,17 +20,17 @@ import { DyUserViewRepository } from "./repositories/dy-user-view.repository";
     RedisModule,
     EventSourcingModule,
     TypeOrmModule.forFeature([User]),
-    DynamooseModule.forFeature([{ name: 'UserView', schema: DyUserSchema }]),
+    DynamooseModule.forFeature([{ name: 'UserView', schema: UserSchema }]),
   ],
   controllers: [UsersController],
   providers: [
     ...Object.values(CommandHandlers),
     ...Object.values(QueryHandlers),
     ...Object.values(EventHandlers),
-    DyUserViewRepository,
+    UserViewRepository,
     UserRepository,
     PasswordService,
   ],
-  exports: [UserRepository, DyUserViewRepository],
+  exports: [UserRepository, UserViewRepository],
 })
 export class UsersModule {}

@@ -1,16 +1,16 @@
 import { IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 import { GetUserProfileQuery } from "../queries/get-user-profile.query";
 import { NotFoundException } from "@nestjs/common";
-import { DyUserViewRepository } from "src/users/repositories/dy-user-view.repository";
+import { UserViewRepository } from "src/users/repositories/user-view.repository";
 
 @QueryHandler(GetUserProfileQuery)
 export class GetUserProfileHandler
   implements IQueryHandler<GetUserProfileQuery>
 {
-  constructor(private readonly dyUserViewRepository: DyUserViewRepository) {}
+  constructor(private readonly userViewRepository: UserViewRepository) {}
 
   async execute(query: GetUserProfileQuery) {
-    const user = await this.dyUserViewRepository.findByUserId(query.userId);
+    const user = await this.userViewRepository.findByUserId(query.userId);
     if (!user) {
       throw new NotFoundException(`${query.userId} 존재하지 않는 회원입니다.`);
     }

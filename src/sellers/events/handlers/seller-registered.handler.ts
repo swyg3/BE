@@ -1,7 +1,7 @@
 import { EventsHandler, IEventHandler } from "@nestjs/cqrs";
 import { Logger } from "@nestjs/common";
 import { SellerRegisteredEvent } from "../events/register-seller.event";
-import { DySellerViewRepository } from "src/sellers/repositories/dy-seller-view.repository";
+import { SellerViewRepository } from "src/sellers/repositories/seller-view.repository";
 
 @EventsHandler(SellerRegisteredEvent)
 export class SellerRegisteredHandler
@@ -9,13 +9,13 @@ export class SellerRegisteredHandler
 {
   private readonly logger = new Logger(SellerRegisteredHandler.name);
 
-  constructor(private readonly dySellerViewRepository: DySellerViewRepository) {}
+  constructor(private readonly sellerViewRepository: SellerViewRepository) {}
 
   async handle(event: SellerRegisteredEvent) {
     this.logger.log(`SellerRegisteredEvent 처리중: ${event.aggregateId}`);
 
     try {
-      await this.dySellerViewRepository.create({
+      await this.sellerViewRepository.create({
           sellerId: event.aggregateId,
           email: event.data.email,
           name: event.data.name,
