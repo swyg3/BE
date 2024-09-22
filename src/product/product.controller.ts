@@ -25,8 +25,6 @@ import { GetProductByDiscountRateDto } from "./dtos/get-products-by-discountRate
 import { ThrottlerGuard } from "@nestjs/throttler";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { Express } from 'express';
-import { GetProductByCategoryDto } from "./dtos/get-product-by-category.dto";
-import { Category } from "./product.category";
 import { GetCategoryDto } from "./dtos/get-category.dto";
 
 

@@ -31,6 +31,7 @@ services:
     depends_on:
       - postgres
       - redis
+      - dynamodb-local
     # healthcheck:
     #   test: ["CMD", "curl", "-f", "http://localhost:${NODE_PORT}/health"]
     #   interval: 30s
@@ -52,16 +53,16 @@ services:
     ports:
       - "${REDIS_PORT}:${REDIS_PORT}"
     command: redis-server --maxmemory 200mb --maxmemory-policy allkeys-lru
-    # healthcheck:
-    #   test: ["CMD", "redis-cli", "ping"]
-    #   interval: 10s
-    #   timeout: 5s
-    #   retries: 5
-    # deploy:
-    #   resources:
-    #     limits:
-    #       cpus: "0.2"
-    #       memory: 250M
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: "0.2"
+          memory: 250M
 
   postgres:
     image: postgres:13
@@ -86,6 +87,7 @@ services:
     #     limits:
     #       cpus: "0.3"
     #       memory: 300M
+
   dynamodb-local:
       image: amazon/dynamodb-local:latest
       container_name: dynamodb-local
@@ -96,16 +98,16 @@ services:
       command: "-jar DynamoDBLocal.jar -sharedDb -port ${DYNAMODB_PORT}"
       volumes:
         - dynamodb_data:/home/dynamodblocal
-      healthcheck:
-        test: ["CMD-SHELL", "curl -f http://localhost:${DYNAMODB_PORT} || exit 1"]
-        interval: 10s
-        timeout: 5s
-        retries: 5
-      deploy:
-        resources:
-          limits:
-            cpus: "0.2"
-            memory: 300M
+      # healthcheck:
+      #   test: ["CMD-SHELL", "curl -f http://localhost:${DYNAMODB_PORT} || exit 1"]
+      #   interval: 10s
+      #   timeout: 5s
+      #   retries: 5
+      # deploy:
+      #   resources:
+      #     limits:
+      #       cpus: "0.2"
+      #       memory: 300M
 
   dynamodb-admin:
     image: aaronshaf/dynamodb-admin
@@ -140,7 +142,7 @@ services:
     environment:
       - ELASTICSEARCH_HOST=http://elasticsearch:9200
     depends_on:
-      - elasticsearch
+      - elasticsearch    
 
   prometheus:
     image: prom/prometheus:v2.30.3
@@ -228,7 +230,7 @@ services:
 
 volumes:
   postgres_data_dev:
+  dynamodb_data:
   prometheus_data:
   grafana_data:
-  dynamodb_data:
   es_data:
