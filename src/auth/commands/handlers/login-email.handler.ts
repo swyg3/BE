@@ -31,9 +31,12 @@ export class LoginEmailCommandHandler
 
   async execute(command: LoginEmailCommand) {
     const { loginDto, req } = command;
-    const userType = loginDto.userType || (req.path.includes("seller") ? "seller" : "user");
-    
-    this.logger.debug(`Login attempt - Path: ${req.path}, UserType: ${userType}`);
+    const userType =
+      loginDto.userType || (req.path.includes("seller") ? "seller" : "user");
+
+    this.logger.debug(
+      `Login attempt - Path: ${req.path}, UserType: ${userType}`,
+    );
 
     try {
       this.logger.log(`${userType} 로그인 시도 - 이메일: ${loginDto.email}`);
@@ -96,7 +99,7 @@ export class LoginEmailCommandHandler
 
     const repository =
       userType === "user" ? this.userRepository : this.sellerRepository;
-    
+
     this.logger.debug(`Selected repository: ${repository.constructor.name}`);
 
     const user = await repository.findByEmail(email);
@@ -106,7 +109,7 @@ export class LoginEmailCommandHandler
       );
       throw new UnauthorizedException("등록되지 않은 이메일 주소입니다.");
     }
-    this.logger.debug(`User found: ${user ? 'Yes' : 'No'}`);
+    this.logger.debug(`User found: ${user ? "Yes" : "No"}`);
 
     const isPasswordValid = await this.passwordService.verifyPassword(
       user.password,

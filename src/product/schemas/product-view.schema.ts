@@ -20,8 +20,10 @@ export class ProductView extends Document {
   @Prop({ required: true })
   name: string;
 
-  @Prop({ required: true }) 
-  @Transform(({value})=> value && `/${join(PRODUCTS_PUBLIC_IMAGE_PATH ,value)}`)
+  @Prop({ required: true })
+  @Transform(
+    ({ value }) => value && `/${join(PRODUCTS_PUBLIC_IMAGE_PATH, value)}`,
+  )
   productImageUrl: string;
 
   @Prop({ required: true })
@@ -47,8 +49,6 @@ export class ProductView extends Document {
 
   @Prop({ required: true })
   updatedAt: Date;
-  
-  
 }
 
 export const ProductViewSchema = SchemaFactory.createForClass(ProductView);

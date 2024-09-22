@@ -16,11 +16,14 @@ import { ProductModule } from "./product/product.module";
 import { InventoryModule } from "./inventory/inventory.module";
 import { ServeStaticModule } from "@nestjs/serve-static";
 import { PUBLIC_FOLDER_PATH } from "./product/const/path.const";
+import { DynamooseModule } from "nestjs-dynamoose";
+import { getDynamoConfig } from "./shared/infrastructure/database/dynamodb.config";
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: `.env.${process.env.NODE_ENV}`,
       validationSchema: configValidationSchema,
       validationOptions: {
         allowUnknown: true,
@@ -42,13 +45,19 @@ import { PUBLIC_FOLDER_PATH } from "./product/const/path.const";
       inject: [ConfigService],
     }),
     MongooseModule.forRootAsync({
-      useFactory: getMongoConfig,
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) =>
+        await getMongoConfig(configService),
+      inject: [ConfigService],
+    }),
+    DynamooseModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => getDynamoConfig(configService),
       inject: [ConfigService],
     }),
     ServeStaticModule.forRoot({
-      rootPath:PUBLIC_FOLDER_PATH,
-      serveRoot:'/public'
-
+      rootPath: PUBLIC_FOLDER_PATH,
+      serveRoot: "/public",
     }),
     MetricsModule,
     AuthModule,

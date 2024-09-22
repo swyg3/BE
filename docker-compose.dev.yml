@@ -32,16 +32,17 @@ services:
       - postgres
       - redis
       - dynamodb-local
-    # healthcheck:
-    #   test: ["CMD", "curl", "-f", "http://localhost:${NODE_PORT}/health"]
-    #   interval: 30s
-    #   timeout: 10s
-    #   retries: 3
-    # deploy:
-    #   resources:
-    #     limits:
-    #       cpus: "0.5"
-    #       memory: 700M
+      - elasticsearch
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${NODE_PORT}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 700M
 
   redis:
     image: redis:latest
@@ -77,16 +78,16 @@ services:
       - "${DB_PORT}:${DB_PORT}"
     volumes:
       - postgres_data_dev:/var/lib/postgresql/data
-    # healthcheck:
-    #   test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME}"]
-    #   interval: 10s
-    #   timeout: 5s
-    #   retries: 5
-    # deploy:
-    #   resources:
-    #     limits:
-    #       cpus: "0.3"
-    #       memory: 300M
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: "0.3"
+          memory: 300M
 
   dynamodb-local:
       image: amazon/dynamodb-local:latest
@@ -98,16 +99,16 @@ services:
       command: "-jar DynamoDBLocal.jar -sharedDb -port ${DYNAMODB_PORT}"
       volumes:
         - dynamodb_data:/home/dynamodblocal
-      # healthcheck:
-      #   test: ["CMD-SHELL", "curl -f http://localhost:${DYNAMODB_PORT} || exit 1"]
-      #   interval: 10s
-      #   timeout: 5s
-      #   retries: 5
-      # deploy:
-      #   resources:
-      #     limits:
-      #       cpus: "0.2"
-      #       memory: 300M
+      healthcheck:
+        test: ["CMD-SHELL", "curl -f http://localhost:${DYNAMODB_PORT} || exit 1"]
+        interval: 10s
+        timeout: 5s
+        retries: 5
+      deploy:
+        resources:
+          limits:
+            cpus: "0.2"
+            memory: 300M
 
   dynamodb-admin:
     image: aaronshaf/dynamodb-admin
@@ -122,27 +123,6 @@ services:
       AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
     depends_on:
       - dynamodb-local
-
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.10.1
-    container_name: elasticsearch
-    environment:
-      - discovery.type=single-node
-      - ES_JAVA_OPTS=-Xms512m -Xmx512m
-    ports:
-      - "${ELASTICSEARCH_PORT}:${ELASTICSEARCH_PORT}"
-    volumes:
-      - es_data:/usr/share/elasticsearch/data
-
-  kibana:
-    image: docker.elastic.co/kibana/kibana:7.10.1
-    container_name: kibana
-    ports:
-      - "5601:5601"
-    environment:
-      - ELASTICSEARCH_HOST=http://elasticsearch:9200
-    depends_on:
-      - elasticsearch    
 
   prometheus:
     image: prom/prometheus:v2.30.3
@@ -161,24 +141,35 @@ services:
     volumes:
       - ./prometheus:/etc/prometheus
       - prometheus_data:/prometheus
-    # healthcheck:
-    #   test:
-    #     [
-    #       "CMD",
-    #       "wget",
-    #       "-q",
-    #       "--tries=1",
-    #       "--spider",
-    #       "http://localhost:${PROMETHEUS_PORT}",
-    #     ]
-    #   interval: 30s
-    #   timeout: 10s
-    #   retries: 3
-    # deploy:
-    #   resources:
-    #     limits:
-    #       cpus: "0.2"
-    #       memory: 300M
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "-q",
+          "--tries=1",
+          "--spider",
+          "http://localhost:${PROMETHEUS_PORT}",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: "0.2"
+          memory: 300M
+
+  elasticsearch:
+    image: elasticsearch:7.10.0
+    container_name: elasticsearch_dev
+    environment:
+      - discovery.type=single-node
+      - ELASTICSEARCH_PORT=${ELASTICSEARCH_PORT}
+    ports:
+      - "${ELASTICSEARCH_PORT}:${ELASTICSEARCH_PORT}"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data         
 
   node-exporter:
     image: prom/node-exporter:latest
@@ -217,20 +208,20 @@ services:
       - grafana_data:/var/lib/grafana
     depends_on:
       - prometheus
-    # healthcheck:
-    #   test: ["CMD", "curl", "-f", "http://localhost:${GRAFANA_PORT}"]
-    #   interval: 30s
-    #   timeout: 10s
-    #   retries: 3
-    # deploy:
-    #   resources:
-    #     limits:
-    #       cpus: "0.2"
-    #       memory: 300M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${GRAFANA_PORT}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: "0.2"
+          memory: 300M
 
 volumes:
   postgres_data_dev:
   dynamodb_data:
   prometheus_data:
   grafana_data:
-  es_data:
+  es_data: 

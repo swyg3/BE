@@ -1,77 +1,117 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { InjectModel } from "@nestjs/mongoose";
-import { Model, UpdateQuery } from "mongoose";
-import { SellerView } from "../schemas/seller-view.schema";
+import { InjectModel, Model } from "nestjs-dynamoose";
+import { Condition } from "dynamoose/dist/Condition";
+
+export interface SellerView {
+  sellerId: string;
+  email: string;
+  name: string;
+  phoneNumber: string;
+  storeName: string;
+  storeAddress: string;
+  storePhoneNumber: string;
+  isBusinessNumberVerified: boolean;
+  isEmailVerified: boolean;
+  lastLoginAt?: Date;
+}
 
 @Injectable()
 export class SellerViewRepository {
   private readonly logger = new Logger(SellerViewRepository.name);
 
   constructor(
-    @InjectModel(SellerView.name) private sellerViewModel: Model<SellerView>,
+    @InjectModel('SellerView')
+    private readonly sellerViewModel: Model<SellerView, { sellerId: string }>
   ) {}
 
-  async create(sellerView: Partial<SellerView>): Promise<SellerView> {
-    const createdSellerView = new this.sellerViewModel(sellerView);
-    return await createdSellerView.save();
+  async create(sellerView: SellerView): Promise<SellerView> {
+    try {
+      this.logger.log(`SellerView 생성: ${sellerView.sellerId}`);
+      return await this.sellerViewModel.create(sellerView);
+    } catch (error) {
+      this.logger.error(`SellerView 생성 실패: ${error.message}`, error.stack);
+      throw error;
+    }
   }
 
   async findBySellerId(sellerId: string): Promise<SellerView | null> {
-    return await this.sellerViewModel.findOne({ sellerId }).exec();
+    try {
+      this.logger.log(`SellerView 조회: sellerId=${sellerId}`);
+      return await this.sellerViewModel.get({ sellerId });
+    } catch (error) {
+      this.logger.error(`SellerView 조회 실패: ${error.message}`, error.stack);
+      return null;
+    }
   }
 
   async findByEmail(email: string): Promise<SellerView | null> {
-    return await this.sellerViewModel.findOne({ email }).exec();
+    try {
+      this.logger.log(`SellerView 조회: email=${email}`);
+      const results = await this.sellerViewModel.query('email').eq(email).exec();
+      return results.length > 0 ? results[0] : null;
+    } catch (error) {
+      this.logger.error(`SellerView 조회 실패: ${error.message}`, error.stack);
+      return null;
+    }
   }
 
   async update(
-    sellerId: string,
-    updates: Partial<SellerView>,
+    sellerId: string, 
+    updates: Partial<SellerView>
   ): Promise<SellerView | null> {
-    return await this.sellerViewModel
-      .findOneAndUpdate({ sellerId }, { $set: updates }, { new: true })
-      .exec();
+    try {
+      this.logger.log(`SellerView 업데이트: sellerId=${sellerId}`);
+      const updatedSeller = await this.sellerViewModel.update(
+        { sellerId: sellerId }, 
+        updates, 
+        { return: 'item' }
+      );
+      this.logger.log(`SellerView 업데이트 성공: ${updatedSeller}`);
+      return updatedSeller;
+    } catch (error) {
+      this.logger.error(`SellerView 업데이트 실패: ${error.message}`, error.stack);
+      return null;
+    }
   }
 
   async updateBusinessNumberVerification(
-    sellerId: string,
-    isVerified: boolean,
+    sellerId: string, 
+    isVerified: boolean
   ): Promise<SellerView | null> {
-    return this.sellerViewModel
-      .findOneAndUpdate(
-        { sellerId },
-        { $set: { isBusinessNumberVerified: isVerified } },
-        { new: true },
-      )
-      .exec();
+    return this.update(
+      sellerId, 
+      { 
+        isBusinessNumberVerified: isVerified 
+      }
+    );
   }
 
   async findOneAndUpdate(
-    filter: { sellerId: string },
-    update: UpdateQuery<SellerView>,
-    options: { upsert: boolean; new: boolean; setDefaultsOnInsert: boolean },
-  ): Promise<SellerView | null> {
+    sellerId: string,
+    sellerView: Partial<SellerView>
+  ): Promise<{ sellerView: SellerView; isNewSellerView: boolean }> {
+    this.logger.log(`SellerView Upsert 시도: sellerId=${sellerId}`);
+
     try {
-      const result = await this.sellerViewModel
-        .findOneAndUpdate(filter, update, {
-          ...options,
-          setDefaultsOnInsert: true,
-        })
-        .exec();
-      return result;
-    } catch (error) {
-      if (error.code === 11000) {
-        this.logger.warn(
-          `sellerId 중복 키 에러 발생: ${filter.sellerId}. Attempting to update existing document.`,
-        );
-        return await this.sellerViewModel
-          .findOneAndUpdate(filter, update, { new: true })
-          .exec();
-      }
-      this.logger.error(
-        `Seller-View findOneAndUpdate: ${error.message}`,
-        error.stack,
+      const condition = new Condition().attribute('sellerId').exists();
+      const updatedSeller = await this.sellerViewModel.update(
+        { sellerId },
+        sellerView,
+        {
+          return: 'item',
+          condition: condition
+        }
       );
+      return { sellerView: updatedSeller, isNewSellerView: false };
+    } catch (error) {
+      if (error.name === 'ConditionalCheckFailedException') {
+        const newSellerView = await this.create({ 
+          sellerId, 
+          ...sellerView
+        } as SellerView);
+        return { sellerView: newSellerView, isNewSellerView: true };
+      }
+      this.logger.error(`SellerView Upsert 실패: ${error.message}`, error.stack);
       throw error;
     }
   }

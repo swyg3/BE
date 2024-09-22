@@ -24,7 +24,7 @@ import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { GetProductByDiscountRateDto } from "./dtos/get-products-by-discountRate.dto";
 import { ThrottlerGuard } from "@nestjs/throttler";
 import { FileInterceptor } from "@nestjs/platform-express";
-import { Express } from 'express';
+import { Express } from "express";
 import { GetCategoryDto } from "./dtos/get-category.dto";
 
 
@@ -233,7 +233,7 @@ export class ProductController {
   ) {
     return {
       productImageUrl: file.filename,
-    }
+    };
   }
 
 

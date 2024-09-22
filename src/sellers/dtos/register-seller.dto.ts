@@ -66,5 +66,4 @@ export class RegisterSellerDto {
     message: "유효한 휴대폰 번호 형식이 아닙니다.",
   })
   phoneNumber: string;
-
 }
