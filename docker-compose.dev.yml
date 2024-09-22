@@ -32,7 +32,6 @@ services:
       - postgres
       - redis
       - dynamodb-local
-      - elasticsearch
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:${NODE_PORT}/health"]
       interval: 30s
@@ -159,17 +158,17 @@ services:
         limits:
           cpus: "0.2"
           memory: 300M
-
+  
   elasticsearch:
-    image: elasticsearch:7.10.0
+    image: elasticsearch:8.0.0
     container_name: elasticsearch_dev
     environment:
-      - discovery.type=single-node
-      - ELASTICSEARCH_PORT=${ELASTICSEARCH_PORT}
+      discovery.type: single-node
+      ELASTICSEARCH_PORT: ${ELASTICSEARCH_PORT}
     ports:
       - "${ELASTICSEARCH_PORT}:${ELASTICSEARCH_PORT}"
     volumes:
-      - es_data:/usr/share/elasticsearch/data         
+      - es_data:/usr/share/elasticsearch/data        
 
   node-exporter:
     image: prom/node-exporter:latest
@@ -223,5 +222,5 @@ volumes:
   postgres_data_dev:
   dynamodb_data:
   prometheus_data:
+  es_data:
   grafana_data:
-  es_data: 

@@ -29,7 +29,6 @@ import { DynamooseModule } from "nestjs-dynamoose";
 import { ProductSchema } from "./schemas/dy-product-view.shema";
 import { DyProductViewRepository } from "./repositories/dy-product-view.repository";
 import { APP_PIPE } from "@nestjs/core";
-import { GetProductByCategoryHandler } from "./queries/handlers/get-product-by-category.handler";
 import { GetCategoryHandler } from "./queries/handlers/get-category.handler";
 
 const CommandHandlers = [
@@ -101,7 +100,6 @@ const EventsHandlers = [
     GetProductByIdHandler,
     GetProductByDiscountRateHandler,
     GetCategoryHandler,
-    GetProductByCategoryHandler,
     //페이지네이션을 위한 transform 설정 
     // {
     //   provide: APP_PIPE,
