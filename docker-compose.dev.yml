@@ -18,6 +18,10 @@ services:
       - MONGODB_URI=${MONGODB_URI}
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}
+      - DYNAMODB_ENDPOINT=${DYNAMODB_ENDPOINT}
+      - AWS_REGION=${AWS_REGION}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
     ports:
       - "${NODE_PORT}:${NODE_PORT}"
     command: npm run start:dev
@@ -82,6 +86,61 @@ services:
     #     limits:
     #       cpus: "0.3"
     #       memory: 300M
+  dynamodb-local:
+      image: amazon/dynamodb-local:latest
+      container_name: dynamodb-local
+      env_file:
+        - .env.dev
+      ports:
+        - "${DYNAMODB_PORT}:${DYNAMODB_PORT}"
+      command: "-jar DynamoDBLocal.jar -sharedDb -port ${DYNAMODB_PORT}"
+      volumes:
+        - dynamodb_data:/home/dynamodblocal
+      healthcheck:
+        test: ["CMD-SHELL", "curl -f http://localhost:${DYNAMODB_PORT} || exit 1"]
+        interval: 10s
+        timeout: 5s
+        retries: 5
+      deploy:
+        resources:
+          limits:
+            cpus: "0.2"
+            memory: 300M
+
+  dynamodb-admin:
+    image: aaronshaf/dynamodb-admin
+    env_file:
+      - .env.dev
+    ports:
+      - "${DYNAMODB_ADMIN_PORT}:${DYNAMODB_ADMIN_PORT}"
+    environment:
+      DYNAMO_ENDPOINT: "${DYNAMODB_ENDPOINT}"
+      AWS_REGION: "${AWS_REGION}"
+      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
+      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
+    depends_on:
+      - dynamodb-local
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.10.1
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "${ELASTICSEARCH_PORT}:${ELASTICSEARCH_PORT}"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.10.1
+    container_name: kibana
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOST=http://elasticsearch:9200
+    depends_on:
+      - elasticsearch
 
   prometheus:
     image: prom/prometheus:v2.30.3
@@ -171,3 +230,5 @@ volumes:
   postgres_data_dev:
   prometheus_data:
   grafana_data:
+  dynamodb_data:
+  es_data:
