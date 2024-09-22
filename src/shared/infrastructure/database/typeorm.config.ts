@@ -18,10 +18,10 @@ export const getTypeOrmConfig = async (
     autoLoadEntities: true,
     synchronize: isDev, // 개발 환경에서는 true, 프로덕션에서는 false
     logging: isDev ? ["error", "warn", "query"] : ["error"], // 로깅 설정
-    // ssl: {
-    //   rejectUnauthorized: false,
-    // },
+    ssl: {
+      rejectUnauthorized: false,
+    },
   };
-  
+
   return baseConfig;
 };
