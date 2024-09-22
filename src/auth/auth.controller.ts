@@ -31,7 +31,14 @@ import { OAuthCallbackCommand } from "./commands/commands";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { JwtPayload } from "src/shared/interfaces/jwt-payload.interface";
 import { GetUser } from "src/shared/decorators/get-user.decorator";
-import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
+import {
+  ApiBody,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from "@nestjs/swagger";
 import { CustomResponse } from "src/shared/interfaces/api-response.interface";
 
 @ApiTags("Auth")
@@ -42,6 +49,16 @@ export class AuthController {
 
   @ApiOperation({ summary: "이메일 인증 요청" })
   @ApiResponse({ status: 200, description: "인증 메일 발송 성공" })
+  @ApiBody({
+    type: RequestEmailVerificationDto,
+    description: "이메일 인증 요청 정보",
+    examples: {
+      example1: {
+        value: { email: "user@example.com" },
+        summary: "유효한 이메일 주소",
+      },
+    },
+  })
   @Post("request-verification")
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   async requestEmailVerification(
@@ -60,6 +77,16 @@ export class AuthController {
 
   @ApiOperation({ summary: "이메일 인증 확인" })
   @ApiResponse({ status: 200, description: "이메일 인증 성공" })
+  @ApiBody({
+    type: VerifyEmailDto,
+    description: "이메일 인증 확인 정보",
+    examples: {
+      example1: {
+        value: { email: "user@example.com", verificationCode: "123456" },
+        summary: "유효한 이메일 주소와 인증 코드",
+      },
+    },
+  })
   @Post("verify-email")
   async verifyEmail(@Body() dto: VerifyEmailDto): Promise<CustomResponse> {
     const result = await this.commandBus.execute(
@@ -73,6 +100,28 @@ export class AuthController {
 
   @ApiOperation({ summary: "이메일 로그인" })
   @ApiResponse({ status: 200, description: "로그인 성공" })
+  @ApiBody({
+    type: LoginEmailDto,
+    description: "이메일 로그인 정보",
+    examples: {
+      example1: {
+        value: {
+          email: "user@example.com",
+          password: "StrongPassword123!",
+          userType: "user",
+        },
+        summary: "구매자 로그인 예시",
+      },
+      example2: {
+        value: {
+          email: "seller@example.com",
+          password: "StrongPassword123!",
+          userType: "seller",
+        },
+        summary: "판매자 로그인 예시",
+      },
+    },
+  })
   @Post("login-email")
   async loginEmail(
     @Body() loginDto: LoginEmailDto,
@@ -92,6 +141,22 @@ export class AuthController {
   // Authorization code를 OAuth Token으로 교환하는 과정
   @ApiOperation({ summary: "OAuth 콜백 처리" })
   @ApiResponse({ status: 200, description: "OAuth 콜백 처리 성공" })
+  @ApiParam({
+    name: "provider",
+    enum: ["google", "kakao"],
+    description: "OAuth 제공자",
+  })
+  @ApiQuery({ name: "code", description: "OAuth 인증 코드" })
+  @ApiQuery({
+    name: "userType",
+    enum: ["user", "seller"],
+    description: "사용자 유형",
+  })
+  @ApiQuery({
+    name: "state",
+    required: false,
+    description: "CSRF 방지를 위한 상태 값",
+  })
   @Get("login/:provider/callback")
   async oauthCallback(
     @Param("provider") provider: string,
@@ -132,6 +197,28 @@ export class AuthController {
 
   @ApiOperation({ summary: "OAuth 로그인" })
   @ApiResponse({ status: 200, description: "OAuth 로그인 성공" })
+  @ApiBody({
+    type: LoginOAuthDto,
+    description: "OAuth 로그인 정보",
+    examples: {
+      example1: {
+        value: {
+          provider: "google",
+          accessToken: "ya29.a0AfB_byC...",
+          userType: "user",
+        },
+        summary: "Google OAuth 로그인 예시",
+      },
+      example2: {
+        value: {
+          provider: "kakao",
+          accessToken: "ya29.a0AfB_byC...",
+          userType: "user",
+        },
+        summary: "KaKao OAuth 로그인 예시",
+      },
+    },
+  })
   @Post("login-oauth")
   async loginOAuth(
     @Body() loginOAuthDto: LoginOAuthDto,
@@ -164,6 +251,20 @@ export class AuthController {
 
   @ApiOperation({ summary: "AccessToken 재발급" })
   @ApiResponse({ status: 200, description: "AccessToken 재발급 성공" })
+  @ApiBody({
+    schema: {
+      type: "object",
+      properties: {
+        refreshToken: { type: "string" },
+      },
+    },
+    examples: {
+      example1: {
+        value: { refreshToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." },
+        summary: "유효한 Refresh Token",
+      },
+    },
+  })
   @Post("refresh-token")
   async refreshToken(
     @Body("refreshToken") refreshToken: string,
@@ -180,6 +281,17 @@ export class AuthController {
 
   @ApiOperation({ summary: "사업자등록번호 인증" })
   @ApiResponse({ status: 200, description: "사업자등록번호 인증 성공" })
+  @ApiBody({
+    type: VerifyBusinessNumberDto,
+    description:
+      "(임시)사업자등록번호 인증 정보: 임시로 'test' 입력하면 무조건 통과",
+    examples: {
+      example1: {
+        value: { email: "seller@example.com", businessNumber: "test" },
+        summary: "유효한 이메일과 사업자등록번호",
+      },
+    },
+  })
   @Post("verify-business-number")
   async verifyBusinessNumber(
     @Body() dto: VerifyBusinessNumberDto,
@@ -192,6 +304,21 @@ export class AuthController {
 
   @ApiOperation({ summary: "판매자 매장정보 추가" })
   @ApiResponse({ status: 200, description: "판매자 매장정보 추가 성공" })
+  @ApiBody({
+    type: CompleteSellerProfileDto,
+    description: "판매자 추가 정보",
+    examples: {
+      example1: {
+        value: {
+          email: "seller@example.com",
+          storeName: "맥도날드",
+          storeAddress: "서울특별시 강남구 테헤란로 123",
+          storePhoneNumber: "01012341234",
+        },
+        summary: "판매자 추가 정보 예시",
+      },
+    },
+  })
   @Post("complete-profile")
   async completeProfile(
     @Body() profileDto: CompleteSellerProfileDto,
