@@ -30,6 +30,9 @@ import { ProductSchema } from "./schemas/dy-product-view.shema";
 import { DyProductViewRepository } from "./repositories/dy-product-view.repository";
 import { APP_PIPE } from "@nestjs/core";
 import { GetCategoryHandler } from "./queries/handlers/get-category.handler";
+import { FindProductsByNameHandler } from "./queries/handlers/dy-product-search.handler";
+import { ProductSearchController } from "./product.search.contoller";
+import { DyProductViewSearchRepository } from "./repositories/dy-product-search.repository";
 
 const CommandHandlers = [
   CreateProductHandler,
@@ -54,6 +57,7 @@ const EventsHandlers = [
     TypeOrmModule.forFeature([Product, Seller]),
     DynamooseModule.forFeature([
       { name: "ProductView", schema: ProductSchema },
+      { name: "DyProductView", schema: ProductSchema },
     ]),
     MulterModule.register({
       limits: {
@@ -97,9 +101,11 @@ const EventsHandlers = [
     SellerRepository,
     ProductViewRepository,
     DyProductViewRepository,
+    DyProductViewSearchRepository,
     GetProductByIdHandler,
     GetProductByDiscountRateHandler,
     GetCategoryHandler,
+    FindProductsByNameHandler,
     //페이지네이션을 위한 transform 설정 
     // {
     //   provide: APP_PIPE,
@@ -111,7 +117,7 @@ const EventsHandlers = [
     //   }),
     // },
   ],
-  controllers: [ProductController],
-  exports: [ProductRepository, SellerRepository, DyProductViewRepository],
+  controllers: [ProductController,ProductSearchController],
+  exports: [ProductRepository, SellerRepository, DyProductViewRepository,DyProductViewSearchRepository],
 })
 export class ProductModule {}
