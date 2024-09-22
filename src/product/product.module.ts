@@ -25,6 +25,9 @@ import { extname } from "path";
 import { v4 as uuid } from "uuid";
 import * as multer from "multer";
 import { PRODUCTS_IMAGE_PATH, TEMP_FOLDER_PATH } from "./const/path.const";
+import { DynamooseModule } from "nestjs-dynamoose";
+import { ProductSchema } from "./schemas/dy-product-view.shema";
+import { DyProductViewRepository } from "./repositories/dy-product-view.repository";
 
 const CommandHandlers = [
   CreateProductHandler,
@@ -47,6 +50,9 @@ const EventsHandlers = [
       { name: ProductView.name, schema: ProductViewSchema },
     ]),
     TypeOrmModule.forFeature([Product, Seller]),
+    DynamooseModule.forFeature([
+      { name: "ProductView", schema: ProductSchema },
+    ]),
     MulterModule.register({
       limits: {
         // 바이트 단위로 입력
@@ -88,10 +94,11 @@ const EventsHandlers = [
     ProductRepository,
     SellerRepository,
     ProductViewRepository,
+    DyProductViewRepository,
     GetProductByIdHandler,
     GetProductByDiscountRateHandler,
   ],
   controllers: [ProductController],
-  exports: [ProductRepository, SellerRepository],
+  exports: [ProductRepository, SellerRepository, DyProductViewRepository],
 })
 export class ProductModule {}
