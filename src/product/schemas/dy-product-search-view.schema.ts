@@ -80,6 +80,7 @@ export const DySearchProductViewSchema = new Schema({
     type: Date,
     required: true,
   },
+  
 }, {
   timestamps: {
     createdAt: "createdAt",

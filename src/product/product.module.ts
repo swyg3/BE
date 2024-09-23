@@ -35,6 +35,7 @@ import { Client } from "@elastic/elasticsearch";
 import { ProductSearchService } from "./product-search.service";
 import { DySearchProductViewModel, DySearchProductViewSchema } from "./schemas/dy-product-search-view.schema";
 import { ElasticModule } from "src/elastic/elastic.module";
+import { DyProductCreatedHandler } from "./events/handlers/dy-product-created.handler";
 
 const CommandHandlers = [
   CreateProductHandler,
@@ -46,6 +47,7 @@ const EventsHandlers = [
   ProductCreatedHandler,
   ProductUpdatedEventHandler,
   ProductDeletedHandler,
+  DyProductCreatedHandler
 ];
 
 @Module({
@@ -59,7 +61,6 @@ const EventsHandlers = [
     ]),
     TypeOrmModule.forFeature([Product, Seller]),
     DynamooseModule.forFeature([
-      { name: "ProductView", schema: ProductSchema },
       { name: "DyProductView", schema: ProductSchema },
       { name: 'DySearchProductView', schema: DySearchProductViewSchema },
     ]),

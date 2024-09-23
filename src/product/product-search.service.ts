@@ -2,13 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ElasticService } from '../elastic/elastic.service';
-import { ProductView } from './schemas/product-view.schema';
+import { DyProductView } from './repositories/dy-product-view.repository';
 
 @Injectable()
 export class ProductSearchService {
   constructor(
     private readonly elasticService: ElasticService,
-    @InjectModel('ProductView') private readonly productViewModel: Model<ProductView>
+    @InjectModel('DyProductView') private readonly productViewModel: Model<DyProductView>
   ) {}
 
   async indexProducts() {

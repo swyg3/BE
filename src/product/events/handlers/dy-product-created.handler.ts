@@ -1,6 +1,5 @@
 import { EventsHandler, IEventHandler } from "@nestjs/cqrs";
 import { Logger } from "@nestjs/common";
-import { ProductCreatedEvent } from "../impl/product-created.event";
 import { DyProductViewRepository } from "../../repositories/dy-product-view.repository";
 import { DyProductCreatedEvent } from "../impl/dy-product-created.event";
 
@@ -25,11 +24,13 @@ export class DyProductCreatedHandler
         name: event.data.name,
         productImageUrl: event.data.productImageUrl,
         description: event.data.description,
-        originalPrice: event.data.originalPrice,
-        discountedPrice: event.data.discountedPrice,
-        discountRate: event.data.discountRate,
-        availableStock: event.data.availableStock,
+        originalPrice: Number(event.data.originalPrice),
+        discountedPrice: Number(event.data.discountedPrice),
+        discountRate: Number(event.data.discountRate),
+        availableStock: Number(event.data.availableStock),
         expirationDate: event.data.expirationDate,
+        createdAt: event.data.createdAt || new Date(), 
+        updatedAt: event.data.updatedAt || new Date(), 
       });
 
       this.logger.log(`ProductView 등록 성공: ${event.aggregateId}`);

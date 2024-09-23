@@ -9,6 +9,7 @@ import { BadRequestException, Inject, Logger } from "@nestjs/common";
 import { EventBusService } from "src/shared/infrastructure/event-sourcing/event-bus.service";
 import { SellerRepository } from "src/sellers/repositories/seller.repository";
 import { Seller } from "src/sellers/entities/seller.entity";
+import { DyProductCreatedEvent } from "src/product/events/impl/dy-product-created.event";
 
 @CommandHandler(CreateProductCommand)
 export class CreateProductHandler
@@ -37,10 +38,10 @@ export class CreateProductHandler
       expirationDate,
     } = command;
 
-    const seller = await this.sellerRepository.findBySellerId(sellerId);
-    if (!seller) {
-      throw new Error("존재하지 않는 판매자입니다.");
-    }
+    // const seller = await this.sellerRepository.findBySellerId(sellerId);
+    // if (!seller) {
+    //   throw new Error("존재하지 않는 판매자입니다.");
+    // }
 
     let savedProduct: Product | null = null;
 
@@ -73,7 +74,7 @@ export class CreateProductHandler
       this.logger.log(expirationDate);
 
       // ProductCreatedEvent 생성 및 발행
-      const event = new ProductCreatedEvent(
+      const event = new DyProductCreatedEvent(
         product.id,
         {
           sellerId: product.sellerId,

@@ -14,6 +14,8 @@ export interface DyProductView {
   discountRate: number;
   availableStock: number;
   expirationDate: Date;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 @Injectable()
@@ -21,7 +23,7 @@ export class DyProductViewRepository {
   private readonly logger = new Logger(DyProductViewRepository.name);
 
   constructor(
-    @InjectModel("ProductView")
+    @InjectModel("DyProductView")
     private readonly dyProductViewModel: Model<
       DyProductView,
       { productId: string }
@@ -32,9 +34,12 @@ export class DyProductViewRepository {
   async create(productView: DyProductView): Promise<DyProductView> {
     try {
       this.logger.log(`ProductView 생성: ${productView.productId}`);
+      this.logger.log(`Attempting to create ProductView: ${JSON.stringify(productView)}`);
       return await this.dyProductViewModel.create(productView);
     } catch (error) {
       this.logger.error(`ProductView 생성 실패: ${error.message}`, error.stack);
+      this.logger.error(`Failed to create ProductView: ${JSON.stringify(productView)}`, error.stack);
+
       throw error;
     }
   }
