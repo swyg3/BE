@@ -1,20 +1,22 @@
-import { Controller, Get, Query } from '@nestjs/common';
-import { CustomResponse } from 'src/shared/interfaces/api-response.interface';
-import { QueryBus } from '@nestjs/cqrs';
-import { FindProductsByName } from './queries/impl/dy-product-search.query';
+import { Controller, Get, Post, Query } from '@nestjs/common';
+import { ElasticService } from 'src/elastic/elastic.service';
 
-@Controller('products')
+@Controller('search')
 export class ProductSearchController {
-  constructor(
-    private readonly queryBus: QueryBus,
+    constructor(
+        private readonly elasticService: ElasticService
+    ) { }
+    
+        @Get('search')
+        async searchProducts(@Query('content') query: string) {
+          return this.elasticService.searchProducts(query);
+        }
+      
+        @Post('index')
+        async indexProducts() {
+          return this.elasticService.indexProductsFromDynamoDB();
+        }
+    }
 
-  ) {}
-  @Get('search')
-  async search(@Query('name') name: string): Promise<CustomResponse> {
-    const products = await this.queryBus.execute(new FindProductsByName(name));
-    return {
-        success: true,
-        data: products,
-      };
-  }
-}
+
+

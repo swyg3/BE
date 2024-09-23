@@ -1,4 +1,4 @@
-import { BadRequestException, Module, ValidationPipe } from "@nestjs/common";
+import { BadRequestException, forwardRef, Module, ValidationPipe } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { Product } from "./entities/product.entity";
 import { ProductController } from "./product.controller";
@@ -30,9 +30,11 @@ import { ProductSchema } from "./schemas/dy-product-view.shema";
 import { DyProductViewRepository } from "./repositories/dy-product-view.repository";
 import { APP_PIPE } from "@nestjs/core";
 import { GetCategoryHandler } from "./queries/handlers/get-category.handler";
-import { FindProductsByNameHandler } from "./queries/handlers/dy-product-search.handler";
 import { ProductSearchController } from "./product.search.contoller";
-import { DyProductViewSearchRepository } from "./repositories/dy-product-search.repository";
+import { Client } from "@elastic/elasticsearch";
+import { ProductSearchService } from "./product-search.service";
+import { DySearchProductViewModel, DySearchProductViewSchema } from "./schemas/dy-product-search-view.schema";
+import { ElasticModule } from "src/elastic/elastic.module";
 
 const CommandHandlers = [
   CreateProductHandler,
@@ -48,6 +50,7 @@ const EventsHandlers = [
 
 @Module({
   imports: [
+    forwardRef(() => ElasticModule),
     CqrsModule,
     EventSourcingModule,
     RedisModule,
@@ -58,6 +61,7 @@ const EventsHandlers = [
     DynamooseModule.forFeature([
       { name: "ProductView", schema: ProductSchema },
       { name: "DyProductView", schema: ProductSchema },
+      { name: 'DySearchProductView', schema: DySearchProductViewSchema },
     ]),
     MulterModule.register({
       limits: {
@@ -101,11 +105,10 @@ const EventsHandlers = [
     SellerRepository,
     ProductViewRepository,
     DyProductViewRepository,
-    DyProductViewSearchRepository,
     GetProductByIdHandler,
     GetProductByDiscountRateHandler,
     GetCategoryHandler,
-    FindProductsByNameHandler,
+    ProductSearchService,
     //페이지네이션을 위한 transform 설정 
     // {
     //   provide: APP_PIPE,
@@ -118,6 +121,10 @@ const EventsHandlers = [
     // },
   ],
   controllers: [ProductController,ProductSearchController],
-  exports: [ProductRepository, SellerRepository, DyProductViewRepository,DyProductViewSearchRepository],
+  exports: [ProductRepository, SellerRepository,
+     DyProductViewRepository,
+    ProductSearchService,
+    DynamooseModule.forFeature([{ name: 'DySearchProductView', schema: DySearchProductViewSchema }]), // 외부로 내보내기
+  ],
 })
 export class ProductModule {}
