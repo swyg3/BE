@@ -7,22 +7,21 @@ import { DynamooseModule } from 'nestjs-dynamoose';
 import { ProductModule } from 'src/product/product.module';
 import { DySearchProductViewSchema } from 'src/product/schemas/dy-product-search-view.schema';
 
-
 @Module({
   imports: [
-    ConfigModule.forRoot(), 
+    ConfigModule.forRoot(),
     ElasticsearchModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
-        node: configService.get<string>('ELASTICSEARCH_PORT'),
+        node: `http://${configService.get<string>('ELASTICSEARCH_HOST')}:${configService.get<string>('ELASTICSEARCH_PORT')}`,
       }),
       inject: [ConfigService],
     }),
-    DynamooseModule.forFeature([{ name: 'DySearchProductView', schema: DySearchProductViewSchema }]), // DynamoDB 모델 등록
-    forwardRef(() => ProductModule), 
+    DynamooseModule.forFeature([{ name: 'DySearchProductView', schema: DySearchProductViewSchema }]), 
+    forwardRef(() => ProductModule),
   ],
   providers: [ElasticService],
   controllers: [ElasticController],
-  exports: [ElasticService], 
+  exports: [ElasticService],
 })
 export class ElasticModule {}
