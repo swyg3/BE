@@ -13,7 +13,7 @@ import { DySearchProductViewSchema } from 'src/product/schemas/dy-product-search
     ElasticsearchModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
-        node: `http://${configService.get<string>('ELASTICSEARCH_HOST')}:${configService.get<string>('ELASTICSEARCH_PORT')}`,
+        node: `http://elasticsearch_dev:${configService.get<string>('ELASTICSEARCH_PORT')}`,
       }),
       inject: [ConfigService],
     }),
