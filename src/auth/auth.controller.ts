@@ -138,117 +138,60 @@ export class AuthController {
       data: result,
     };
   }
-
-  // Authorization code를 OAuth Token으로 교환하는 과정
-  @ApiOperation({ summary: "OAuth 콜백 처리" })
-  @ApiResponse({ status: 200, description: "OAuth 콜백 처리 성공" })
+  @ApiOperation({ summary: "OAuth 콜백 처리" }) // API 설명 추가
   @ApiParam({
     name: "provider",
-    enum: ["google", "kakao"],
-    description: 'OAuth 제공자. google 또는 kakao 중 하나',
-  })
-  @ApiQuery({
-    name: 'code',
+    description: "OAuth 제공자 (google 또는 kakao)",
     required: true,
-    description: 'OAuth 제공자로부터 받은 인증 코드',
+  }) // 파라미터 설명 추가
+  @ApiBody({
+    description: "OAuth 콜백 요청 본체",
+    type: OAuthCallbackDto,
+    schema: {
+      type: "object",
+      properties: {
+        code: {
+          type: "string",
+          description: "OAuth 인증 코드",
+        },
+        userType: {
+          type: "string",
+          enum: ["user", "seller"],
+          description: "사용자 유형 (user 또는 seller)",
+        },
+      },
+      required: ["code", "userType"],
+    },
   })
-  @ApiQuery({
-    name: 'state',
-    required: true,
-    description: 'Base64로 인코딩된 userType 정보. 예: eyJ1c2VyVHlwZSI6InVzZXIifQ== (user) 또는 eyJ1c2VyVHlwZSI6InNlbGxlciJ9 (seller)',
-  })
-  @Get("login-oauth/:provider/callback")
+  @ApiResponse({ status: 200, description: "로그인 성공" })
+  @Post("login-oauth/:provider/callback")
   async oauthCallback(
     @Param("provider") provider: string,
-    @Query("code") code: string,
-    @Query("state") state: string,
-    @Res() res: Response,
-  ): Promise<void> {
-
-    console.log(`Received OAuth callback - Provider: ${provider}, Code: ${code}, State: ${state}`);
-
+    @Body() oauthCallbackDto: OAuthCallbackDto,
+  ): Promise<CustomResponse> {
     try {
-
-      if (!state) {
-        throw new BadRequestException('Missing state parameter');
-      }
-      let parsedState: { userType: string };
-      const decodedState = Buffer.from(state, 'base64').toString('utf-8');
-      parsedState = JSON.parse(decodedState);
-
-      if (!parsedState || !parsedState.userType) {
-        throw new BadRequestException('Invalid state structure');
-      }
-
-      const { userType } = parsedState;
-
-      if (userType !== 'user' && userType !== 'seller') {
-        throw new BadRequestException('Invalid userType');
-      }
-      console.log(`Processed userType: ${userType}`);
-
-      const oauthCallbackDto: OAuthCallbackDto = { provider, code, state, userType };
-      const result = await this.commandBus.execute(
-        new OAuthCallbackCommand(oauthCallbackDto),
+      const { code, userType } = oauthCallbackDto;
+      console.log(
+        `Received OAuth callback - Provider: ${provider}, Code: ${code}, userType: ${userType}`,
       );
 
-      // Base64로 인코딩된 userType을 포함하여 리다이렉트
-      const encodedUserType = Buffer.from(userType).toString('base64');
-      const redirectUrl = `http://localhost:3000/api/auth/complete-oauth?provider=${provider}&token=${result.oneTimeToken}&userType=${encodedUserType}`;
-      console.log(`Redirecting to: ${redirectUrl}`);
-      res.redirect(redirectUrl);
+      const result = await this.commandBus.execute(
+        new OAuthCallbackCommand(provider, code, userType),
+      );
+
+      return {
+        success: true,
+        message: `${provider} 로그인에 성공하였습니다.`,
+        data: result,
+      };
     } catch (error) {
-      console.error("OAuth callback error:", error);
+      console.error(`로그인 처리 중 오류가 발생했습니다. ${error}`);
+      return {
+        success: false,
+        message: "로그인 처리 중 오류가 발생했습니다.",
+        data: error.message || "알 수 없는 오류입니다.", // 오류 메시지 추가
+      };
     }
-  }
-
-  // OAuth 로그인 최종 단계, 일회용 토큰으로 JWT 발급
-  @ApiOperation({ summary: 'OAuth 로그인 완료' })
-  @ApiResponse({ status: 200, description: 'OAuth 로그인 완료 및 JWT 발급 성공' })
-  @ApiResponse({ status: 400, description: '잘못된 요청. userType이 올바르지 않음.' })
-  @ApiResponse({ status: 500, description: '서버 에러' })
-  @ApiQuery({
-    name: 'provider',
-    required: true,
-    description: 'OAuth 제공자. google 또는 kakao 중 하나',
-  })
-  @ApiQuery({
-    name: 'token',
-    required: true,
-    description: 'OAuth 콜백 처리 후 발급된 일회용 토큰',
-  })
-  @ApiQuery({
-    name: 'userType',
-    required: true,
-    description: 'Base64로 인코딩된 userType 정보. 예: dXNlcg== (user) 또는 c2VsbGVy (seller)',
-  })
-  @Get("complete-oauth")
-  async completeOauth(
-    @Query('provider') provider: string,
-    @Query('token') oneTimeToken: string,
-    @Query('userType') encodedUserType: string,
-  ): Promise<CustomResponse> {
-
-    console.log(`complete-oauth 경로에서 일회용 토큰: ${oneTimeToken}`)
-    
-    const userType = Buffer.from(encodedUserType, 'base64').toString('utf-8');
-    console.log(`complete-oauth 경로에서 사용자유형: ${encodedUserType}`)
-    
-    if (userType !== 'user' && userType !== 'seller') {
-      throw new BadRequestException('Invalid userType');
-    }
-
-    console.log(`Completing OAuth - Provider: ${provider}, UserType: ${userType}`);
-
-    const result = await this.commandBus.execute(
-      new LoginOAuthCommand(provider, oneTimeToken, userType),
-    );
-
-    return {
-      success: true,
-      message: `${result.provider} 로그인에 성공하였습니다.`,
-      data: result,
-    };
   }
 
   @ApiOperation({ summary: "로그아웃" })
