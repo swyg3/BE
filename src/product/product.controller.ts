@@ -16,17 +16,18 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { CreateProductCommand } from "./commands/impl/create-product.command";
 import { CreateProductDto } from "./dtos/create-product.dto";
 import { DeleteProductCommand } from "./commands/impl/delete-product.command";
-import { GetProductByIdQuery } from "./queries/impl/get-product-by-id.query";
 import { UpdateProductCommand } from "./commands/impl/update-product.command";
 import { CustomResponse } from "src/shared/interfaces/api-response.interface";
 import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
 import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
-import { GetProductByDiscountRateDto } from "./dtos/get-products-by-discountRate.dto";
 import { ThrottlerGuard } from "@nestjs/throttler";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { Express } from "express";
 import { GetCategoryDto } from "./dtos/get-category.dto";
 import { DyGetProductByIdQuery } from "./queries/impl/dy-get-prouct-by-id.query";
+import { DyGetProductByDiscountRateQuery } from "./queries/impl/dy-get-product-by-discountRate.query";
+import { DyProductViewRepository } from "./repositories/dy-product-view.repository";
+import { DyGetProductByDiscountRateInputDto } from "./dtos/dy-get-products-by-discountRate.dto";
 
 
 @ApiTags("Products")
@@ -38,6 +39,7 @@ export class ProductController {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
+    private readonly dyProductViewRepository:DyProductViewRepository
   ) { }
 
   @ApiOperation({ summary: "상품 등록" })
@@ -163,22 +165,28 @@ export class ProductController {
 
   @ApiOperation({ summary: "상품 할인률 순 조회" })
   @ApiResponse({ status: 200, description: "상품 할인률 순 조회 성공" })
-  @Get()
-  async getProducts(@Query() query: GetProductByDiscountRateDto) {
-    const productQuery = new GetProductByDiscountRateDto();
-    productQuery.where__id_more_than = query.where__id_more_than;
-    productQuery.order__discountRate = query.order__discountRate;
-    productQuery.take = query.take||100;
-
-    const product = await this.queryBus.execute(productQuery);
-
+  @Get("discountrate")
+  async getProducts(@Query() query: DyGetProductByDiscountRateInputDto) {
+    console.log('Received query:', query);
+    const productQuery = new DyGetProductByDiscountRateInputDto();
+    productQuery.order = query.order;
+    productQuery.take = query.take;
+    productQuery.exclusiveStartKey = query.exclusiveStartKey || '';
+    
+    console.log('Processed query:', productQuery);
+    const result = await this.queryBus.execute(
+      new DyGetProductByDiscountRateQuery(productQuery));
     return {
-      success: !!product,
-      message: product
-        ? "해당 상품리스트 조회를 성공했습니다."
-        : "상품을 찾을 수 없습니다.",
-      data: product,
+      success: true,
+      message: '해당 상품리스트 조회를 성공했습니다.',
+      data: result.items,
+      cursor: result.lastEvaluatedKey,
     };
+  }
+
+  @Get('scan')
+  async scanProducts(@Query('limit') limit: number = 10) {
+    return this.dyProductViewRepository.scanProducts(limit);
   }
 
 
@@ -199,43 +207,43 @@ export class ProductController {
 
   // }
 
-  @ApiOperation({ summary: "상품 카테고리 조회" })
-  @ApiResponse({ status: 200, description: "상품 카테고리 조회 성공" })
-  @Get("category")
-  async getKoreanCategory(@Query() query: GetCategoryDto) {
-    console.log('Received query:', query);
+  // @ApiOperation({ summary: "상품 카테고리 조회" })
+  // @ApiResponse({ status: 200, description: "상품 카테고리 조회 성공" })
+  // @Get("category")
+  // async getKoreanCategory(@Query() query: GetCategoryDto) {
+  //   console.log('Received query:', query);
 
-    const productQuery = new GetCategoryDto();
-    productQuery.where__id_more_than = query.where__id_more_than;
-    productQuery.category = query.category;
-    productQuery.take = query.take||100;
-    productQuery.order__discountRate = query.order__discountRate;
-    productQuery.order__createdAt=query.order__createdAt;
+  //   const productQuery = new GetCategoryDto();
+  //   productQuery.where__id_more_than = query.where__id_more_than;
+  //   productQuery.category = query.category;
+  //   productQuery.take = query.take||100;
+  //   productQuery.order__discountRate = query.order__discountRate;
+  //   productQuery.order__createdAt=query.order__createdAt;
 
-    console.log('Processed query:', productQuery);
+  //   console.log('Processed query:', productQuery);
 
-    const product = await this.queryBus.execute(productQuery);
+  //   const product = await this.queryBus.execute(productQuery);
 
-    return {
-      success: !!product,
-      message: product.data.length > 0
-        ? "해당 상품리스트 조회를 성공했습니다."
-        : "조건에 맞는 상품을 찾을 수 없습니다.",
-      data: product,
-    };
-  }
+  //   return {
+  //     success: !!product,
+  //     message: product.data.length > 0
+  //       ? "해당 상품리스트 조회를 성공했습니다."
+  //       : "조건에 맞는 상품을 찾을 수 없습니다.",
+  //     data: product,
+  //   };
+  // }
 
  
   
-  @Post('image')
-  @UseInterceptors(FileInterceptor('image'))
-  postImage(
-    @UploadedFile() file: Express.Multer.File,
-  ) {
-    return {
-      productImageUrl: file.filename,
-    };
-  }
+  // @Post('image')
+  // @UseInterceptors(FileInterceptor('image'))
+  // postImage(
+  //   @UploadedFile() file: Express.Multer.File,
+  // ) {
+  //   return {
+  //     productImageUrl: file.filename,
+  //   };
+  // }
 
 
 }

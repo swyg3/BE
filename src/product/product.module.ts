@@ -1,4 +1,4 @@
-import { BadRequestException, forwardRef, Module, ValidationPipe } from "@nestjs/common";
+import { BadRequestException, forwardRef, Logger, Module, ValidationPipe } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { Product } from "./entities/product.entity";
 import { ProductController } from "./product.controller";
@@ -17,7 +17,7 @@ import { InventoryCreatedEvent } from "src/inventory/events/impl/inventory-creat
 import { ProductCreatedHandler } from "./events/handlers/product-created.handler";
 import { EventSourcingModule } from "src/shared/infrastructure/event-sourcing";
 import { RedisModule } from "src/shared/infrastructure/redis/redis.config";
-import { GetProductByDiscountRateHandler } from "./queries/handlers/get-products-by-discountRate.handler";
+import { DyGetProductByDiscountRateHandler } from "./queries/handlers/get-products-by-discountRate.handler";
 import { Seller } from "src/sellers/entities/seller.entity";
 import { SellerRepository } from "src/sellers/repositories/seller.repository";
 import { MulterModule } from "@nestjs/platform-express";
@@ -112,20 +112,11 @@ const EventsHandlers = [
     ProductViewRepository,
     DyProductViewRepository,
     GetProductByIdHandler,
-    GetProductByDiscountRateHandler,
+    DyGetProductByDiscountRateHandler,
     GetCategoryHandler,
     ProductSearchService,
     DyGetProductByIdHandler,
-    //페이지네이션을 위한 transform 설정 
-    // {
-    //   provide: APP_PIPE,
-    //   useValue: new ValidationPipe({
-    //     transform: true,
-    //     transformOptions: {
-    //       enableImplicitConversion: true
-    //     }
-    //   }),
-    // },
+    Logger,
   ],
   controllers: [ProductController,ProductSearchController],
   exports: [ProductRepository, SellerRepository,

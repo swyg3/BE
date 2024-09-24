@@ -1,6 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { InjectModel, Model } from "nestjs-dynamoose";
 import { SortOrder } from "dynamoose/dist/General";
+import { DySearchProductView, DySearchProductViewModel } from "../schemas/dy-product-search-view.schema";
 
 export interface DyProductView {
   productId: string;
@@ -28,7 +29,7 @@ export class DyProductViewRepository {
       DyProductView,
       { productId: string }
     >,
-  ) {}
+  ) { }
 
   // 상품 생성
   async create(productView: DyProductView): Promise<DyProductView> {
@@ -121,59 +122,69 @@ export class DyProductViewRepository {
     }
   }
 
-  // 할인율 기준 상품 목록 조회
-  async findProductsByDiscountRate({
-    order,
-    limit,
-    cursor,
-    minDiscountRate,
-    maxDiscountRate,
-  }: {
-    order: "asc" | "desc";
-    limit: number;
-    cursor?: string;
-    minDiscountRate?: number;
-    maxDiscountRate?: number;
-  }): Promise<{ items: DyProductView[]; lastEvaluatedKey: string | null }> {
+
+  async findProductsByDiscountRate(
+    param: {
+      order: 'asc' | 'desc';
+      limit: number;
+      exclusiveStartKey?: string;
+    }
+  ): Promise<{ items: DyProductView[]; lastEvaluatedKey: string | null; count: number }> {
     try {
-      this.logger.log(
-        `할인율별 ProductView 조회: ${JSON.stringify({ order, limit, cursor, minDiscountRate, maxDiscountRate })}`,
-      );
+      // GSI를 사용한 쿼리 시작
+      let scan = this.dyProductViewModel
+        .scan()
+        .using("DiscountRateIndex")
+        .filter("discountRate").gt(0);  // discountRate > 0 조건을 필터로 변경
 
-      let query = this.dyProductViewModel.query("discountRate");
 
-      if (minDiscountRate !== undefined && maxDiscountRate !== undefined) {
-        query = query.between(minDiscountRate, maxDiscountRate);
-      } else if (minDiscountRate !== undefined) {
-        query = query.ge(minDiscountRate);
-      } else if (maxDiscountRate !== undefined) {
-        query = query.le(maxDiscountRate);
+      // 결과 제한
+      scan = scan.limit(param.limit);
+
+      // 시작 키 설정 (페이지네이션)
+      if (param.exclusiveStartKey) {
+        const [discountRate, productId] = param.exclusiveStartKey.split('|');
+        scan = scan.startAt({ productId, discountRate: parseFloat(discountRate) });
       }
+      console.log(scan);
 
-      query = query.using("DiscountRateIndex");
+      // 쿼리 실행
+      const results = await scan.exec();
+      this.logger.log(`Pagination query result: ${results.length} items`);
 
-      const sortOrder: SortOrder =
-        order === "asc" ? SortOrder.ascending : SortOrder.descending;
-      query = query.sort(sortOrder);
-
-      query = query.limit(limit);
-
-      if (cursor) {
-        query = query.startAt({ productId: cursor });
+      // 마지막 평가된 키 설정 (파티션 키와 정렬 키 모두 포함)
+      let lastEvaluatedKey = null;
+      if (results.lastKey && results.lastKey.discountRate !== undefined && results.lastKey.productId !== undefined) {
+        lastEvaluatedKey = `${results.lastKey.discountRate}|${results.lastKey.productId}`;
       }
-
-      const results = await query.exec();
 
       return {
         items: results,
-        lastEvaluatedKey: results.lastKey ? results.lastKey.productId : null,
+        lastEvaluatedKey,
+        count: results.length,
       };
     } catch (error) {
-      this.logger.error(
-        `할인율별 ProductView 조회 실패: ${error.message}`,
-        error.stack,
-      );
+      this.logger.error(`Pagination query failed: ${error.message}`, error.stack);
       throw error;
     }
   }
+
+
+
+  async scanProducts(limit: number = 10): Promise<DyProductView[]> {
+    try {
+      const order: 'desc' | 'asc' = 'desc';
+      let query = this.dyProductViewModel.query('discountRate')
+        .using('DiscountRateIndex')
+      query = query.sort(order === 'desc' ? SortOrder.ascending : SortOrder.descending);
+      const results = await query.limit(limit).exec();
+
+      this.logger.log(`스캔 결과: ${results.length} 항목`);
+      return results;
+    } catch (error) {
+      this.logger.error(`스캔 실패: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+
 }
