@@ -7,8 +7,10 @@ import { EventBusService } from "src/shared/infrastructure/event-sourcing";
 import { RefreshTokenService } from "../../services/refresh-token.service";
 import { UserLoggedInEvent } from "../../events/events/user-logged-in.event";
 import { SellerLoggedInEvent } from "../../events/events/seller-logged-in.event";
-import { BadRequestException, Logger, Injectable } from "@nestjs/common";
+import { BadRequestException, Logger, Injectable, Inject } from "@nestjs/common";
 import axios from "axios";
+import { REDIS_CLIENT } from "src/shared/infrastructure/redis/redis.config";
+import Redis from "ioredis";
 
 enum UserType {
   USER = "user",
@@ -67,10 +69,11 @@ export class LoginOAuthCommandHandler
     private readonly tokenService: TokenService,
     private readonly refreshTokenService: RefreshTokenService,
     private readonly eventBusService: EventBusService,
+    @Inject(REDIS_CLIENT) private readonly redisClient: Redis
   ) {}
 
   async execute(command: LoginOAuthCommand) {
-    const { provider, userType, accessToken } = command.loginOAuthDto;
+    const { provider, oneTimeToken, userType } = command;
 
     if (!Object.values(UserType).includes(userType as UserType)) {
       throw new BadRequestException("잘못된 사용자 유형입니다.");
@@ -83,6 +86,12 @@ export class LoginOAuthCommandHandler
     const oauthProvider = this.oauthProviders[provider];
     if (!oauthProvider) {
       throw new BadRequestException("지원하지 않는 OAuth 제공자입니다.");
+    }
+
+    // 일회용 토큰으로 실제 액세스 토큰 가져오기
+    const accessToken = await this.useOneTimeToken(oneTimeToken);
+    if (!accessToken) {
+      throw new BadRequestException("유효하지 않거나 만료된 토큰입니다.");
     }
 
     const oauthUserInfo = await this.fetchUserInfo(oauthProvider, accessToken);
@@ -145,6 +154,8 @@ export class LoginOAuthCommandHandler
     let isNew;
     let event;
 
+    this.logger.log(`처리할 유저 정보: ${JSON.stringify(userInfo)}`);
+
     if (userType === UserType.USER) {
       const result = await this.userRepository.upsert(userInfo.email, {
         name: userInfo.name,
@@ -186,7 +197,17 @@ export class LoginOAuthCommandHandler
         user.version || 1,
       );
     }
-
+    this.logger.log(`User or Seller 생성: ${JSON.stringify(user)}`);
+    this.logger.log(`생성된 이벤트: ${JSON.stringify(event)}`);
+    
     return { user, event };
+  }
+
+  async useOneTimeToken(token: string): Promise<string | null> {
+    const value = await this.redisClient.get(token);
+    if (value) {
+      await this.redisClient.del(token);
+    }
+    return value;
   }
 }

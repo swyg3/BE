@@ -12,6 +12,11 @@ export class OAuthCallbackDto {
   @IsNotEmpty()
   code: string;
 
+  @ApiProperty({ description: "사용자 유형 (user 또는 seller)" })
+  @IsString()
+  @IsIn(["user", "seller"])
+  userType: string;
+
   @ApiProperty({ description: "상태" })
   @IsString()
   state?: string;
