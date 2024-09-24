@@ -89,4 +89,5 @@ export const DySearchProductViewSchema = new Schema({
   saveUnknown: false,
 });
 
+
 export const DySearchProductViewModel = dynamoose.model<DySearchProductView>('DySearchProductView', DySearchProductViewSchema);

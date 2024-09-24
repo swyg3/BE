@@ -149,8 +149,17 @@ export class DyProductViewRepository {
       console.log(scan);
 
       // 쿼리 실행
-      const results = await scan.exec();
+      let results = await scan.exec();
       this.logger.log(`Pagination query result: ${results.length} items`);
+
+      // 결과를 메모리에서 정렬 (수정된 부분)
+      results = results.sort((a, b) => {
+        if (param.order === 'asc') {
+          return a.discountRate - b.discountRate;
+        } else {
+          return b.discountRate - a.discountRate;  // desc 순서를 위해 b - a로 변경
+        }
+      });
 
       // 마지막 평가된 키 설정 (파티션 키와 정렬 키 모두 포함)
       let lastEvaluatedKey = null;
