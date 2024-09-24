@@ -36,6 +36,10 @@ import { ProductSearchService } from "./product-search.service";
 import { DySearchProductViewModel, DySearchProductViewSchema } from "./schemas/dy-product-search-view.schema";
 import { ElasticModule } from "src/elastic/elastic.module";
 import { DyProductCreatedHandler } from "./events/handlers/dy-product-created.handler";
+import { DyGetProductByIdHandler } from "./queries/handlers/dy-get-product-by-id.handler";
+import { UserViewRepository } from "src/users/repositories/user-view.repository";
+import { UsersModule } from "src/users/users.module";
+import { SellersModule } from "src/sellers/sellers.module";
 
 const CommandHandlers = [
   CreateProductHandler,
@@ -64,6 +68,7 @@ const EventsHandlers = [
       { name: "DyProductView", schema: ProductSchema },
       { name: 'DySearchProductView', schema: DySearchProductViewSchema },
     ]),
+    SellersModule,
     MulterModule.register({
       limits: {
         // 바이트 단위로 입력
@@ -110,6 +115,7 @@ const EventsHandlers = [
     GetProductByDiscountRateHandler,
     GetCategoryHandler,
     ProductSearchService,
+    DyGetProductByIdHandler,
     //페이지네이션을 위한 transform 설정 
     // {
     //   provide: APP_PIPE,

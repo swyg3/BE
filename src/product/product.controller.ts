@@ -26,6 +26,7 @@ import { ThrottlerGuard } from "@nestjs/throttler";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { Express } from "express";
 import { GetCategoryDto } from "./dtos/get-category.dto";
+import { DyGetProductByIdQuery } from "./queries/impl/dy-get-prouct-by-id.query";
 
 
 @ApiTags("Products")
@@ -65,7 +66,7 @@ export class ProductController {
       `Creating product with expiration date: ${expirationDateObj}`,
     );
     const productImageUrl = file.filename;
-
+    this.logger.log(`controller${productImageUrl}`);
     const result = await this.commandBus.execute(
       new CreateProductCommand(
         sellerId,
@@ -108,7 +109,7 @@ export class ProductController {
   @Get("get/:id")
   @UseGuards(JwtAuthGuard)
   async getProductById(@Param("id") id: string): Promise<CustomResponse> {
-    const product = await this.queryBus.execute(new GetProductByIdQuery(id));
+    const product = await this.queryBus.execute(new DyGetProductByIdQuery(id));
 
     return {
       success: !!product,

@@ -10,6 +10,7 @@ export const ProductSchema = new Schema(
       hashKey: true,
       required: true,
     },
+
     sellerId: {
       type: String,
       required: true,

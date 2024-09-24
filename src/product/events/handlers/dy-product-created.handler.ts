@@ -15,6 +15,7 @@ export class DyProductCreatedHandler
 
   async handle(event: DyProductCreatedEvent) {
     this.logger.log(`ProductCreatedEvent 처리중: ${event.aggregateId}`);
+    this.logger.log(`evebt handler${event.data.productImageUrl}`);
 
     try {
       await this.dyProductViewRepository.create({

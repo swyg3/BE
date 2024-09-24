@@ -13,8 +13,7 @@ import { DyProductCreatedEvent } from "src/product/events/impl/dy-product-create
 
 @CommandHandler(CreateProductCommand)
 export class CreateProductHandler
-  implements ICommandHandler<CreateProductCommand>
-{
+  implements ICommandHandler<CreateProductCommand> {
   private readonly logger = new Logger(CreateProductHandler.name);
 
   constructor(
@@ -23,7 +22,7 @@ export class CreateProductHandler
     private readonly sellerRepository: SellerRepository,
     private readonly eventBusService: EventBusService,
     @Inject(CommandBus) private readonly commandBus: CommandBus,
-  ) {}
+  ) { }
 
   async execute(command: CreateProductCommand) {
     const {
@@ -38,10 +37,10 @@ export class CreateProductHandler
       expirationDate,
     } = command;
 
-    // const seller = await this.sellerRepository.findBySellerId(sellerId);
-    // if (!seller) {
-    //   throw new Error("존재하지 않는 판매자입니다.");
-    // }
+    const seller = await this.sellerRepository.findBySellerId(sellerId);
+    if (!seller) {
+      throw new Error("존재하지 않는 판매자입니다.");
+    }
 
     let savedProduct: Product | null = null;
 
@@ -56,6 +55,7 @@ export class CreateProductHandler
         originalPrice,
         discountedPrice,
       });
+      this.logger.log(`command handler${productImageUrl}`);
 
       try {
         savedProduct = await this.productRepository.save(product);
