@@ -1,7 +1,6 @@
 import { Body, Controller, Delete, Get, Logger, Param, Post } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { CreateOrderCommand } from './commands/create-order.command';
-import { DeleteOrderCommand } from './commands/delete-order.command';
 import { CreateOrderDto } from './dtos/create-order.dto';
 import { OrderService } from './services/order.service';
 
@@ -15,6 +14,7 @@ export class OrderController {
         private readonly orderService: OrderService,
     ) {}
 
+    // 주문 생성
     @Post()
     createOrder(@Body() createOrderDto: CreateOrderDto) {
         const { userId, totalAmount, totalPrice, pickupTime, paymentMethod, status, items } = createOrderDto;
@@ -30,11 +30,9 @@ export class OrderController {
         return this.orderService.getOrdersByUserId(userId);
     }
 
-    // 사용자별 선택한 주문 목록의 상세 주문 내용
-
-    // orders의 id == order_items의 orderId(외래키)
+    // 주문 취소
     @Delete(':id')
-    async deleteOrder(@Param('id') id: string) {
-        await this.commandBus.execute(new DeleteOrderCommand(id));
+    async cancelOrders(@Param('id') id: number) {
+        
     }
 }
