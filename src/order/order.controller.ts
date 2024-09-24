@@ -1,6 +1,7 @@
 import { Body, Controller, Delete, Get, Logger, Param, Post } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { CreateOrderCommand } from './commands/create-order.command';
+import { DeleteOrderCommand } from './commands/delete-order.command';
 import { CreateOrderDto } from './dtos/create-order.dto';
 import { OrderService } from './services/order.service';
 
@@ -32,7 +33,9 @@ export class OrderController {
 
     // 주문 취소
     @Delete(':id')
-    async cancelOrders(@Param('id') id: number) {
-        
+    async cancelOrders(@Param('id') id: string) {
+        return this.commandBus.execute(
+            new DeleteOrderCommand(id)
+        );
     }
 }

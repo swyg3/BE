@@ -1,4 +1,5 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch } from '@nestjs/common';
+import { UpdateOrderItemDto } from './dtos/update-order-itmes.dto';
 import { OrderItemService } from './services/order-item.service';
 
 @Controller('order-itmes')
@@ -11,5 +12,11 @@ export class OrderItmesController {
     @Get(':orderId')
     async getOrderItems(@Param('orderId') orderId: string) {
         return this.orderItemService.getOrderItemsByOrderId(orderId);
+    }
+
+    // 주문 상세 수정
+    @Patch(':orderId')
+    async updateOrderItem(@Body() updateOrderItemDto: UpdateOrderItemDto) {
+        return this.orderItemService.updateOrderItem(updateOrderItemDto);
     }
 }
