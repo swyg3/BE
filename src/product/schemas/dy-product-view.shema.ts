@@ -1,4 +1,4 @@
-import { Schema } from "dynamoose";
+import { model, Schema } from "dynamoose";
 import { Category } from "src/product/product.category";
 import { PRODUCTS_PUBLIC_IMAGE_PATH } from "../const/path.const";
 import { join } from "path";
@@ -74,4 +74,12 @@ export const ProductSchema = new Schema(
     },
     saveUnknown: false, // 스키마에 정의되지 않은 속성의 저장을 방지
   },
+  
 );
+
+export const Product = model("Product", ProductSchema, {
+  create: false,  // 테이블이 이미 존재한다고 가정
+  update: true,
+  waitForActive: false,
+});
+
