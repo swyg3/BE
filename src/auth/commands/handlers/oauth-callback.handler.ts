@@ -1,11 +1,20 @@
-import { Inject, Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { CommandHandler, ICommandHandler } from "@nestjs/cqrs";
 import axios from "axios";
 import { ConfigService } from "@nestjs/config";
 import { OAuthCallbackCommand } from "../commands/oauth-callback.command";
-import { v4 as uuidv4 } from 'uuid';
-import { REDIS_CLIENT } from "src/shared/infrastructure/redis/redis.config";
-import Redis from "ioredis";
+import { UserRepository } from "src/users/repositories/user.repository";
+import { SellerRepository } from "src/sellers/repositories/seller.repository";
+import { TokenService } from "src/auth/services/token.service";
+import { RefreshTokenService } from "src/auth/services/refresh-token.service";
+import { EventBusService } from "src/shared/infrastructure/event-sourcing/event-bus.service";
+import { UserLoggedInEvent } from "src/auth/events/events/user-logged-in.event";
+import { SellerLoggedInEvent } from "src/auth/events/events/seller-logged-in.event";
+
+enum UserType {
+  USER = "user",
+  SELLER = "seller",
+}
 
 @Injectable()
 @CommandHandler(OAuthCallbackCommand)
@@ -16,41 +25,83 @@ export class LoginOAuthCallbackCommandHandler
 
   constructor(
     private readonly configService: ConfigService,
-    @Inject(REDIS_CLIENT) private readonly redisClient: Redis
+    private readonly userRepository: UserRepository,
+    private readonly sellerRepository: SellerRepository,
+    private readonly tokenService: TokenService,
+    private readonly refreshTokenService: RefreshTokenService,
+    private readonly eventBusService: EventBusService,
   ) {}
 
   async execute(command: OAuthCallbackCommand): Promise<any> {
-    const { provider, code, userType } = command.oauthCallbackDto;
+    const { provider, code, userType } = command;
 
-    this.logger.debug(`Received OAuth callback - Provider: ${provider}, Code: ${code}, userType: ${userType}`);
-
-    let tokenUrl: string;
-    let clientId: string;
-    let clientSecret: string;
-    let redirectUri: string;
-
-    if (provider === "google") {
-      tokenUrl = "https://oauth2.googleapis.com/token";
-      clientId = this.configService.get<string>("GOOGLE_CLIENT_ID");
-      clientSecret = this.configService.get<string>("GOOGLE_CLIENT_SECRET");
-      redirectUri = this.configService.get<string>("GOOGLE_CALLBACK_URL");
-    } else if (provider === "kakao") {
-      tokenUrl = "https://kauth.kakao.com/oauth/token";
-      clientId = this.configService.get<string>("KAKAO_CLIENT_ID");
-      clientSecret = this.configService.get<string>("KAKAO_CLIENT_SECRET");
-      redirectUri = this.configService.get<string>("KAKAO_CALLBACK_URL");
-    } else {
-      throw new Error(`${provider}: 지원하지 않는 기능입니다.`);
-    }
-
-    // 설정 로깅
-    this.logger.debug(`Provider: ${provider}`);
-    this.logger.debug(`Client ID: ${clientId}`);
-    this.logger.debug(`Redirect URI: ${redirectUri}`);
+    this.logger.log(
+      `OAuth 로그인 요청 받음: provider=${provider}, userType=${userType}`,
+    );
 
     try {
-      // 1. 액세스 토큰 요청
-      const tokenResponse = await axios.post(tokenUrl, null, {
+      // 1. 인증 코드로 액세스 토큰 요청
+      const accessToken = await this.getAccessToken(provider, code);
+
+      // 2. 액세스 토큰으로 사용자 정보 요청
+      const userInfo = await this.getUserInfo(provider, accessToken);
+
+      // 3. 사용자 생성 또는 업데이트
+      const { user, event } = await this.handleUserOrSellerLogin(
+        userType as UserType,
+        userInfo,
+        provider,
+      );
+
+      // 4. JWT 생성
+      const tokens = await this.tokenService.generateTokens(
+        user.id,
+        user.email,
+        userType,
+      );
+
+      await this.refreshTokenService.storeRefreshToken(
+        user.id,
+        tokens.refreshToken,
+      );
+
+      // 5. 이벤트 발행
+      await this.eventBusService.publishAndSave(event);
+
+      // 6. JWT 및 사용자 정보 반환
+      return {
+        provider,
+        [userType === UserType.USER ? "userId" : "sellerId"]: user.id,
+        email: user.email,
+        name: user.name,
+        userType: userType,
+        ...tokens,
+      };
+    } catch (error) {
+      this.logger.error(`OAuth Callback 처리 중 오류 발생: ${error.message}`);
+      throw new Error(`OAuth Callback 실패: ${error.message}`);
+    }
+  }
+
+  private async getAccessToken(
+    provider: string,
+    code: string,
+  ): Promise<string> {
+    try {
+      const tokenUrl = this.configService.get<string>(
+        `${provider.toUpperCase()}_TOKEN_URL`,
+      );
+      const clientId = this.configService.get<string>(
+        `${provider.toUpperCase()}_CLIENT_ID`,
+      );
+      const clientSecret = this.configService.get<string>(
+        `${provider.toUpperCase()}_CLIENT_SECRET`,
+      );
+      const redirectUri = this.configService.get<string>(
+        `${provider.toUpperCase()}_CALLBACK_URL`,
+      );
+
+      const response = await axios.post(tokenUrl, null, {
         params: {
           code,
           client_id: clientId,
@@ -58,45 +109,89 @@ export class LoginOAuthCallbackCommandHandler
           redirect_uri: redirectUri,
           grant_type: "authorization_code",
         },
-        validateStatus: () => true,
       });
-
-      if (tokenResponse.status !== 200) {
-        this.logger.error(
-          `OAuth 토큰 요청 실패: ${JSON.stringify(tokenResponse.data)}`,
-        );
-        throw new Error(`OAuth 토큰 요청 실패: ${tokenResponse.status}`);
-      }
-
-      this.logger.log(
-        `${provider}에서 ${tokenResponse.data.access_token}을 성공적으로 받았습니다.`,
-      );
-
-      // 3. 일회용 토큰 생성
-      const oneTimeToken = await this.createOneTimeToken(tokenResponse.data.access_token);
-
-      // 4. 인증 토큰 반환
-      this.logger.log(
-        `${oneTimeToken}으로 변환해서 응답합니다.`,
-      );
-      return {
-        oneTimeToken,
-        provider,
-      };
+      this.logger.log(`getAccessToken: response=${response}`);
+      return response.data.access_token;
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        this.logger.error(`OAuth 토큰 요청 실패: ${error.response?.status} ${error.response?.statusText}`);
-        this.logger.error(`오류 상세: ${JSON.stringify(error.response?.data)}`);
-      } else {
-        this.logger.error(`OAuth Callback 처리 중 오류 발생: ${error.message}`);
+        this.logger.error(
+          `Failed to get access token. Status: ${error.response?.status}`,
+        );
+        this.logger.error(
+          `Error data: ${JSON.stringify(error.response?.data)}`,
+        );
       }
-      throw new Error(`OAuth Callback 실패: ${error.message}`);
+      throw error;
     }
   }
 
-  async createOneTimeToken(value: string, expirationSeconds: number = 300): Promise<string> {
-    const token = uuidv4();
-    await this.redisClient.set(token, value, 'EX', expirationSeconds);
-    return token;
+  private async getUserInfo(
+    provider: string,
+    accessToken: string,
+  ): Promise<any> {
+    const userInfoUrl = this.configService.get<string>(
+      `${provider.toUpperCase()}_USER_INFO_URL`,
+    );
+    const response = await axios.get(userInfoUrl, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    this.logger.log(
+      `getUserInfo: userInfoUrl=${userInfoUrl}, userType=${response}`,
+    );
+    return response.data;
+  }
+
+  private async handleUserOrSellerLogin(
+    userType: UserType,
+    userInfo: any,
+    provider: string,
+  ) {
+    let user;
+    let isNew;
+    let event;
+
+    if (userType === UserType.USER) {
+      const result = await this.userRepository.upsert(userInfo.email, {
+        name: userInfo.name,
+        phoneNumber: userInfo.phoneNumber || null,
+        password: "",
+      });
+      user = result.user;
+      isNew = result.isNewUser;
+      event = new UserLoggedInEvent(
+        user.id,
+        {
+          email: user.email,
+          provider,
+          isNewUser: isNew,
+          isEmailVerified: true,
+          timestamp: new Date(),
+        },
+        user.version || 1,
+      );
+    } else {
+      const result = await this.sellerRepository.upsert(userInfo.email, {
+        name: userInfo.name,
+        phoneNumber: userInfo.phoneNumber || null,
+        password: "",
+        isEmailVerified: true,
+      });
+      user = result.seller;
+      isNew = result.isNewSeller;
+      event = new SellerLoggedInEvent(
+        user.id,
+        {
+          email: user.email,
+          provider,
+          isNewSeller: isNew,
+          isEmailVerified: true,
+          isBusinessNumberVerified: user.isBusinessNumberVerified,
+          timestamp: new Date(),
+        },
+        user.version || 1,
+      );
+    }
+    this.logger.log(`event: user=${user}, event=${event}`);
+    return { user, event };
   }
 }
