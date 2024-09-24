@@ -170,7 +170,7 @@ export class ProductController {
     console.log('Received query:', query);
     const productQuery = new DyGetProductByDiscountRateInputDto();
     productQuery.order = query.order;
-    productQuery.take = query.take;
+    productQuery.take = Number(query.take);
     productQuery.exclusiveStartKey = query.exclusiveStartKey || '';
     
     console.log('Processed query:', productQuery);
@@ -180,7 +180,9 @@ export class ProductController {
       success: true,
       message: '해당 상품리스트 조회를 성공했습니다.',
       data: result.items,
-      cursor: result.lastEvaluatedKey,
+      lastEvaluatedKey:result.lastEvaluatedKey,
+      firstEvaluatedKey:result.firstEvaluatedKey,
+      count:result.count
     };
   }
 

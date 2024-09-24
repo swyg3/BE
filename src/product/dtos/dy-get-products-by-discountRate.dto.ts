@@ -8,7 +8,7 @@ export class DyGetProductByDiscountRateInputDto {
   @IsInt()
   @Min(1)
   @Max(100)
-  take: number = 10;
+  take: number;
 
   @IsOptional()
   @IsString()

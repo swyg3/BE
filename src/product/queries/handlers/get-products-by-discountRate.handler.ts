@@ -16,14 +16,15 @@ export class DyGetProductByDiscountRateHandler
     const { order, take, exclusiveStartKey } = query.dto;
     const param = {
       order,
-      limit: take,
+      limit: Number(take),
       ...(exclusiveStartKey && { exclusiveStartKey }),
     };
 
     const result = await this.dyProductViewRepository.findProductsByDiscountRate(param);
     return {
       items: result.items,
-      lastEvaluatedKey: result.lastEvaluatedKey || null,
+      lastEvaluatedKey: result.lastEvaluatedUrl ||null,
+      firstEvaluatedKey:result.firstEvaluatedUrl||null,
       count: result.count,
 
     };
