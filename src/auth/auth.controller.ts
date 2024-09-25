@@ -5,29 +5,23 @@ import {
   UseGuards,
   Req,
   Controller,
-  Res,
   Param,
   Query,
-  BadRequestException,
 } from "@nestjs/common";
 import { CommandBus } from "@nestjs/cqrs";
 import { Throttle, ThrottlerGuard } from "@nestjs/throttler";
 import { RequestEmailVerificationCommand } from "./commands/commands/request-email-verification.command";
 import { VerifyEmailCommand } from "./commands/commands/verify-email.command";
 import { LoginEmailCommand } from "./commands/commands/login-email.command";
-import { LoginOAuthCommand } from "./commands/commands/login-oauth.command";
 import { LogoutCommand } from "./commands/commands/logout.command";
 import { RefreshTokenCommand } from "./commands/commands/refresh-token.command";
 import { RequestEmailVerificationDto } from "./dtos/request-email-verify.dto";
 import { VerifyEmailDto } from "./dtos/verify-email.dto";
 import { LoginEmailDto } from "./dtos/login-email.dto";
-import { LoginOAuthDto } from "./dtos/login-oauth.dto";
 import { CompleteSellerProfileDto } from "./dtos/complete-seller-profile.dto";
 import { CompleteSellerProfileCommand } from "./commands/commands/complete-seller-profile.command";
 import { VerifyBusinessNumberCommand } from "./commands/commands/verify-business-number.command";
 import { VerifyBusinessNumberDto } from "./dtos/verify-business-number.dto";
-import { OAuthCallbackDto } from "./dtos/oauth-callback.dto";
-import { Response } from "express";
 import { OAuthCallbackCommand } from "./commands/commands";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { JwtPayload } from "src/shared/interfaces/jwt-payload.interface";
@@ -41,6 +35,8 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 import { CustomResponse } from "src/shared/interfaces/api-response.interface";
+import { UserTypes } from "src/shared/decorators/validate-user-type.decorator";
+import { UserType } from "./interfaces/user-type.type";
 
 @ApiTags("Auth")
 @Controller("auth")
@@ -138,39 +134,37 @@ export class AuthController {
       data: result,
     };
   }
-  @ApiOperation({ summary: "OAuth 콜백 처리" }) // API 설명 추가
+
+  @ApiOperation({
+    summary: "OAuth 로그인 콜백",
+    description: "OAuth 프로바이더로부터 리다이렉트된 콜백 요청을 처리합니다.",
+  })
   @ApiParam({
     name: "provider",
-    description: "OAuth 제공자 (google 또는 kakao)",
+    description: "OAuth 제공자 이름 google 또는 kakao",
     required: true,
-  }) // 파라미터 설명 추가
-  @ApiBody({
-    description: "OAuth 콜백 요청 본체",
-    type: OAuthCallbackDto,
-    schema: {
-      type: "object",
-      properties: {
-        code: {
-          type: "string",
-          description: "OAuth 인증 코드",
-        },
-        userType: {
-          type: "string",
-          enum: ["user", "seller"],
-          description: "사용자 유형 (user 또는 seller)",
-        },
-      },
-      required: ["code", "userType"],
-    },
+    type: String,
   })
-  @ApiResponse({ status: 200, description: "로그인 성공" })
-  @Post("login-oauth/:provider/callback")
+  @ApiQuery({
+    name: "code",
+    description: "OAuth 제공자로부터 받은 인증 코드",
+    required: true,
+    type: String,
+  })
+  @ApiQuery({
+    name: "userType",
+    description: "userType: user 또는 seller",
+    required: true,
+    enum: UserType,
+    example: UserType.USER,
+  })
+  @Get("login-oauth/:provider/callback")
   async oauthCallback(
     @Param("provider") provider: string,
-    @Body() oauthCallbackDto: OAuthCallbackDto,
+    @Query("code") code: string,
+    @UserTypes() userType: UserType,
   ): Promise<CustomResponse> {
     try {
-      const { code, userType } = oauthCallbackDto;
       console.log(
         `Received OAuth callback - Provider: ${provider}, Code: ${code}, userType: ${userType}`,
       );
