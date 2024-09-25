@@ -5,7 +5,7 @@ import { Logger } from "@nestjs/common";
 import { DyGetProductByDiscountRateOutputDto } from "src/product/dtos/dy-get-product-by-dicounstRateout.dto";
 
 @QueryHandler(DyGetProductByDiscountRateQuery)
-export class DyGetProductByDiscountRateHandler
+export class DyGetProductByDiscountRateHandler 
   implements IQueryHandler<DyGetProductByDiscountRateQuery> {
   constructor(
     private readonly dyProductViewRepository: DyProductViewRepository,
@@ -13,20 +13,26 @@ export class DyGetProductByDiscountRateHandler
   ) {}
 
   async execute(query: DyGetProductByDiscountRateQuery): Promise<DyGetProductByDiscountRateOutputDto> {
-    const { order, take, exclusiveStartKey } = query.dto;
+    const { order, limit, exclusiveStartKey, paginationDirection } = query.dto;
+    
     const param = {
       order,
-      limit: Number(take),
+      limit: Number(limit),
       ...(exclusiveStartKey && { exclusiveStartKey }),
+      ...(paginationDirection && { paginationDirection }),
     };
 
+    this.logger.log(`Executing query with parameters: ${JSON.stringify(param)}`);
+
     const result = await this.dyProductViewRepository.findProductsByDiscountRate(param);
+
+    this.logger.log(`Query result: ${result.count} items found`);
+
     return {
       items: result.items,
-      lastEvaluatedKey: result.lastEvaluatedUrl ||null,
-      firstEvaluatedKey:result.firstEvaluatedUrl||null,
+      lastEvaluatedUrl: result.lastEvaluatedUrl || null,
+      firstEvaluatedUrl: result.firstEvaluatedUrl || null,
       count: result.count,
-
     };
   }
 }

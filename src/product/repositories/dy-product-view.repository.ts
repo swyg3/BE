@@ -128,7 +128,6 @@ export class DyProductViewRepository {
 
 
   
-  
   async findProductsByDiscountRate(
     param: {
       order: 'asc' | 'desc';
@@ -164,7 +163,7 @@ export class DyProductViewRepository {
         }
       }
   
-      query = query.sort(sortOrder).limit(param.limit);
+      query = query.sort(sortOrder).limit(Number(2));
   
       // 쿼리 실행
       const results: QueryResponse<DyProductView> = await query.exec();
@@ -209,7 +208,6 @@ export class DyProductViewRepository {
       throw error;
     }
   }
-
 
 
 

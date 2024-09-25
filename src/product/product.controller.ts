@@ -166,30 +166,33 @@ export class ProductController {
       data: result,
     };
   }
-
   @ApiOperation({ summary: "상품 할인률 순 조회" })
   @ApiResponse({ status: 200, description: "상품 할인률 순 조회 성공" })
   @Get("discountrate")
   async getProducts(@Query() query: DyGetProductByDiscountRateInputDto) {
     console.log('Received query:', query);
+  
     const productQuery = new DyGetProductByDiscountRateInputDto();
     productQuery.order = query.order;
-    productQuery.take = Number(query.take);
+    productQuery.limit = Number(query.limit);
     productQuery.exclusiveStartKey = query.exclusiveStartKey || '';
-
+    productQuery.paginationDirection = query.paginationDirection || 'forward';
+  
     console.log('Processed query:', productQuery);
+  
     const result = await this.queryBus.execute(
-      new DyGetProductByDiscountRateQuery(productQuery));
+      new DyGetProductByDiscountRateQuery(productQuery)
+    );
+  
     return {
       success: true,
       message: '해당 상품리스트 조회를 성공했습니다.',
       data: result.items,
-      lastEvaluatedKey: result.lastEvaluatedKey,
-      firstEvaluatedKey: result.firstEvaluatedKey,
+      lastEvaluatedUrl: result.lastEvaluatedUrl,
+      firstEvaluatedUrl: result.firstEvaluatedUrl,
       count: result.count
     };
   }
-
   // @Get('discounted')
   // async getDiscountedProducts(@Query('limit') limit: number = 100) {
   //   const discountedProducts = await this.productService.getDiscountedProductsPaginated(limit);
