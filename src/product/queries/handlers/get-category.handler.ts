@@ -6,10 +6,26 @@ import { ProductView } from "src/product/schemas/product-view.schema";
 import { Category } from "src/product/product.category";
 import { ConfigService } from "@nestjs/config";
 
+export interface DyProductView {
+  productId: string;
+  sellerId: string;
+  category: string;
+  name: string;
+  productImageUrl: string;
+  description: string;
+  originalPrice: number;
+  discountedPrice: number;
+  discountRate: number;
+  availableStock: number;
+  expirationDate: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 @QueryHandler(GetCategoryDto)
 export class GetCategoryHandler implements IQueryHandler<GetCategoryDto> {
   constructor(
-    @InjectModel(ProductView.name)
+   
     private readonly productViewModel: Model<ProductView>,
     private configService: ConfigService
   ) {}

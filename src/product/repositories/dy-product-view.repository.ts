@@ -1,9 +1,10 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { InjectModel, Model } from "nestjs-dynamoose";
+import { InjectModel, Model, QueryResponse } from "nestjs-dynamoose";
 import { SortOrder } from "dynamoose/dist/General";
 import { DySearchProductView, DySearchProductViewModel } from "../schemas/dy-product-search-view.schema";
 import { ConfigService } from "@nestjs/config/dist/config.service";
 import { Item } from 'dynamoose/dist/Item';
+import { v4 as uuidv4 } from 'uuid';
 
 export interface DyProductView {
   productId: string;
@@ -111,7 +112,7 @@ export class DyProductViewRepository {
   }
 
   // 카테고리로 상품 목록 조회
-  async findAllProductsByCategory(category: string): Promise<DyProductView[]> {
+  async findProductsByCategory(category: string): Promise<DyProductView[]> {
     try {
       this.logger.log(`ProductView 조회: category=${category}`);
       const results = await this.dyProductViewModel
@@ -126,77 +127,89 @@ export class DyProductViewRepository {
   }
 
 
+  
+  
   async findProductsByDiscountRate(
     param: {
       order: 'asc' | 'desc';
       limit: number;
       exclusiveStartKey?: string;
     }
-  ): Promise<{ items: DyProductView[]; lastEvaluatedUrl: string | null; firstEvaluatedUrl: string | null; count: number }> {
+  ): Promise<{
+    items: DyProductView[];
+    lastEvaluatedUrl: string | null;
+    firstEvaluatedUrl: string | null;
+    count: number
+  }> {
     try {
-      
-      // GSI를 사용한 쿼리 시작
-      let scan = this.dyProductViewModel
-        .scan()
-        .using("DiscountRateIndex")
-        .filter("discountRate").gt(0);  // discountRate > 0 조건을 필터로 변경
-      
-
-      // 결과 제한
-      scan = scan.limit(param.limit);
-
-      // 시작 키 설정 (페이지네이션)
+      const sortOrder = param.order === 'desc' ? SortOrder.descending : SortOrder.ascending;
+      let startKey: Record<string, any> | undefined;
+  
       if (param.exclusiveStartKey) {
-        const startkey = param.exclusiveStartKey;
-        scan = scan.startAt({ productId: startkey });
+        startKey = JSON.parse(param.exclusiveStartKey);
       }
-      console.log(scan);
-
-      // 쿼리 실행
-      let results = await scan.exec();
-      this.logger.log(`Pagination query result: ${results .length} items`);
-
-
-
-      // 결과를 메모리에서 정렬 (수정된 부분)
-      results = results.sort((a, b) => {
-        if (param.order === 'asc') {
-          return a.discountRate - b.discountRate;
+  
+      // GSI를 사용한 쿼리 시작
+      let query = this.dyProductViewModel
+        .query('GSI_KEY')
+        .eq('PRODUCT')
+        .using('DiscountRateIndex');
+  
+      // discountRate에 대한 조건 추가
+      if (startKey && startKey.discountRate !== undefined) {
+        if (sortOrder === SortOrder.ascending) {
+          query = query.where('discountRate').ge(startKey.discountRate);
         } else {
-          return b.discountRate - a.discountRate;  // desc 순서를 위해 b - a로 변경
+          query = query.where('discountRate').le(startKey.discountRate);
         }
-      });
-
-      let lastEvaluatedKey = results.lastKey?.productId || null;
-
+      }
+  
+      query = query.sort(sortOrder).limit(param.limit);
+  
+      // 쿼리 실행
+      const results: QueryResponse<DyProductView> = await query.exec();
+      
+      const items = Array.from(results);  // QueryResponse를 배열로 변환
+  
+      this.logger.log(`Pagination query result: ${items.length} items`);
+  
       // 첫 번째 평가된 키 설정
-      let firstEvaluatedKey = results[0]?.productId || null;
-      const appUrl = this.configService.get<string>('APP_URL'); // APP_URL 가져오기
-      // URL 생성 함수
-      const createUrlWithKey = (key: string | null): string | null => {
+      const firstEvaluatedKey = items.length > 0 ? {
+        productId: items[0].productId,
+        GSI_KEY: 'PRODUCT',
+        discountRate: items[0].discountRate,
+      } : null;
+  
+      // 마지막 평가된 키 설정
+      const lastEvaluatedKey = results.lastKey || null;
+  
+      // URL 생성 (페이지네이션용)
+      const appUrl = this.configService.get<string>('APP_URL');
+      const createUrlWithKey = (key: Record<string, any> | null) => {
         if (!key || !appUrl) return null;
         const baseUrl = new URL("/api/products/discountrate", appUrl);
         baseUrl.searchParams.append('order', param.order);
         baseUrl.searchParams.append('limit', param.limit.toString());
-        baseUrl.searchParams.append('exclusiveStartKey', key);  // 여기서 key를 추가
+        baseUrl.searchParams.append('exclusiveStartKey', JSON.stringify(key));
         return baseUrl.toString();
-
-
       };
+  
       // 첫 번째 및 마지막 평가된 키에 URL 추가
       const firstEvaluatedUrl = createUrlWithKey(firstEvaluatedKey);
       const lastEvaluatedUrl = createUrlWithKey(lastEvaluatedKey);
+  
       return {
-        items: results,
+        items,
         lastEvaluatedUrl,
         firstEvaluatedUrl,
-        count: results.length
+        count: items.length
       };
     } catch (error) {
       this.logger.error(`Pagination query failed: ${error.message}`, error.stack);
       throw error;
     }
   }
+
 
 
 

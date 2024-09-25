@@ -9,8 +9,7 @@ export class GetCategoryDto {
     where__id_more_than?: string;
 
     @IsEnum(Category)
-    @IsOptional()
-    category?: Category;
+    category: Category;
 
     @IsIn(["desc"])
     @IsOptional()
@@ -23,6 +22,9 @@ export class GetCategoryDto {
     @IsNumber()
     @IsOptional()
     @Transform(({ value }) => value ? Number(value) : undefined)
-    take: number = 5;
-
+    take: number = 8;
+    
+    constructor(partial: Partial<GetCategoryDto>) {
+        Object.assign(this, partial);
+      }
 }

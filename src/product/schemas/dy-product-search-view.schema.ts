@@ -69,7 +69,6 @@ export const DySearchProductViewSchema = new Schema({
     index: {
       name: "DiscountRateIndex",
       type: "global",
-      rangeKey: "productId",
     },
   },
   availableStock: {

@@ -11,6 +11,7 @@ import {
   Query,
   UseInterceptors,
   UploadedFile,
+  BadRequestException,
 } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { CreateProductCommand } from "./commands/impl/create-product.command";
@@ -39,7 +40,7 @@ export class ProductController {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
-    private readonly dyProductViewRepository:DyProductViewRepository
+    private readonly dyProductViewRepository: DyProductViewRepository,
   ) { }
 
   @ApiOperation({ summary: "상품 등록" })
@@ -67,6 +68,9 @@ export class ProductController {
     this.logger.log(
       `Creating product with expiration date: ${expirationDateObj}`,
     );
+    if (!file) {
+      throw new BadRequestException('File is required');
+    }  
     const productImageUrl = file.filename;
     this.logger.log(`controller${productImageUrl}`);
     const result = await this.commandBus.execute(
@@ -172,7 +176,7 @@ export class ProductController {
     productQuery.order = query.order;
     productQuery.take = Number(query.take);
     productQuery.exclusiveStartKey = query.exclusiveStartKey || '';
-    
+
     console.log('Processed query:', productQuery);
     const result = await this.queryBus.execute(
       new DyGetProductByDiscountRateQuery(productQuery));
@@ -180,16 +184,23 @@ export class ProductController {
       success: true,
       message: '해당 상품리스트 조회를 성공했습니다.',
       data: result.items,
-      lastEvaluatedKey:result.lastEvaluatedKey,
-      firstEvaluatedKey:result.firstEvaluatedKey,
-      count:result.count
+      lastEvaluatedKey: result.lastEvaluatedKey,
+      firstEvaluatedKey: result.firstEvaluatedKey,
+      count: result.count
     };
   }
 
-  @Get('scan')
-  async scanProducts(@Query('limit') limit: number = 10) {
-    return this.dyProductViewRepository.scanProducts(limit);
-  }
+  // @Get('discounted')
+  // async getDiscountedProducts(@Query('limit') limit: number = 100) {
+  //   const discountedProducts = await this.productService.getDiscountedProductsPaginated(limit);
+  //   return { products: discountedProducts, count: discountedProducts.length };
+  // }
+
+
+  // @Get('scan')
+  // async scanProducts(@Query('limit') limit: number = 10) {
+  //   return this.dyProductViewRepository.scanProducts(limit);
+  // }
 
 
   // @Get("category")
@@ -205,7 +216,7 @@ export class ProductController {
 
   //   const product = await this.queryBus.execute(productQuery);
   //   return this.queryBus.execute(query);
-   
+
 
   // }
 
@@ -218,9 +229,9 @@ export class ProductController {
   //   const productQuery = new GetCategoryDto();
   //   productQuery.where__id_more_than = query.where__id_more_than;
   //   productQuery.category = query.category;
-  //   productQuery.take = query.take||100;
+  //   productQuery.take = query.take || 100;
   //   productQuery.order__discountRate = query.order__discountRate;
-  //   productQuery.order__createdAt=query.order__createdAt;
+  //   productQuery.order__createdAt = query.order__createdAt;
 
   //   console.log('Processed query:', productQuery);
 
@@ -235,8 +246,8 @@ export class ProductController {
   //   };
   // }
 
- 
-  
+
+
   // @Post('image')
   // @UseInterceptors(FileInterceptor('image'))
   // postImage(

@@ -29,7 +29,6 @@ import { DynamooseModule } from "nestjs-dynamoose";
 import { ProductSchema } from "./schemas/dy-product-view.shema";
 import { DyProductViewRepository } from "./repositories/dy-product-view.repository";
 import { APP_PIPE } from "@nestjs/core";
-import { GetCategoryHandler } from "./queries/handlers/get-category.handler";
 import { ProductSearchController } from "./product.search.contoller";
 import { Client } from "@elastic/elasticsearch";
 import { ProductSearchService } from "./product-search.service";
@@ -113,7 +112,7 @@ const EventsHandlers = [
     DyProductViewRepository,
     GetProductByIdHandler,
     DyGetProductByDiscountRateHandler,
-    GetCategoryHandler,
+    //GetCategoryHandler,
     ProductSearchService,
     DyGetProductByIdHandler,
     Logger,

@@ -10,7 +10,15 @@ export const ProductSchema = new Schema(
       hashKey: true,
       required: true,
     },
-
+    GSI_KEY: {
+      type: String,
+      default: "PRODUCT",  // 모든 제품에 대해 동일한 값
+      index: {
+        name: "DiscountRateIndex",
+        type: "global",
+        rangeKey: "discountRate"  // GSI의 정렬 키로 discountRate 사용
+      }
+    },
     sellerId: {
       type: String,
       required: true,
@@ -52,11 +60,7 @@ export const ProductSchema = new Schema(
     },
     discountRate: {
       type: Number,
-      index: {
-        name: "DiscountRateIndex",
-        type: "global",
-        rangeKey: "productId",
-      },
+      required: true,  // discountRate를 필수 필드로 변경
     },
     availableStock: {
       type: Number,
@@ -69,17 +73,15 @@ export const ProductSchema = new Schema(
   },
   {
     timestamps: {
-      createdAt: "createdAt", // 자동 생성 시간 설정
-      updatedAt: "updatedAt", // 자동 수정 시간 설정
+      createdAt: "createdAt",
+      updatedAt: "updatedAt",
     },
-    saveUnknown: false, // 스키마에 정의되지 않은 속성의 저장을 방지
-  },
-  
+    saveUnknown: false,
+  }
 );
 
 export const Product = model("Product", ProductSchema, {
-  create: false,  // 테이블이 이미 존재한다고 가정
+  create: false,
   update: true,
   waitForActive: false,
 });
-
