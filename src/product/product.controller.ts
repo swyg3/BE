@@ -12,6 +12,7 @@ import {
   UseInterceptors,
   UploadedFile,
   BadRequestException,
+  InternalServerErrorException,
 } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { CreateProductCommand } from "./commands/impl/create-product.command";
@@ -29,6 +30,7 @@ import { DyGetProductByIdQuery } from "./queries/impl/dy-get-prouct-by-id.query"
 import { DyGetProductByDiscountRateQuery } from "./queries/impl/dy-get-product-by-discountRate.query";
 import { DyProductViewRepository } from "./repositories/dy-product-view.repository";
 import { DyGetProductByDiscountRateInputDto } from "./dtos/dy-get-products-by-discountRate.dto";
+import { GetCategoryQuery } from "./queries/impl/dy-get-product-by-category.query";
 
 
 @ApiTags("Products")
@@ -70,7 +72,7 @@ export class ProductController {
     );
     if (!file) {
       throw new BadRequestException('File is required');
-    }  
+    }
     const productImageUrl = file.filename;
     this.logger.log(`controller${productImageUrl}`);
     const result = await this.commandBus.execute(
@@ -166,23 +168,24 @@ export class ProductController {
       data: result,
     };
   }
+
   @ApiOperation({ summary: "상품 할인률 순 조회" })
   @ApiResponse({ status: 200, description: "상품 할인률 순 조회 성공" })
   @Get("discountrate")
   async getProducts(@Query() query: DyGetProductByDiscountRateInputDto) {
     console.log('Received query:', query);
-  
+
     const productQuery = new DyGetProductByDiscountRateInputDto();
     productQuery.order = query.order;
     productQuery.limit = Number(query.limit);
     productQuery.exclusiveStartKey = query.exclusiveStartKey || '';
-  
+
     console.log('Processed query:', productQuery);
-  
+
     const result = await this.queryBus.execute(
       new DyGetProductByDiscountRateQuery(productQuery)
     );
-  
+
     return {
       success: true,
       message: '해당 상품리스트 조회를 성공했습니다.',
@@ -192,17 +195,6 @@ export class ProductController {
       count: result.count
     };
   }
-  // @Get('discounted')
-  // async getDiscountedProducts(@Query('limit') limit: number = 100) {
-  //   const discountedProducts = await this.productService.getDiscountedProductsPaginated(limit);
-  //   return { products: discountedProducts, count: discountedProducts.length };
-  // }
-
-
-  // @Get('scan')
-  // async scanProducts(@Query('limit') limit: number = 10) {
-  //   return this.dyProductViewRepository.scanProducts(limit);
-  // }
 
 
   // @Get("category")
@@ -222,31 +214,33 @@ export class ProductController {
 
   // }
 
-  // @ApiOperation({ summary: "상품 카테고리 조회" })
-  // @ApiResponse({ status: 200, description: "상품 카테고리 조회 성공" })
-  // @Get("category")
-  // async getKoreanCategory(@Query() query: GetCategoryDto) {
-  //   console.log('Received query:', query);
+  @ApiOperation({ summary: "상품 카테고리 조회" })
+  @ApiResponse({ status: 200, description: "상품 카테고리 조회 성공" })
+  @Get("category")
+  async getCategory(@Query() query: GetCategoryDto) {
+    console.log('Received query:', query);
 
-  //   const productQuery = new GetCategoryDto();
-  //   productQuery.where__id_more_than = query.where__id_more_than;
-  //   productQuery.category = query.category;
-  //   productQuery.take = query.take || 100;
-  //   productQuery.order__discountRate = query.order__discountRate;
-  //   productQuery.order__createdAt = query.order__createdAt;
+    const productQuery = new GetCategoryQuery(query);
 
-  //   console.log('Processed query:', productQuery);
+    console.log('Processed query:', productQuery);
 
-  //   const product = await this.queryBus.execute(productQuery);
+    try {
+      const product = await this.queryBus.execute(productQuery);
 
-  //   return {
-  //     success: !!product,
-  //     message: product.data.length > 0
-  //       ? "해당 상품리스트 조회를 성공했습니다."
-  //       : "조건에 맞는 상품을 찾을 수 없습니다.",
-  //     data: product,
-  //   };
-  // }
+      return {
+        success: true,
+        message: product.items.length > 0
+          ? "해당 상품리스트 조회를 성공했습니다."
+          : "조건에 맞는 상품을 찾을 수 없습니다.",
+        data: product,
+      };
+    } catch (error) {
+      console.error('Error in getCategory:', error);
+      throw error;
+    }
+  }
+
+
 
 
 

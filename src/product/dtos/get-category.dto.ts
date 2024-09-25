@@ -1,30 +1,21 @@
-import { ApiProperty } from "@nestjs/swagger";
-import { Transform } from "class-transformer";
-import { IsEnum, IsIn, IsNumber, IsOptional, IsString } from "class-validator";
-import { Category } from "../product.category";
+import { IsEnum, IsInt, IsOptional, IsString } from 'class-validator';
+import { Category } from '../product.category';
 
 export class GetCategoryDto {
-    @IsString()
-    @IsOptional()
-    where__id_more_than?: string;
+  @IsEnum(Category)
+  category: Category;
 
-    @IsEnum(Category)
-    category: Category;
+  @IsEnum(['discountRate', 'createdAt'])
+  sortBy: 'discountRate' | 'createdAt';
 
-    @IsIn(["desc"])
-    @IsOptional()
-    order__discountRate?: "desc" = "desc";
+  @IsEnum(['asc', 'desc'])
+  order: 'asc' | 'desc';
 
-    @IsIn(["desc"])
-    @IsOptional()
-    order__createdAt?: "desc" = "desc";
+  @IsInt()
+  @IsOptional()
+  limit?: number;
 
-    @IsNumber()
-    @IsOptional()
-    @Transform(({ value }) => value ? Number(value) : undefined)
-    take: number = 8;
-    
-    constructor(partial: Partial<GetCategoryDto>) {
-        Object.assign(this, partial);
-      }
+  @IsString()
+  @IsOptional()
+  exclusiveStartKey?: string;
 }
