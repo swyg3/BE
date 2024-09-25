@@ -1,8 +1,5 @@
 import { CommandHandler, ICommandHandler } from "@nestjs/cqrs";
 import { CompleteSellerProfileCommand } from "../commands/complete-seller-profile.command";
-import { SellerRepository } from "src/sellers/repositories/seller.repository";
-import { EventBusService } from "src/shared/infrastructure/event-sourcing/event-bus.service";
-import { SellerProfileCompletedEvent } from "../../events/events/seller-profile-completed.event";
 import { Inject } from "@nestjs/common";
 import { REDIS_CLIENT } from "src/shared/infrastructure/redis/redis.config";
 import Redis from "ioredis";

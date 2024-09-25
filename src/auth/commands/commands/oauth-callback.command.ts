@@ -1,11 +1,10 @@
 import { ICommand } from "@nestjs/cqrs";
-import { OAuthCallbackDto } from "src/auth/dtos/oauth-callback.dto";
+import { UserType } from "src/auth/interfaces/user-type.type";
 
 export class OAuthCallbackCommand implements ICommand {
   constructor(
-    // public readonly oauthCallbackDto: oauthCallbackDto
     public readonly provider: string,
     public readonly code: string,
-    public readonly userType: string,
+    public readonly userType: UserType,
   ) {}
 }
