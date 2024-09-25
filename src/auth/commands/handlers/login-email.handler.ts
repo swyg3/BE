@@ -126,8 +126,10 @@ export class LoginEmailCommandHandler
   private createLoggedInEvent(user: any, userType: string, provider: string) {
     const timestamp = new Date();
     const eventData = {
-      email: user.email,
       provider,
+      email: user.email,
+      name: user.name,
+      phoneNumber: user.phoneNumber,
       isNewUser: false,
       isEmailVerified: user.isEmailVerified,
       timestamp,
@@ -141,6 +143,9 @@ export class LoginEmailCommandHandler
         {
           ...eventData,
           isNewSeller: false,
+          storeName: user.storeName,
+          storeAddress: user.storeAddress,
+          storePhoneNumber: user.storePhoneNumber,
           isBusinessNumberVerified: user.isBusinessNumberVerified,
         },
         user.version || 1,
