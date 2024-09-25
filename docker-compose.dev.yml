@@ -159,18 +159,18 @@ services:
     #       cpus: "0.2"
     #       memory: 300M
   
-  elasticsearch:
-    image: elasticsearch:8.0.0
-    container_name: elasticsearch_dev
-    environment:
-      discovery.type: single-node
-      ELASTICSEARCH_PORT: ${ELASTICSEARCH_PORT}
-      xpack.security.enabled: false
-      xpack.security.http.ssl.enabled: false
-    ports:
-      - "${ELASTICSEARCH_PORT}:${ELASTICSEARCH_PORT}"
-    volumes:
-      - es_data:/usr/share/elasticsearch/data       
+  # elasticsearch:
+  #   image: elasticsearch:8.0.0
+  #   container_name: elasticsearch_dev
+  #   environment:
+  #     discovery.type: single-node
+  #     ELASTICSEARCH_PORT: ${ELASTICSEARCH_PORT}
+  #     xpack.security.enabled: false
+  #     xpack.security.http.ssl.enabled: false
+  #   ports:
+  #     - "${ELASTICSEARCH_PORT}:${ELASTICSEARCH_PORT}"
+  #   volumes:
+  #     - es_data:/usr/share/elasticsearch/data       
 
   node-exporter:
     image: prom/node-exporter:latest
