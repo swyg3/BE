@@ -12,23 +12,12 @@ export const ProductSchema = new Schema(
     },
     GSI_KEY: {
       type: String,
-      default: "PRODUCT",  // 모든 제품에 대해 동일한 값
+      default: "PRODUCT",
       index: {
         name: "DiscountRateIndex",
         type: "global",
-        rangeKey: "discountRate"  // GSI의 정렬 키로 discountRate 사용
+        rangeKey: "discountRate"
       }
-    },
-    GSI1_PK: {
-      type: String,
-      index: {
-        name: "CategoryDiscountUpdateIndex",
-        type: "global",
-        rangeKey: "GSI1_SK"
-      }
-    },
-    GSI1_SK: {
-      type: String,
     },
     sellerId: {
       type: String,
@@ -42,10 +31,18 @@ export const ProductSchema = new Schema(
       type: String,
       required: true,
       enum: Object.values(Category),
-      index: {
-        name: "CategoryIndex",
-        type: "global",
-      },
+      index: [
+        {
+          name: "CategoryCreatedAtIndex",
+          type: "global",
+          rangeKey: "createdAt"
+        },
+        {
+          name: "CategoryDiscountRateIndex",
+          type: "global",
+          rangeKey: "discountRate"
+        }
+      ]
     },
     name: {
       type: String,
@@ -71,7 +68,7 @@ export const ProductSchema = new Schema(
     },
     discountRate: {
       type: Number,
-      required: true,  // discountRate를 필수 필드로 변경
+      required: true,
     },
     availableStock: {
       type: Number,

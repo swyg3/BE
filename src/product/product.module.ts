@@ -39,6 +39,7 @@ import { DyGetProductByIdHandler } from "./queries/handlers/dy-get-product-by-id
 import { UserViewRepository } from "src/users/repositories/user-view.repository";
 import { UsersModule } from "src/users/users.module";
 import { SellersModule } from "src/sellers/sellers.module";
+import { GetCategoryHandler } from "./queries/handlers/dy-get-product-by-category.handler";
 
 const CommandHandlers = [
   CreateProductHandler,
@@ -112,7 +113,7 @@ const EventsHandlers = [
     DyProductViewRepository,
     GetProductByIdHandler,
     DyGetProductByDiscountRateHandler,
-    //GetCategoryHandler,
+    GetCategoryHandler,
     ProductSearchService,
     DyGetProductByIdHandler,
     Logger,
