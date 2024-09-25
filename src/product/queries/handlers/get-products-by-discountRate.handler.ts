@@ -13,13 +13,12 @@ export class DyGetProductByDiscountRateHandler
   ) {}
 
   async execute(query: DyGetProductByDiscountRateQuery): Promise<DyGetProductByDiscountRateOutputDto> {
-    const { order, limit, exclusiveStartKey, paginationDirection } = query.dto;
+    const { order, limit, exclusiveStartKey } = query.dto;
     
     const param = {
       order,
       limit: Number(limit),
       ...(exclusiveStartKey && { exclusiveStartKey }),
-      ...(paginationDirection && { paginationDirection }),
     };
 
     this.logger.log(`Executing query with parameters: ${JSON.stringify(param)}`);

@@ -127,7 +127,7 @@ export class DyProductViewRepository {
   }
 
 
-  
+
   async findProductsByDiscountRate(
     param: {
       order: 'asc' | 'desc';
@@ -138,7 +138,7 @@ export class DyProductViewRepository {
     items: DyProductView[];
     lastEvaluatedUrl: string | null;
     firstEvaluatedUrl: string | null;
-    count: number
+    count: number;
   }> {
     try {
       const sortOrder = param.order === 'desc' ? SortOrder.descending : SortOrder.ascending;
@@ -163,23 +163,23 @@ export class DyProductViewRepository {
         }
       }
   
-      query = query.sort(sortOrder).limit(Number(2));
+      query = query.sort(sortOrder).limit(Number(9)); // 한 개 더 가져옵니다.
   
-      // 쿼리 실행
+      // 전체 쿼리 결과
       const results: QueryResponse<DyProductView> = await query.exec();
-      
-      const items = Array.from(results);  // QueryResponse를 배열로 변환
+      // 페이지 당 아이템
+      const items = Array.from(results).slice(0, Number(8)); // 원하는 개수만큼 잘라냅니다.
   
       this.logger.log(`Pagination query result: ${items.length} items`);
   
-      // 첫 번째 평가된 키 설정
-      const firstEvaluatedKey = items.length > 0 ? {
+      // 첫 번째 키 설정 (이전 페이지로 돌아가기 위한 키)
+      const firstEvaluatedKey = param.exclusiveStartKey && items.length > 0 ? {
         productId: items[0].productId,
         GSI_KEY: 'PRODUCT',
         discountRate: items[0].discountRate,
       } : null;
   
-      // 마지막 평가된 키 설정
+      // 마지막 평가된 키 설정 (다음 페이지로 가기 위한 키)
       const lastEvaluatedKey = results.lastKey || null;
   
       // URL 생성 (페이지네이션용)
@@ -194,21 +194,21 @@ export class DyProductViewRepository {
       };
   
       // 첫 번째 및 마지막 평가된 키에 URL 추가
-      const firstEvaluatedUrl = createUrlWithKey(firstEvaluatedKey);
+      const firstEvaluatedUrl = param.exclusiveStartKey ? createUrlWithKey(firstEvaluatedKey) : null;
       const lastEvaluatedUrl = createUrlWithKey(lastEvaluatedKey);
   
       return {
         items,
         lastEvaluatedUrl,
         firstEvaluatedUrl,
-        count: items.length
+        count: items.length,
       };
     } catch (error) {
       this.logger.error(`Pagination query failed: ${error.message}`, error.stack);
       throw error;
     }
   }
-
+  
 
 
   async scanProducts(limit: number = 10): Promise<DyProductView[]> {
