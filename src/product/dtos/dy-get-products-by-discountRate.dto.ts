@@ -16,8 +16,4 @@ export class DyGetProductByDiscountRateInputDto {
   @IsOptional()
   exclusiveStartKey?: string;
 
-  @ApiProperty({ enum: ['forward', 'backward'], description: '페이지네이션 방향', required: false })
-  @IsEnum(['forward', 'backward'])
-  @IsOptional()
-  paginationDirection?: 'forward' | 'backward' = 'forward';
 }

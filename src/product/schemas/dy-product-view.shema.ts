@@ -19,6 +19,17 @@ export const ProductSchema = new Schema(
         rangeKey: "discountRate"  // GSI의 정렬 키로 discountRate 사용
       }
     },
+    GSI1_PK: {
+      type: String,
+      index: {
+        name: "CategoryDiscountUpdateIndex",
+        type: "global",
+        rangeKey: "GSI1_SK"
+      }
+    },
+    GSI1_SK: {
+      type: String,
+    },
     sellerId: {
       type: String,
       required: true,

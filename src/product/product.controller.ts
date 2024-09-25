@@ -176,7 +176,6 @@ export class ProductController {
     productQuery.order = query.order;
     productQuery.limit = Number(query.limit);
     productQuery.exclusiveStartKey = query.exclusiveStartKey || '';
-    productQuery.paginationDirection = query.paginationDirection || 'forward';
   
     console.log('Processed query:', productQuery);
   
