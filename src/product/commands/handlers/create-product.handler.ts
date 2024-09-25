@@ -9,11 +9,11 @@ import { BadRequestException, Inject, Logger } from "@nestjs/common";
 import { EventBusService } from "src/shared/infrastructure/event-sourcing/event-bus.service";
 import { SellerRepository } from "src/sellers/repositories/seller.repository";
 import { Seller } from "src/sellers/entities/seller.entity";
+import { DyProductCreatedEvent } from "src/product/events/impl/dy-product-created.event";
 
 @CommandHandler(CreateProductCommand)
 export class CreateProductHandler
-  implements ICommandHandler<CreateProductCommand>
-{
+  implements ICommandHandler<CreateProductCommand> {
   private readonly logger = new Logger(CreateProductHandler.name);
 
   constructor(
@@ -22,7 +22,7 @@ export class CreateProductHandler
     private readonly sellerRepository: SellerRepository,
     private readonly eventBusService: EventBusService,
     @Inject(CommandBus) private readonly commandBus: CommandBus,
-  ) {}
+  ) { }
 
   async execute(command: CreateProductCommand) {
     const {
@@ -55,6 +55,7 @@ export class CreateProductHandler
         originalPrice,
         discountedPrice,
       });
+      this.logger.log(`command handler${productImageUrl}`);
 
       try {
         savedProduct = await this.productRepository.save(product);
@@ -73,7 +74,7 @@ export class CreateProductHandler
       this.logger.log(expirationDate);
 
       // ProductCreatedEvent 생성 및 발행
-      const event = new ProductCreatedEvent(
+      const event = new DyProductCreatedEvent(
         product.id,
         {
           sellerId: product.sellerId,

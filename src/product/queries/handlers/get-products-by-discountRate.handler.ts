@@ -1,55 +1,32 @@
 import { QueryHandler, IQueryHandler } from "@nestjs/cqrs";
-import { InjectModel } from "@nestjs/mongoose";
-import { Model } from "mongoose";
-import { GetProductByDiscountRate } from "src/product/dtos/get-products-by-discountRate.dto";
-import { ProductView } from "src/product/schemas/product-view.schema";
+import { DyProductViewRepository } from "src/product/repositories/dy-product-view.repository";
+import { DyGetProductByDiscountRateQuery } from "../impl/dy-get-product-by-discountRate.query";
+import { Logger } from "@nestjs/common";
+import { DyGetProductByDiscountRateOutputDto } from "src/product/dtos/dy-get-product-by-dicounstRateout.dto";
 
-@QueryHandler(GetProductByDiscountRate)
-export class GetProductByDiscountRateHandler
-  implements IQueryHandler<GetProductByDiscountRate>
-{
+@QueryHandler(DyGetProductByDiscountRateQuery)
+export class DyGetProductByDiscountRateHandler
+  implements IQueryHandler<DyGetProductByDiscountRateQuery> {
   constructor(
-    @InjectModel(ProductView.name)
-    private readonly productViewModel: Model<ProductView>,
+    private readonly dyProductViewRepository: DyProductViewRepository,
+    private readonly logger: Logger
   ) {}
 
-  async execute(query: GetProductByDiscountRate) {
-    const { where__id_more_than, take, order__discountRate } = query;
-    const filter: any = {};
+  async execute(query: DyGetProductByDiscountRateQuery): Promise<DyGetProductByDiscountRateOutputDto> {
+    const { order, take, exclusiveStartKey } = query.dto;
+    const param = {
+      order,
+      limit: Number(take),
+      ...(exclusiveStartKey && { exclusiveStartKey }),
+    };
 
-    if (where__id_more_than) {
-      filter._id = { $gt: where__id_more_than };
-    }
-
-    const products = await this.productViewModel
-      .find(filter)
-      .sort({ discountRate: order__discountRate })
-      .limit(take || 10)
-      .exec();
-
-    const last = products.length > 0 ? products[products.length - 1] : null;
-
-    let nextUrl = null;
-    if (last) {
-      const nextPageQuery = {
-        ...query,
-        where__id_more_than: last._id.toString(),
-      };
-      nextUrl = new URL("http://localhost:3000/api/products");
-      for (const [key, value] of Object.entries(nextPageQuery)) {
-        if (value !== undefined) {
-          nextUrl.searchParams.append(key, value.toString());
-        }
-      }
-    }
-
+    const result = await this.dyProductViewRepository.findProductsByDiscountRate(param);
     return {
-      data: products,
-      cursor: {
-        after: last ? last._id.toString() : null,
-      },
-      count: products.length,
-      next: nextUrl ? nextUrl.toString() : null,
+      items: result.items,
+      lastEvaluatedKey: result.lastEvaluatedUrl ||null,
+      firstEvaluatedKey:result.firstEvaluatedUrl||null,
+      count: result.count,
+
     };
   }
 }
