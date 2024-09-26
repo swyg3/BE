@@ -26,10 +26,9 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./certbot/conf:/etc/letsencrypt
-      - ./certbot/www:/var/www/certbot
-      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /home/ubuntu/app/nginx.conf:/etc/nginx/nginx.conf:ro
+      - /home/ubuntu/app/certbot/conf:/etc/letsencrypt
+      - /home/ubuntu/app/certbot/www:/var/www/certbot
       - /var/lib/letsencrypt:/var/lib/letsencrypt:ro
     depends_on:
       - nest_app
