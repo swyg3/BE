@@ -172,6 +172,7 @@ services:
       - xpack.security.enabled=false
       - xpack.security.http.ssl.enabled=false
     ports:
+      - "${ELASTICSEARCH_HOST}:elastic"
       - "${ELASTICSEARCH_PORT}:9200"
     volumes:
       - es_data:/usr/share/elasticsearch/data
