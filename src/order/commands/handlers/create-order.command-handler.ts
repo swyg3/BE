@@ -1,5 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { CommandHandler, EventBus, ICommandHandler } from "@nestjs/cqrs";
+import { CommandHandler, ICommandHandler } from "@nestjs/cqrs";
 import { InjectRepository } from "@nestjs/typeorm";
 import { OrderItems } from "src/order-itmes/entities/order-items.entity";
 import { Order } from "src/order/entities/order.entity";
@@ -16,7 +16,6 @@ export class CreateOrderCommandHandler implements ICommandHandler<CreateOrderCom
         private readonly orderRepository: Repository<Order>,
         @InjectRepository(OrderItems)
         private readonly orderItemsRepository: Repository<OrderItems>,
-        private readonly eventBus: EventBus,
     ) {}
 
     async execute(command: CreateOrderCommand): Promise<any> {
@@ -38,13 +37,14 @@ export class CreateOrderCommandHandler implements ICommandHandler<CreateOrderCom
         // 2. 주문 내역 생성
         const orderItems = items.map(item => {
             const orderItem = new OrderItems();
-            orderItem.orderId = newOrder.id;
+            orderItem.orderId = savedOrder.id;
             orderItem.productId = item.productId;
             orderItem.quantity = item.quantity;
             orderItem.price = item.price;
             return orderItem;
         });
         await this.orderItemsRepository.save(orderItems);
+        this.logger.log(`주문 내역 및 주문 상세 내역 생성 완료: ${savedOrder.id}`);
 
         // 3. 주문 수량 만큼 재고 삭제
     }
