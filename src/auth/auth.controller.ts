@@ -172,6 +172,7 @@ export class AuthController {
       const result = await this.commandBus.execute(
         new OAuthCallbackCommand(provider, code, userType),
       );
+      console.log(`Command created - userType: ${result.userType}`);
 
       return {
         success: true,
