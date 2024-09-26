@@ -49,15 +49,20 @@ export class LoginEmailCommandHandler
       );
 
       // 2. 토큰 생성
-      this.logger.log(`${userType} 사용자 ID ${user.id}에 대한 토큰 생성`);
-      const tokens = await this.tokenService.generateTokens(
+      const {
+        accessToken,
+        refreshToken,
+        accessTokenExpiresIn,
+        refreshTokenExpiresIn
+      } = await this.tokenService.generateTokens(
         user.id,
         user.email,
         userType,
       );
+      this.logger.log(`JWT 생성: ${accessToken}, ${accessTokenExpiresIn}, ${refreshToken}, ${refreshTokenExpiresIn}`);
       await this.refreshTokenService.storeRefreshToken(
         user.id,
-        tokens.refreshToken,
+        refreshToken,
       );
 
       // 3. 로그인 이벤트 생성 및 발행
@@ -68,18 +73,21 @@ export class LoginEmailCommandHandler
       await this.eventBusService.publishAndSave(event);
 
       // 4. 결과 반환
-      this.logger.log(`${userType} 사용자 ID ${user.id} 로그인 성공`);
       return {
-        success: true,
-        data: {
-          user: {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            userType: userType,
+          [userType === "user" ? "userId" : "sellerId"]: user.id,
+          email: user.email,
+          name: user.name,
+          userType: userType,
+          tokens: {
+            access: {
+              token: accessToken,
+              expiresIn: accessTokenExpiresIn
+            },
+            refresh: {
+              token: refreshToken,
+              expiresIn: refreshTokenExpiresIn
+            }
           },
-          ...tokens,
-        },
       };
     } catch (error) {
       this.logger.error("로그인 실패", error.stack);

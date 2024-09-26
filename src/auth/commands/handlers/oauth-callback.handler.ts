@@ -51,10 +51,10 @@ export class LoginOAuthCallbackCommandHandler
 
     try {
       // 1. 인증 코드로 액세스 토큰 요청
-      const accessToken = await this.getAccessToken(provider, code);
+      const oauthAccessToken = await this.getAccessToken(provider, code);
 
       // 2. 액세스 토큰으로 사용자 정보 요청
-      const userInfo = await this.getUserInfo(provider, accessToken);
+      const userInfo = await this.getUserInfo(provider, oauthAccessToken);
 
       // 3. 사용자 생성 또는 업데이트
       const result = await this.handleUserOrSellerLogin(userType, userInfo);
@@ -63,15 +63,20 @@ export class LoginOAuthCallbackCommandHandler
       );
 
       // 4. JWT 생성
-      const tokens = await this.tokenService.generateTokens(
+      const {
+        accessToken,
+        refreshToken,
+        accessTokenExpiresIn,
+        refreshTokenExpiresIn
+      } = await this.tokenService.generateTokens(
         result.id,
         result.email,
         userType,
       );
-      this.logger.log(`JWT 생성: ${tokens}`);
+      this.logger.log(`JWT 생성: ${accessToken}, ${accessTokenExpiresIn}, ${refreshToken}, ${refreshTokenExpiresIn}`);
       await this.refreshTokenService.storeRefreshToken(
         result.id,
-        tokens.refreshToken,
+        refreshToken,
       );
 
       // 5. 이벤트 발행
@@ -85,7 +90,16 @@ export class LoginOAuthCallbackCommandHandler
         email: result.email,
         name: result.name,
         userType: userType,
-        ...tokens,
+        tokens: {
+          access: {
+            token: accessToken,
+            expiresIn: accessTokenExpiresIn
+          },
+          refresh: {
+            token: refreshToken,
+            expiresIn: refreshTokenExpiresIn
+          }
+        },
       };
     } catch (error) {
       this.logger.error(`OAuth Callback 처리 중 오류 발생: ${error.message}`);
@@ -137,14 +151,14 @@ export class LoginOAuthCallbackCommandHandler
 
   private async getUserInfo(
     provider: string,
-    accessToken: string,
+    oauthAccessToken: string,
   ): Promise<any> {
     const userInfoUrl = this.configService.get<string>(
       `${provider.toUpperCase()}_USER_INFO_URL`,
     );
     try {
       const response = await axios.get(userInfoUrl, {
-        headers: { Authorization: `Bearer ${accessToken}` },
+        headers: { Authorization: `Bearer ${oauthAccessToken}` },
       });
       return this.normalizeUserInfo(provider, response.data);
     } catch (error) {
