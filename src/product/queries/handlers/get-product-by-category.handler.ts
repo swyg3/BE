@@ -1,13 +1,13 @@
 import { QueryHandler, IQueryHandler } from "@nestjs/cqrs";
-import { DyProductViewRepository } from "src/product/repositories/dy-product-view.repository";
+import { ProductViewRepository } from "src/product/repositories/product-view.repository";
 import { Logger } from "@nestjs/common";
 import { GetCategoryQueryOutputDto } from "src/product/dtos/get-category-out-dto";
-import { GetCategoryQuery } from "../impl/dy-get-product-by-category.query";
+import { GetCategoryQuery } from "../impl/get-product-by-category.query";
 
 @QueryHandler(GetCategoryQuery)
 export class GetCategoryHandler implements IQueryHandler<GetCategoryQuery> {
   constructor(
-    private readonly dyProductViewRepository: DyProductViewRepository,
+    private readonly productViewRepository: ProductViewRepository,
     private readonly logger: Logger
   ) {}
 
@@ -29,7 +29,7 @@ export class GetCategoryHandler implements IQueryHandler<GetCategoryQuery> {
 
     let result;
     if (sortBy === 'discountRate') {
-      result = await this.dyProductViewRepository.findProductsByCategoryAndDiscountRate(param);
+      result = await this.productViewRepository.findProductsByCategoryAndDiscountRate(param);
     } else {
         console.log("아직 개발못한 지오코딩")
      // result = await this.dyProductViewRepository.findProductsByCategoryAndCreatedAt(param);

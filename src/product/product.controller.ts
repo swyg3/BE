@@ -12,7 +12,6 @@ import {
   UseInterceptors,
   UploadedFile,
   BadRequestException,
-  InternalServerErrorException,
 } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { CreateProductCommand } from "./commands/impl/create-product.command";
@@ -21,16 +20,15 @@ import { DeleteProductCommand } from "./commands/impl/delete-product.command";
 import { UpdateProductCommand } from "./commands/impl/update-product.command";
 import { CustomResponse } from "src/shared/interfaces/api-response.interface";
 import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
-import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { ThrottlerGuard } from "@nestjs/throttler";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { Express } from "express";
 import { GetCategoryDto } from "./dtos/get-category.dto";
-import { DyGetProductByIdQuery } from "./queries/impl/dy-get-prouct-by-id.query";
-import { DyGetProductByDiscountRateQuery } from "./queries/impl/dy-get-product-by-discountRate.query";
-import { DyProductViewRepository } from "./repositories/dy-product-view.repository";
-import { DyGetProductByDiscountRateInputDto } from "./dtos/dy-get-products-by-discountRate.dto";
-import { GetCategoryQuery } from "./queries/impl/dy-get-product-by-category.query";
+import { GetCategoryQuery } from "./queries/impl/get-product-by-category.query";
+import { GetProductByDiscountRateInputDto } from "./dtos/get-discountRate.dto";
+import { GetProductByIdQuery } from "./queries/impl/get-prouct-by-id.query";
+import { GetProductByDiscountRateQuery } from "./queries/impl/get-product-by-discountRate.query";
 
 
 @ApiTags("Products")
@@ -42,7 +40,6 @@ export class ProductController {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
-    private readonly dyProductViewRepository: DyProductViewRepository,
   ) { }
 
   @ApiOperation({ summary: "상품 등록" })
@@ -117,7 +114,7 @@ export class ProductController {
   @Get("get/:id")
   @UseGuards(JwtAuthGuard)
   async getProductById(@Param("id") id: string): Promise<CustomResponse> {
-    const product = await this.queryBus.execute(new DyGetProductByIdQuery(id));
+    const product = await this.queryBus.execute(new GetProductByIdQuery(id));
 
     return {
       success: !!product,
@@ -172,10 +169,10 @@ export class ProductController {
   @ApiOperation({ summary: "상품 할인률 순 조회" })
   @ApiResponse({ status: 200, description: "상품 할인률 순 조회 성공" })
   @Get("discountrate")
-  async getProducts(@Query() query: DyGetProductByDiscountRateInputDto) {
+  async getProducts(@Query() query: GetProductByDiscountRateInputDto) {
     console.log('Received query:', query);
 
-    const productQuery = new DyGetProductByDiscountRateInputDto();
+    const productQuery = new GetProductByDiscountRateInputDto();
     productQuery.order = query.order;
     productQuery.limit = Number(query.limit);
     productQuery.exclusiveStartKey = query.exclusiveStartKey || '';
@@ -183,7 +180,7 @@ export class ProductController {
     console.log('Processed query:', productQuery);
 
     const result = await this.queryBus.execute(
-      new DyGetProductByDiscountRateQuery(productQuery)
+      new GetProductByDiscountRateQuery(productQuery)
     );
 
     return {
@@ -197,23 +194,6 @@ export class ProductController {
     };
   }
 
-
-  // @Get("category")
-  // async getCategoryProducts(@Query() query: GetProductByCategoryDto) {
-  //   console.log('Received query:', query);
-  //   const productQuery = new GetProductByCategoryDto();
-  //   productQuery.where__id_more_than = query.where__id_more_than;
-  //   productQuery.category = query.category as Category;
-  //   productQuery.take = query.take||100;
-  //   productQuery.order__discountRate = query.order__discountRate;
-
-  //   console.log('Processed query:', productQuery);
-
-  //   const product = await this.queryBus.execute(productQuery);
-  //   return this.queryBus.execute(query);
-
-
-  // }
 
   @ApiOperation({ summary: "상품 카테고리 조회" })
   @ApiResponse({ status: 200, description: "상품 카테고리 조회 성공" })
@@ -243,17 +223,6 @@ export class ProductController {
 
 
 
-
-
-  // @Post('image')
-  // @UseInterceptors(FileInterceptor('image'))
-  // postImage(
-  //   @UploadedFile() file: Express.Multer.File,
-  // ) {
-  //   return {
-  //     productImageUrl: file.filename,
-  //   };
-  // }
 
 
 }

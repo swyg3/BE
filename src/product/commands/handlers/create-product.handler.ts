@@ -3,13 +3,12 @@ import { ProductRepository } from "../../repositories/product.repository";
 import { Product } from "src/product/entities/product.entity";
 import { CreateInventoryCommand } from "src/inventory/commands/impl/create-inventory.command";
 import { InjectRepository } from "@nestjs/typeorm";
-import { ProductCreatedEvent } from "src/product/events/impl/product-created.event";
 import { CommandBus, CommandHandler, ICommandHandler } from "@nestjs/cqrs";
 import { BadRequestException, Inject, Logger } from "@nestjs/common";
 import { EventBusService } from "src/shared/infrastructure/event-sourcing/event-bus.service";
 import { SellerRepository } from "src/sellers/repositories/seller.repository";
 import { Seller } from "src/sellers/entities/seller.entity";
-import { DyProductCreatedEvent } from "src/product/events/impl/dy-product-created.event";
+import { ProductCreatedEvent } from "src/product/events/impl/product-created.event";
 
 @CommandHandler(CreateProductCommand)
 export class CreateProductHandler
@@ -74,7 +73,7 @@ export class CreateProductHandler
       this.logger.log(expirationDate);
 
       // ProductCreatedEvent 생성 및 발행
-      const event = new DyProductCreatedEvent(
+      const event = new ProductCreatedEvent(
         product.id,
         {
           sellerId: product.sellerId,

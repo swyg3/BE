@@ -1,7 +1,7 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { IsEnum, IsNumber, IsOptional, IsString } from "class-validator";
 
-export class DyGetProductByDiscountRateInputDto {
+export class GetProductByDiscountRateInputDto {
   @ApiProperty({ enum: ['asc', 'desc'], description: '정렬 순서' })
   @IsEnum(['asc', 'desc'])
   order: 'asc' | 'desc';

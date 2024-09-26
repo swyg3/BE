@@ -4,20 +4,12 @@ import { Product } from "./entities/product.entity";
 import { ProductController } from "./product.controller";
 import { ProductRepository } from "./repositories/product.repository";
 import { CreateProductHandler } from "./commands/handlers/create-product.handler";
-import { ProductView, ProductViewSchema } from "./schemas/product-view.schema";
-import { MongooseModule } from "@nestjs/mongoose";
 import { CommandHandler, CqrsModule, EventsHandler } from "@nestjs/cqrs";
-import { ProductViewRepository } from "./repositories/product-view.repository";
-import { GetProductByIdHandler } from "./queries/handlers/get-product-by-id.handler";
 import { DeleteProductHandler } from "./commands/handlers/delete-product.handler";
-import { UpdateProductHandler } from "./commands/handlers/update-product.handler";
-import { ProductUpdatedEventHandler } from "./events/handlers/product-update.handler";
-import { ProductDeletedHandler } from "./events/handlers/product-deleted.handler";
 import { InventoryCreatedEvent } from "src/inventory/events/impl/inventory-created.event";
-import { ProductCreatedHandler } from "./events/handlers/product-created.handler";
 import { EventSourcingModule } from "src/shared/infrastructure/event-sourcing";
 import { RedisModule } from "src/shared/infrastructure/redis/redis.config";
-import { DyGetProductByDiscountRateHandler } from "./queries/handlers/get-products-by-discountRate.handler";
+import { GetProductByDiscountRateHandler } from "./queries/handlers/get-products-by-discountRate.handler";
 import { Seller } from "src/sellers/entities/seller.entity";
 import { SellerRepository } from "src/sellers/repositories/seller.repository";
 import { MulterModule } from "@nestjs/platform-express";
@@ -26,25 +18,21 @@ import { v4 as uuid } from "uuid";
 import * as multer from "multer";
 import { PRODUCTS_IMAGE_PATH, TEMP_FOLDER_PATH } from "./const/path.const";
 import { DynamooseModule } from "nestjs-dynamoose";
-import { ProductSchema } from "./schemas/dy-product-view.shema";
-import { DyProductViewRepository } from "./repositories/dy-product-view.repository";
-import { DySearchProductViewModel, DySearchProductViewSchema } from "./schemas/dy-product-search-view.schema";
-import { DyProductCreatedHandler } from "./events/handlers/dy-product-created.handler";
-import { DyGetProductByIdHandler } from "./queries/handlers/dy-get-product-by-id.handler";
+import { ProductSchema } from "./schemas/product-view.shema";
+import { ProductCreatedHandler } from "./events/handlers/product-created.handler";
 import { SellersModule } from "src/sellers/sellers.module";
-import { GetCategoryHandler } from "./queries/handlers/dy-get-product-by-category.handler";
+import { GetCategoryHandler } from "./queries/handlers/get-product-by-category.handler";
+import { ProductViewRepository } from "./repositories/product-view.repository";
+import { GetProductByIdHandler } from "./queries/handlers/get-product-by-id.handler";
 
 const CommandHandlers = [
   CreateProductHandler,
-  UpdateProductHandler,
+  //UpdateProductHandler,
   DeleteProductHandler,
 ];
 const EventsHandlers = [
   InventoryCreatedEvent,
   ProductCreatedHandler,
-  ProductUpdatedEventHandler,
-  ProductDeletedHandler,
-  DyProductCreatedHandler
 ];
 
 @Module({
@@ -52,13 +40,9 @@ const EventsHandlers = [
     CqrsModule,
     EventSourcingModule,
     RedisModule,
-    MongooseModule.forFeature([
-      { name: ProductView.name, schema: ProductViewSchema },
-    ]),
     TypeOrmModule.forFeature([Product, Seller]),
     DynamooseModule.forFeature([
-      { name: "DyProductView", schema: ProductSchema },
-      { name: 'DySearchProductView', schema: DySearchProductViewSchema },
+      { name: "ProductView", schema: ProductSchema },
     ]),
     SellersModule,
     MulterModule.register({
@@ -102,17 +86,15 @@ const EventsHandlers = [
     ProductRepository,
     SellerRepository,
     ProductViewRepository,
-    DyProductViewRepository,
+    ProductViewRepository,
     GetProductByIdHandler,
-    DyGetProductByDiscountRateHandler,
+    GetProductByDiscountRateHandler,
     GetCategoryHandler,
-    DyGetProductByIdHandler,
     Logger,
   ],
   controllers: [ProductController],
   exports: [ProductRepository, SellerRepository,
-     DyProductViewRepository,
-    DynamooseModule.forFeature([{ name: 'DySearchProductView', schema: DySearchProductViewSchema }]), 
+     ProductViewRepository,
   ],
 })
 export class ProductModule {}

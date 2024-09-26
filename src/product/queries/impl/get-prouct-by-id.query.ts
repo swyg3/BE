@@ -1,3 +1,3 @@
-export class DyGetProductByIdQuery {
+export class GetProductByIdQuery {
   constructor(public readonly productId: string) {}
 }
