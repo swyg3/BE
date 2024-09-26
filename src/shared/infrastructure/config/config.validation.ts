@@ -21,7 +21,6 @@ export const configValidationSchema = Joi.object({
   KAKAO_CALLBACK_URL: Joi.string().uri().required(),
 
   // Nodemailer
-  APP_URL: Joi.string().uri().required(),
   MAIL_ID: Joi.string().email().required(),
   MAIL_PASSWORD: Joi.string().required(),
   HMAC_SECRET: Joi.string().required(),
