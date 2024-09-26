@@ -11,9 +11,7 @@ import { Order } from './entities/order.entity';
 import { CreateOrderEventHandler } from './events/handlers/create-order.event-handler';
 import { OrderController } from './order.controller';
 import { GetOrderQueryHandler } from './queries/handlers/get-order.query-handler';
-import { EventRepository } from './repositories/create-order.repository';
 import { CreateOrderEventSchema } from './schemas/create-order.schema';
-import { OrderService } from './services/order.service';
 
 @Module({
   imports: [
@@ -29,6 +27,6 @@ import { OrderService } from './services/order.service';
     MongooseModule.forFeature([{ name: 'CreateOrderEvent', schema: CreateOrderEventSchema }]),
   ],
   controllers: [OrderController],
-  providers: [CreateOrderCommandHandler, GetOrderQueryHandler, DeleteOrderCommandHandler, CreateOrderEventHandler, EventRepository, OrderService]
+  providers: [CreateOrderCommandHandler, GetOrderQueryHandler, DeleteOrderCommandHandler, CreateOrderEventHandler]
 })
 export class OrderModule {}

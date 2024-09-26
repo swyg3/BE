@@ -44,7 +44,7 @@ export class CreateOrderCommandHandler implements ICommandHandler<CreateOrderCom
             orderItem.price = item.price;
             return orderItem;
         });
-        this.orderItemsRepository.save(orderItems);
+        await this.orderItemsRepository.save(orderItems);
 
         // 3. 주문 수량 만큼 재고 삭제
     }

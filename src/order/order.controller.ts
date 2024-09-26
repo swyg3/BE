@@ -3,7 +3,7 @@ import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { CreateOrderCommand } from './commands/create-order.command';
 import { DeleteOrderCommand } from './commands/delete-order.command';
 import { CreateOrderDto } from './dtos/create-order.dto';
-import { OrderService } from './services/order.service';
+import { GetOrderQuery } from './queries/get-order.query';
 
 @Controller('order')
 export class OrderController {
@@ -12,7 +12,6 @@ export class OrderController {
     constructor(
         private readonly commandBus: CommandBus,
         private readonly queryBus: QueryBus,
-        private readonly orderService: OrderService,
     ) {}
 
     // 주문 생성
@@ -28,8 +27,12 @@ export class OrderController {
     // 사용자별 전체 주문 목록
     @Get(':userId')
     async getOrders(@Param('userId') userId: number) {
-        return this.orderService.getOrdersByUserId(userId);
+        return this.queryBus.execute(
+            new GetOrderQuery(userId)
+        );
     }
+
+    // 주문 내역 수정
 
     // 주문 취소
     @Delete(':id')

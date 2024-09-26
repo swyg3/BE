@@ -11,7 +11,7 @@ export class GetOrderItemQueryHandler implements IQueryHandler<GetOrderItemQuery
         private readonly orderItemRepository: Repository<OrderItems>
     ) {}
 
-    async execute(query: GetOrderItemQuery): Promise<any> {
+    async execute(query: GetOrderItemQuery): Promise<OrderItems[]> {
         return this.orderItemRepository.find({ where: { orderId: query.orderId }});
     }
 }
