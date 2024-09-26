@@ -12,7 +12,9 @@ export class GetCategoryHandler implements IQueryHandler<GetCategoryQuery> {
   ) {}
 
   async execute(query: GetCategoryQuery): Promise<GetCategoryQueryOutputDto> {
-    const { category, sortBy, order, limit, exclusiveStartKey } = query.dto;
+    const { category, sortBy, order, limit, exclusiveStartKey,
+      previousPageKey
+     } = query.dto;
 
     const param = {
       category,
@@ -20,6 +22,7 @@ export class GetCategoryHandler implements IQueryHandler<GetCategoryQuery> {
       order,
       limit: Number(limit) || 10,
       ...(exclusiveStartKey && { exclusiveStartKey }),
+      ...(previousPageKey && { previousPageKey }),
     };
 
     this.logger.log(`Executing query with parameters: ${JSON.stringify(param)}`);
@@ -28,7 +31,7 @@ export class GetCategoryHandler implements IQueryHandler<GetCategoryQuery> {
     if (sortBy === 'discountRate') {
       result = await this.dyProductViewRepository.findProductsByCategoryAndDiscountRate(param);
     } else {
-        console.log("예외")
+        console.log("아직 개발못한 지오코딩")
      // result = await this.dyProductViewRepository.findProductsByCategoryAndCreatedAt(param);
     }
 

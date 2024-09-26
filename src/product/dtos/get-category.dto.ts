@@ -18,4 +18,8 @@ export class GetCategoryDto {
   @IsString()
   @IsOptional()
   exclusiveStartKey?: string;
+
+  @IsString()
+  @IsOptional()
+  previousPageKey?: string;
 }
