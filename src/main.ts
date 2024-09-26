@@ -33,6 +33,7 @@ async function bootstrap() {
       : {
           origin: "*",
           methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+          allowedHeaders: ["Content-Type", "Authorization"],
         };
   app.enableCors(corsOptions);
 
@@ -41,10 +42,10 @@ async function bootstrap() {
 
   // Swagger 설정
   const config = new DocumentBuilder()
-    .setTitle("Your API Title")
-    .setDescription("API description")
+    .setTitle("MOONCO Swagger UI")
+    .setDescription("v1.0 배포 버전 Swagger API 문서입니다.")
     .setVersion("1.0")
-    .addTag("your-tag")
+    .addTag("Tags")
     .addBearerAuth()
     .build();
 
