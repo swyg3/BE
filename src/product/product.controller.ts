@@ -179,7 +179,7 @@ export class ProductController {
     productQuery.order = query.order;
     productQuery.limit = Number(query.limit);
     productQuery.exclusiveStartKey = query.exclusiveStartKey || '';
-
+    productQuery.previousPageKey = query.previousPageKey || '';
     console.log('Processed query:', productQuery);
 
     const result = await this.queryBus.execute(
@@ -192,6 +192,7 @@ export class ProductController {
       data: result.items,
       lastEvaluatedUrl: result.lastEvaluatedUrl,
       firstEvaluatedUrl: result.firstEvaluatedUrl,
+      prevPageUrl:result.prevPageUrl,
       count: result.count
     };
   }

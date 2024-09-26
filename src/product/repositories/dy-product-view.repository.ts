@@ -134,28 +134,29 @@ export class DyProductViewRepository {
       order: 'asc' | 'desc';
       limit: number;
       exclusiveStartKey?: string;
+      previousPageKey?: string; // 이전 페이지 키 추가
     }
   ): Promise<{
     items: DyProductView[];
     lastEvaluatedUrl: string | null;
     firstEvaluatedUrl: string | null;
+    prevPageUrl: string | null; // 이전 페이지 URL 추가
     count: number;
   }> {
     try {
-      const sortOrder = param.order === 'desc' ? SortOrder.descending : SortOrder.ascending;
+      const { order, limit, exclusiveStartKey, previousPageKey } = param;
+      const sortOrder = order === 'desc' ? SortOrder.descending : SortOrder.ascending;
       let startKey: Record<string, any> | undefined;
-
-      if (param.exclusiveStartKey) {
-        startKey = JSON.parse(param.exclusiveStartKey);
+  
+      if (exclusiveStartKey) {
+        startKey = JSON.parse(exclusiveStartKey);
       }
-
-      // GSI를 사용한 쿼리 시작
+  
       let query = this.dyProductViewModel
         .query('GSI_KEY')
         .eq('PRODUCT')
         .using('DiscountRateIndex');
-
-      // discountRate에 대한 조건 추가
+  
       if (startKey && startKey.discountRate !== undefined) {
         if (sortOrder === SortOrder.ascending) {
           query = query.where('discountRate').ge(startKey.discountRate);
@@ -163,45 +164,57 @@ export class DyProductViewRepository {
           query = query.where('discountRate').le(startKey.discountRate);
         }
       }
-
-      query = query.sort(sortOrder).limit(Number(9)); // 한 개 더 가져옵니다.
-
-      // 전체 쿼리 결과
+  
+      query = query.sort(sortOrder).limit(Number(8) + 1); // 한 개 더 가져옵니다.
+  
       const results: QueryResponse<DyProductView> = await query.exec();
-      // 페이지 당 아이템
       const items = Array.from(results).slice(0, Number(8)); // 원하는 개수만큼 잘라냅니다.
-
+  
       this.logger.log(`Pagination query result: ${items.length} items`);
-
+  
       // 첫 번째 키 설정 (이전 페이지로 돌아가기 위한 키)
-      const firstEvaluatedKey = param.exclusiveStartKey && items.length > 0 ? {
-        productId: items[0].productId,
-        GSI_KEY: 'PRODUCT',
-        discountRate: items[0].discountRate,
-      } : null;
-
+      let firstEvaluatedKey;
+      if (previousPageKey) {
+        firstEvaluatedKey = JSON.parse(previousPageKey);
+      } else if (items.length > 0) {
+        firstEvaluatedKey = {
+          productId: items[0].productId,
+          GSI_KEY: 'PRODUCT',
+          discountRate: items[0].discountRate,
+        };
+      } else {
+        firstEvaluatedKey = null;
+      }
+  
       // 마지막 평가된 키 설정 (다음 페이지로 가기 위한 키)
       const lastEvaluatedKey = results.lastKey || null;
-
-      // URL 생성 (페이지네이션용)
+  
       const appUrl = this.configService.get<string>('APP_URL');
-      const createUrlWithKey = (key: Record<string, any> | null) => {
+      const createUrlWithKey = (key: Record<string, any> | null, prevKey: string | null = null) => {
         if (!key || !appUrl) return null;
         const baseUrl = new URL("/api/products/discountrate", appUrl);
-        baseUrl.searchParams.append('order', param.order);
-        baseUrl.searchParams.append('limit', param.limit.toString());
+        baseUrl.searchParams.append('order', order);
+        baseUrl.searchParams.append('limit', limit.toString());
         baseUrl.searchParams.append('exclusiveStartKey', JSON.stringify(key));
+        if (prevKey) {
+          baseUrl.searchParams.append('previousPageKey', prevKey);
+        }
         return baseUrl.toString();
       };
-
-      // 첫 번째 및 마지막 평가된 키에 URL 추가
-      const firstEvaluatedUrl = param.exclusiveStartKey ? createUrlWithKey(firstEvaluatedKey) : null;
-      const lastEvaluatedUrl = createUrlWithKey(lastEvaluatedKey);
-
+  
+      const firstEvaluatedUrl = createUrlWithKey(firstEvaluatedKey, previousPageKey);//현재 처음 키와 이전키를 합쳐서 만듬
+      const lastEvaluatedUrl = createUrlWithKey(lastEvaluatedKey, JSON.stringify(firstEvaluatedKey));// 마지막키와 현재 처음키를 합침
+      
+      let prevPageUrl: string | null = null;
+      if (previousPageKey) {
+        prevPageUrl = createUrlWithKey(JSON.parse(previousPageKey), null);
+      }
+  
       return {
         items,
         lastEvaluatedUrl,
         firstEvaluatedUrl,
+        prevPageUrl,
         count: items.length,
       };
     } catch (error) {
@@ -209,14 +222,14 @@ export class DyProductViewRepository {
       throw error;
     }
   }
-  async findProductsByCategoryAndDiscountRate(
-    param: {
-      category: Category;
-      order: 'asc' | 'desc';
-      limit: number;
-      exclusiveStartKey?: string;
-    }
-  ): Promise<{
+
+  async findProductsByCategoryAndDiscountRate(param: {
+    category: Category;
+    order: 'asc' | 'desc';
+    limit: number;
+    exclusiveStartKey?: string;
+    previousPageKey?: string; // 이전 페이지 키 추가
+  }): Promise<{
     items: DyProductView[];
     lastEvaluatedUrl: string | null;
     firstEvaluatedUrl: string | null;
@@ -224,53 +237,67 @@ export class DyProductViewRepository {
     count: number
   }> {
     try {
-      const { category, order, limit } = param;
+      const { category, order, limit, exclusiveStartKey, previousPageKey } = param;
       const sortOrder = order === 'desc' ? SortOrder.descending : SortOrder.ascending;
       let startKey: Record<string, any> | undefined;
-
-      if (param.exclusiveStartKey) {
-        startKey = JSON.parse(param.exclusiveStartKey);
+  
+      if (exclusiveStartKey) {
+        startKey = JSON.parse(exclusiveStartKey);
       }
-
+  
       let query = this.dyProductViewModel
         .query('category').eq(category)
         .using('CategoryDiscountRateIndex')
         .sort(sortOrder)
-        .limit(limit);
-
+        .limit(Number(limit) + 1); // 한 개 더 가져옵니다.
+  
       if (startKey) {
         query = query.startAt(startKey);
       }
-
-      console.log('Category and DiscountRate query object:', JSON.stringify(query.getRequest(), null, 2));
-      
-      const results = await query.exec();
-      console.log('Category and DiscountRate query results:', JSON.stringify(results, null, 2));
-
-      const items = Array.isArray(results) ? results : [];
-
-      const firstEvaluatedKey = items.length > 0 ? items[0] : null;
-      const lastEvaluatedKey = results.lastKey || null;
-
+  
+      const results: QueryResponse<DyProductView> = await query.exec();
+      const items = Array.from(results).slice(0, Number(limit)); // 원하는 개수만큼 잘라냅니다.
+  
+      this.logger.log(`Pagination query result: ${items.length} items`);
+  
+      // 첫 번째 키 설정 (이전 페이지로 돌아가기 위한 키)
+      const firstEvaluatedKey = items.length > 0 ? {
+        productId: items[0].productId,
+        GSI_KEY: 'PRODUCT',
+        discountRate: items[0].discountRate,
+        category: items[0].category,
+      } : null;
+  
+      // 마지막 키 설정 (다음 페이지로 가기 위한 키)
+      const lastEvaluatedKey = results.length > limit ? {
+        productId: results[limit].productId,
+        GSI_KEY: 'PRODUCT',
+        discountRate: results[limit].discountRate,
+        category: results[limit].category,
+      } : null;
+  
       const appUrl = this.configService.get<string>('APP_URL');
-      const createUrlWithKey = (key: Record<string, any> | null) => {
+      const createUrlWithKey = (key: Record<string, any> | null, prevKey: string | null = null) => {
         if (!key || !appUrl) return null;
         const baseUrl = new URL(`/api/products/category/discount`, appUrl);
         baseUrl.searchParams.append('category', category);
         baseUrl.searchParams.append('order', order);
         baseUrl.searchParams.append('limit', limit.toString());
-        if (key) baseUrl.searchParams.append('exclusiveStartKey', JSON.stringify(key));
+        baseUrl.searchParams.append('exclusiveStartKey', JSON.stringify(key));
+        if (prevKey) {
+          baseUrl.searchParams.append('previousPageKey', prevKey);
+        }
         return baseUrl.toString();
       };
-
-      const firstEvaluatedUrl = createUrlWithKey(firstEvaluatedKey);
-      const lastEvaluatedUrl = createUrlWithKey(lastEvaluatedKey);
+  
+      const firstEvaluatedUrl = createUrlWithKey(firstEvaluatedKey, previousPageKey);
+      const lastEvaluatedUrl = createUrlWithKey(lastEvaluatedKey, JSON.stringify(firstEvaluatedKey));
       
       let prevPageUrl: string | null = null;
-      if (startKey) {
-        prevPageUrl = createUrlWithKey(startKey);
+      if (previousPageKey) {
+        prevPageUrl = createUrlWithKey(JSON.parse(previousPageKey), null);
       }
-
+  
       return {
         items,
         lastEvaluatedUrl,
@@ -278,14 +305,12 @@ export class DyProductViewRepository {
         prevPageUrl,
         count: items.length
       };
-
+  
     } catch (error) {
-      console.error(`Category and DiscountRate query failed: ${error.message}`, error.stack);
+      this.logger.error(`Category and DiscountRate query failed: ${error.message}`, error.stack);
       throw new InternalServerErrorException('Failed to execute category and discountRate query');
     }
   }
-
-
 
   async scanProducts(limit: number = 10): Promise<DyProductView[]> {
     try {

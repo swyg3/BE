@@ -9,11 +9,15 @@ export class DyGetProductByDiscountRateInputDto {
   @ApiProperty({ type: Number, description: '조회할 항목 수' })
   @IsNumber()
   @IsOptional()
-  limit: number = 20;
+  limit: number = Number(8);
 
   @ApiProperty({ type: String, description: '다음 페이지 조회를 위한 키', required: false })
   @IsString()
   @IsOptional()
   exclusiveStartKey?: string;
 
+  @ApiProperty({ type: String, description: '이전 페이지 조회를 위한 키', required: false })
+  @IsString()
+  @IsOptional()
+  previousPageKey?: string;
 }

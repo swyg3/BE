@@ -13,12 +13,13 @@ export class DyGetProductByDiscountRateHandler
   ) {}
 
   async execute(query: DyGetProductByDiscountRateQuery): Promise<DyGetProductByDiscountRateOutputDto> {
-    const { order, limit, exclusiveStartKey } = query.dto;
+    const { order, limit, exclusiveStartKey, previousPageKey } = query.dto;
     
     const param = {
       order,
       limit: Number(limit),
       ...(exclusiveStartKey && { exclusiveStartKey }),
+      ...(previousPageKey &&{previousPageKey})
     };
 
     this.logger.log(`Executing query with parameters: ${JSON.stringify(param)}`);
@@ -31,6 +32,7 @@ export class DyGetProductByDiscountRateHandler
       items: result.items,
       lastEvaluatedUrl: result.lastEvaluatedUrl || null,
       firstEvaluatedUrl: result.firstEvaluatedUrl || null,
+      prevPageUrl:result.prevPageUrl||null,
       count: result.count,
     };
   }
