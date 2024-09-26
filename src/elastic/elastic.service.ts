@@ -69,12 +69,14 @@ export class ElasticService {
   }
 
   async searchProducts(query: string): Promise<any[]> {
+    console.log('Elasticsearch query:', query); // 쿼리 로그 추가
     const searchResponse = await this.esService.search({
       index: this.indexName,
       query: {
         multi_match: {
           query,
           fields: ['name', 'description'],
+          fuzziness: 'AUTO', 
         },
       },
     });
