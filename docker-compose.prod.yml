@@ -91,6 +91,25 @@ services:
       - /sys:/host/sys:ro
       - /:/rootfs:ro
 
+  elasticsearch:
+    image: elasticsearch:8.0.0
+    container_name: elasticsearch_dev
+    environment:
+      - discovery.type=single-node
+      - ELASTICSEARCH_HOST=${ELASTICSEARCH_HOST}
+      - ELASTICSEARCH_PORT=${ELASTICSEARCH_PORT}
+      - xpack.security.enabled=false
+      - xpack.security.http.ssl.enabled=false
+    ports:
+      - "${ELASTICSEARCH_PORT}:9200"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200 >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3    
+
   grafana:
     image: grafana/grafana:8.2.2
     container_name: grafana_prod
@@ -118,3 +137,4 @@ services:
 volumes:
   prometheus_data:
   grafana_data:
+  es_data:
