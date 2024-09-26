@@ -28,12 +28,17 @@ export class TokenService {
       userType,
     );
 
-    const [accessToken, refreshToken] = await Promise.all([
+    const [accessTokenData, refreshTokenData] = await Promise.all([
       this.createAccessToken(accessTokenPayload),
       this.createRefreshToken(refreshTokenPayload),
     ]);
 
-    return { accessToken, refreshToken };
+    return { 
+      accessToken: accessTokenData.token, 
+      refreshToken: refreshTokenData.token,
+      accessTokenExpiresIn: accessTokenData.expiresIn,
+      refreshTokenExpiresIn: refreshTokenData.expiresIn
+     };
   }
 
   private createTokenPayload(
@@ -58,20 +63,39 @@ export class TokenService {
     }
   }
 
-  async createAccessToken(payload: TokenPayload): Promise<string> {
+  async createAccessToken(payload: TokenPayload): Promise<{ token: string; expiresIn: number }> {
     const expiresIn = this.configService.get<string>("ACCESS_TOKEN_EXPIRY");
     this.logger.debug(`ACCESS_TOKEN_EXPIRY: ${expiresIn}`);
     if (!expiresIn) {
       throw new Error("ACCESS_TOKEN_EXPIRY is not set in the environment");
     }
-    return this.jwtService.sign(payload, { expiresIn });
+    const token = await this.jwtService.sign(payload, { expiresIn });
+    return { token, expiresIn: this.parseExpiresIn(expiresIn) };
   }
 
-  async createRefreshToken(payload: TokenPayload): Promise<string> {
+  async createRefreshToken(payload: TokenPayload): Promise<{ token: string; expiresIn: number }> {
     const expiresIn = this.configService.get<string>("REFRESH_TOKEN_EXPIRY");
     if (!expiresIn) {
       throw new Error("REFRESH_TOKEN_EXPIRY is not set in the environment");
     }
-    return this.jwtService.sign(payload, { expiresIn });
+    const token = await this.jwtService.sign(payload, { expiresIn });
+    return { token, expiresIn: this.parseExpiresIn(expiresIn) };
+  }
+
+  // ex. '3d' -> 259200 (3일을 초로 변환)
+  private parseExpiresIn(expiresIn: string): number {
+    const match = expiresIn.match(/^(\d+)([smhd])$/);
+    if (!match) {
+      throw new Error(`Invalid expiresIn format: ${expiresIn}`);
+    }
+    const value = parseInt(match[1], 10);
+    const unit = match[2];
+    switch (unit) {
+      case 's': return value;
+      case 'm': return value * 60;
+      case 'h': return value * 60 * 60;
+      case 'd': return value * 24 * 60 * 60;
+      default: throw new Error(`Unknown time unit: ${unit}`);
+    }
   }
 }

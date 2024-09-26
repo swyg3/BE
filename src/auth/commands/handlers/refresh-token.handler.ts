@@ -3,7 +3,6 @@ import { RefreshTokenCommand } from "../commands/refresh-token.command";
 import { TokenService } from "../../services/token.service";
 import { UnauthorizedException } from "@nestjs/common";
 import { RefreshTokenService } from "../../services/refresh-token.service";
-import { EventBusService } from "src/shared/infrastructure/event-sourcing";
 
 @CommandHandler(RefreshTokenCommand)
 export class RefreshTokenCommandHandler
