@@ -23,27 +23,28 @@ async function bootstrap() {
   app.setGlobalPrefix("api");
 
   // CORS 설정
-const corsOptions = {
-  origin: (origin, callback) => {
-    const allowedOrigins = [
-      "http://localhost:5174",
-      "https://swypmooncofe.vercel.app"
-    ];
-    // 서버-서버 요청 (예: ECS)이나 허용된 출처는 허용
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error('CORS not allowed'));
-    }
-  },
-  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true,
-  optionsSuccessStatus: 204,
-  exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar'],
-};
+  const corsOptions = {
+    origin: (origin, callback) => {
+      const allowedOrigins = [
+        "http://localhost:5174",
+        "https://swypmooncofe.vercel.app",
+        "http://3.34.189.220"
+      ];
+      // 서버-서버 요청 (예: ECS)이나 허용된 출처는 허용
+      if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        callback(new Error('CORS not allowed'));
+      }
+    },
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+    optionsSuccessStatus: 204,
+    exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar'],
+  };
 
-app.enableCors(corsOptions);
+  app.enableCors(corsOptions);
 
   // HTTP 예외 필터
   app.useGlobalFilters(new HttpExceptionFilter());
