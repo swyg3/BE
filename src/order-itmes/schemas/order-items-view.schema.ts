@@ -27,8 +27,9 @@ export const OrderItemsViewSchema = new Schema(
     },
     {
         saveUnknown: false, // 알 수 없는 속성 저장 방지
+        timestamps: true, // createdAt 및 updatedAt 자동 관리
     }
 );
 
 // OrderItemsView 모델 정의
-export const OrderItemsView = model("OrderItemsView", OrderItemsViewSchema);
+export const OrderItemsViewModel = model("OrderItemsView", OrderItemsViewSchema); // 모델 이름 변경
