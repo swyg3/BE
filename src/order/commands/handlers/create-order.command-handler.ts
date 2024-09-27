@@ -24,7 +24,6 @@ export class CreateOrderCommandHandler implements ICommandHandler<CreateOrderCom
     async execute(command: CreateOrderCommand): Promise<any> {
         const { userId, totalAmount, totalPrice, pickupTime, items, paymentMethod, status } = command;
 
-        // create 메소드 만들어서 생성하기
         // 1. 주문 생성
         const newOrder = this.orderRepository.create({
             userId,
