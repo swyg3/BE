@@ -22,16 +22,16 @@ async function bootstrap() {
   // 전역 접두사 설정
   app.setGlobalPrefix("api");
 
-  // CORS 설정
   const corsOptions = {
     origin: (origin, callback) => {
       const allowedOrigins = [
         "http://localhost:5174",
-        "https://swypmooncofe.vercel.app",
-        "http://3.34.189.220"
+        "https://swypmooncofe.vercel.app"
       ];
-      // 서버-서버 요청 (예: ECS)이나 허용된 출처는 허용
-      if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      const allowedIPs = ['3.34.189.220']; // ECS IP 목록
+  
+      // origin이 null인 경우 (로컬 테스트) 또는 허용된 origin/IP인 경우 통과
+      if (!origin || allowedOrigins.includes(origin) || allowedIPs.some(ip => origin.includes(ip))) {
         callback(null, true);
       } else {
         callback(new Error('CORS not allowed'));
@@ -39,11 +39,11 @@ async function bootstrap() {
     },
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true,
+    credentials: false, // 쿠키 및 인증 정보가 필요하면 true로 설정
     optionsSuccessStatus: 204,
     exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar'],
   };
-
+  
   app.enableCors(corsOptions);
 
   // HTTP 예외 필터
