@@ -24,14 +24,16 @@ async function bootstrap() {
 
   // CORS 설정
   const corsOptions = {
-    origin: process.env.NODE_ENV === 'production'
-      ? ['https://3.34.189.220']
-      : ['http://localhost:3000'],
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    origin: [
+      "http://localhost:5174",
+      "https://swypmooncofe.vercel.app"
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
     optionsSuccessStatus: 204,
   };
+  
   app.enableCors(corsOptions);
 
   // HTTP 예외 필터
