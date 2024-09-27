@@ -29,11 +29,8 @@ import { DynamooseModule } from "nestjs-dynamoose";
 import { ProductSchema } from "./schemas/dy-product-view.shema";
 import { DyProductViewRepository } from "./repositories/dy-product-view.repository";
 import { APP_PIPE } from "@nestjs/core";
-import { ProductSearchController } from "./product.search.contoller";
 import { Client } from "@elastic/elasticsearch";
-import { ProductSearchService } from "./product-search.service";
 import { DySearchProductViewModel, DySearchProductViewSchema } from "./schemas/dy-product-search-view.schema";
-import { ElasticModule } from "src/elastic/elastic.module";
 import { DyProductCreatedHandler } from "./events/handlers/dy-product-created.handler";
 import { DyGetProductByIdHandler } from "./queries/handlers/dy-get-product-by-id.handler";
 import { UserViewRepository } from "src/users/repositories/user-view.repository";
@@ -56,7 +53,6 @@ const EventsHandlers = [
 
 @Module({
   imports: [
-    forwardRef(() => ElasticModule),
     CqrsModule,
     EventSourcingModule,
     RedisModule,
@@ -114,14 +110,12 @@ const EventsHandlers = [
     GetProductByIdHandler,
     DyGetProductByDiscountRateHandler,
     GetCategoryHandler,
-    ProductSearchService,
     DyGetProductByIdHandler,
     Logger,
   ],
-  controllers: [ProductController,ProductSearchController],
+  controllers: [ProductController],
   exports: [ProductRepository, SellerRepository,
      DyProductViewRepository,
-    ProductSearchService,
     DynamooseModule.forFeature([{ name: 'DySearchProductView', schema: DySearchProductViewSchema }]), // 외부로 내보내기
   ],
 })
