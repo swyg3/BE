@@ -22,8 +22,6 @@ services:
       - AWS_REGION=${AWS_REGION}
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-      - ELASTICSEARCH_HOST=${ELASTICSEARCH_HOST}
-      - ELASTICSEARCH_PORT=${ELASTICSEARCH_PORT}
     ports:
       - "${NODE_PORT}:${NODE_PORT}"
     command: npm run start:dev
@@ -34,7 +32,6 @@ services:
       - postgres
       - redis
       - dynamodb-local
-      - elasticsearch
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:${NODE_PORT}/health"]
       interval: 30s
@@ -162,25 +159,6 @@ services:
           cpus: "0.2"
           memory: 300M
 
-  elasticsearch:
-    image: elasticsearch:8.0.0
-    container_name: elasticsearch_dev
-    environment:
-      - discovery.type=single-node
-      - ELASTICSEARCH_HOST=${ELASTICSEARCH_HOST}
-      - ELASTICSEARCH_PORT=${ELASTICSEARCH_PORT}
-      - xpack.security.enabled=false
-      - xpack.security.http.ssl.enabled=false
-    ports:
-      - "${ELASTICSEARCH_PORT}:9200"
-    volumes:
-      - es_data:/usr/share/elasticsearch/data
-    healthcheck:
-      test: ["CMD-SHELL", "curl -s http://localhost:9200 >/dev/null || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
 
   node-exporter:
     image: prom/node-exporter:latest
@@ -234,5 +212,4 @@ volumes:
   postgres_data_dev:
   dynamodb_data:
   prometheus_data:
-  es_data:
   grafana_data:

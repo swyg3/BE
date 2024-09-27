@@ -18,7 +18,6 @@ import { ServeStaticModule } from "@nestjs/serve-static";
 import { PUBLIC_FOLDER_PATH } from "./product/const/path.const";
 import { DynamooseModule } from "nestjs-dynamoose";
 import { getDynamoConfig } from "./shared/infrastructure/database/dynamodb.config";
-import { ElasticModule } from './elastic/elastic.module';
 
 @Module({
   imports: [
@@ -66,7 +65,6 @@ import { ElasticModule } from './elastic/elastic.module';
     SellersModule,
     ProductModule,
     InventoryModule,
-    ElasticModule,
   ],
   controllers: [AppController],
   providers: [AppService],
