@@ -23,16 +23,20 @@ async function bootstrap() {
   app.setGlobalPrefix("api");
 
   const corsOptions = {
-    origin: true,  // 모든 origin 허용
+    origin: [
+      "http://localhost:5174",
+      "https://swypmooncofe.vercel.app",
+      "http://3.34.189.220"
+    ],
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: false,
+    credentials: true,  // 인증 정보 허용
     optionsSuccessStatus: 204,
     exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar'],
   };
   
   app.enableCors(corsOptions);
-
+  
   // HTTP 예외 필터
   app.useGlobalFilters(new HttpExceptionFilter());
 
