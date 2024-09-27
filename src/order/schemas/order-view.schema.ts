@@ -1,5 +1,6 @@
 import { model, Schema } from "dynamoose";
 
+// OrderView 스키마 정의
 export const OrderViewSchema = new Schema(
     {
         id: {
@@ -49,4 +50,5 @@ export const OrderViewSchema = new Schema(
     }
 );
 
-export const OrderView = model("OrderView", OrderViewSchema);
+// OrderView 모델 정의
+export const OrderViewModel = model("OrderView", OrderViewSchema);
