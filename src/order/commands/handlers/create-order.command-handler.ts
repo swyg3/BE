@@ -2,7 +2,6 @@ import { Injectable, Logger } from "@nestjs/common";
 import { CommandHandler, EventBus, ICommandHandler } from "@nestjs/cqrs";
 import { InjectRepository } from "@nestjs/typeorm";
 import { OrderItems } from "src/order-itmes/entities/order-items.entity";
-import { CreateOrderAggregate } from "src/order/aggregates/create-order.aggregate";
 import { Order } from "src/order/entities/order.entity";
 import { Repository } from 'typeorm';
 import { CreateOrderCommand } from "../create-order.command";
@@ -23,6 +22,7 @@ export class CreateOrderCommandHandler implements ICommandHandler<CreateOrderCom
     async execute(command: CreateOrderCommand): Promise<any> {
         const { userId, totalAmount, totalPrice, pickupTime, items } = command;
 
+        // create 메소드 만들어서 생성하기
         // 1. 주문 생성
         const newOrder = new Order();
         newOrder.userId = userId;
@@ -48,31 +48,31 @@ export class CreateOrderCommandHandler implements ICommandHandler<CreateOrderCom
         await this.orderItemsRepository.save(orderItems);
         this.logger.log(`주문 내역 및 주문 상세 내역 생성 완료: ${savedOrder.id}`);
 
-        // 3. 주문 수량 만큼 재고 삭제
+        // 3. 주문 수량 만큼 재고 삭제 - 이벤트도 따로 발생
 
-        // 4. 이벤트 aggregate 생성
-        const orderAggregate = new CreateOrderAggregate(savedOrder.id);
+        // // 4. aggregate에서 주문 등록 이벤트 생성
+        // const event = new CreateOrderEvent(
+        //     savedOrder.id,
+        //     {
+        //         userId,
+        //         totalAmount,
+        //         totalPrice,
+        //         paymentMethod,
+        //         status,
+        //         items.map(item => ({
+        //             orderId: savedOrder.id,
+        //             productId: item.productId,
+        //             quantity: item.quantity,
+        //             price: item.price,
+        //         })),
+        //         pickupTime,
+        //         createdAt,
+        //         new Date(),
+        //     },
+        //     1
+        // );
 
-        // 5. aggregate에서 주문 등록 이벤트 생성
-        const event = orderAggregate.register(
-            savedOrder.id,
-            userId,
-            totalAmount,
-            totalPrice,
-            newOrder.paymentMethod,
-            newOrder.status,
-            items.map(item => ({
-                orderId: savedOrder.id,
-                productId: item.productId,
-                quantity: item.quantity,
-                price: item.price,
-            })),
-            pickupTime,
-            newOrder.createdAt,
-            new Date(),
-        );
-
-        // 6. 이벤트 발행
-        this.eventBus.publish(event);
+        // // 5. 이벤트 발행
+        // this.eventBusService.publishAndSave(event);
     }
 }
