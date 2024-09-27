@@ -2,7 +2,7 @@ import { Controller, Get, Param } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
 import { GetOrderItemQuery } from './queries/get-order-item.query';
 
-@Controller('order-itmes')
+@Controller('order-items')
 export class OrderItmesController {
     constructor(
         private readonly queryBus: QueryBus,
