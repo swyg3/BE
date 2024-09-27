@@ -23,26 +23,17 @@ async function bootstrap() {
   app.setGlobalPrefix("api");
 
   // CORS 설정
-  const corsOptions =
-    process.env.NODE_ENV === "production"
-      ? {
-          origin: [
-            "*",
-            "http://localhost:5174",
-            "https://swypmooncofe.vercel.app/",
-          ],
-          methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-          allowedHeaders: ["Content-Type", "Authorization"],
-        }
-      : {
-          origin: [
-            "*",
-            "http://localhost:5174",
-            "https://swypmooncofe.vercel.app/",
-          ],
-          methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-          allowedHeaders: ["Content-Type", "Authorization"],
-        };
+  const corsOptions = {
+    origin: [
+      "http://localhost:5174",
+      "https://swypmooncofe.vercel.app"
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+    optionsSuccessStatus: 204,
+  };
+  
   app.enableCors(corsOptions);
 
   // HTTP 예외 필터

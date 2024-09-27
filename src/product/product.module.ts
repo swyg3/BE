@@ -1,4 +1,4 @@
-import { BadRequestException, Module } from "@nestjs/common";
+import { BadRequestException, forwardRef, Logger, Module, ValidationPipe } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { Product } from "./entities/product.entity";
 import { ProductController } from "./product.controller";
@@ -17,7 +17,7 @@ import { InventoryCreatedEvent } from "src/inventory/events/impl/inventory-creat
 import { ProductCreatedHandler } from "./events/handlers/product-created.handler";
 import { EventSourcingModule } from "src/shared/infrastructure/event-sourcing";
 import { RedisModule } from "src/shared/infrastructure/redis/redis.config";
-import { GetProductByDiscountRateHandler } from "./queries/handlers/get-products-by-discountRate.handler";
+import { DyGetProductByDiscountRateHandler } from "./queries/handlers/get-products-by-discountRate.handler";
 import { Seller } from "src/sellers/entities/seller.entity";
 import { SellerRepository } from "src/sellers/repositories/seller.repository";
 import { MulterModule } from "@nestjs/platform-express";
@@ -28,6 +28,18 @@ import { PRODUCTS_IMAGE_PATH, TEMP_FOLDER_PATH } from "./const/path.const";
 import { DynamooseModule } from "nestjs-dynamoose";
 import { ProductSchema } from "./schemas/dy-product-view.shema";
 import { DyProductViewRepository } from "./repositories/dy-product-view.repository";
+import { APP_PIPE } from "@nestjs/core";
+import { ProductSearchController } from "./product.search.contoller";
+import { Client } from "@elastic/elasticsearch";
+import { ProductSearchService } from "./product-search.service";
+import { DySearchProductViewModel, DySearchProductViewSchema } from "./schemas/dy-product-search-view.schema";
+import { ElasticModule } from "src/elastic/elastic.module";
+import { DyProductCreatedHandler } from "./events/handlers/dy-product-created.handler";
+import { DyGetProductByIdHandler } from "./queries/handlers/dy-get-product-by-id.handler";
+import { UserViewRepository } from "src/users/repositories/user-view.repository";
+import { UsersModule } from "src/users/users.module";
+import { SellersModule } from "src/sellers/sellers.module";
+import { GetCategoryHandler } from "./queries/handlers/dy-get-product-by-category.handler";
 
 const CommandHandlers = [
   CreateProductHandler,
@@ -39,10 +51,12 @@ const EventsHandlers = [
   ProductCreatedHandler,
   ProductUpdatedEventHandler,
   ProductDeletedHandler,
+  DyProductCreatedHandler
 ];
 
 @Module({
   imports: [
+    forwardRef(() => ElasticModule),
     CqrsModule,
     EventSourcingModule,
     RedisModule,
@@ -51,8 +65,10 @@ const EventsHandlers = [
     ]),
     TypeOrmModule.forFeature([Product, Seller]),
     DynamooseModule.forFeature([
-      { name: "ProductView", schema: ProductSchema },
+      { name: "DyProductView", schema: ProductSchema },
+      { name: 'DySearchProductView', schema: DySearchProductViewSchema },
     ]),
+    SellersModule,
     MulterModule.register({
       limits: {
         // 바이트 단위로 입력
@@ -96,9 +112,17 @@ const EventsHandlers = [
     ProductViewRepository,
     DyProductViewRepository,
     GetProductByIdHandler,
-    GetProductByDiscountRateHandler,
+    DyGetProductByDiscountRateHandler,
+    GetCategoryHandler,
+    ProductSearchService,
+    DyGetProductByIdHandler,
+    Logger,
   ],
-  controllers: [ProductController],
-  exports: [ProductRepository, SellerRepository, DyProductViewRepository],
+  controllers: [ProductController,ProductSearchController],
+  exports: [ProductRepository, SellerRepository,
+     DyProductViewRepository,
+    ProductSearchService,
+    DynamooseModule.forFeature([{ name: 'DySearchProductView', schema: DySearchProductViewSchema }]), // 외부로 내보내기
+  ],
 })
 export class ProductModule {}
