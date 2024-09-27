@@ -26,12 +26,20 @@ async function bootstrap() {
   const corsOptions =
     process.env.NODE_ENV === "production"
       ? {
-          origin: ["*"],
+          origin: [
+            "*",
+            "http://localhost:5174",
+            "https://swypmooncofe.vercel.app/",
+          ],
           methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
           allowedHeaders: ["Content-Type", "Authorization"],
         }
       : {
-          origin: "*",
+          origin: [
+            "*",
+            "http://localhost:5174",
+            "https://swypmooncofe.vercel.app/",
+          ],
           methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
           allowedHeaders: ["Content-Type", "Authorization"],
         };
