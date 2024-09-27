@@ -4,7 +4,7 @@ import { Product } from "./entities/product.entity";
 import { ProductController } from "./product.controller";
 import { ProductRepository } from "./repositories/product.repository";
 import { CreateProductHandler } from "./commands/handlers/create-product.handler";
-import { CommandHandler, CqrsModule, EventsHandler } from "@nestjs/cqrs";
+import { CommandHandler, CqrsModule, EventsHandler, QueryBus } from "@nestjs/cqrs";
 import { DeleteProductHandler } from "./commands/handlers/delete-product.handler";
 import { InventoryCreatedEvent } from "src/inventory/events/impl/inventory-created.event";
 import { EventSourcingModule } from "src/shared/infrastructure/event-sourcing";
@@ -24,6 +24,10 @@ import { SellersModule } from "src/sellers/sellers.module";
 import { GetCategoryHandler } from "./queries/handlers/get-product-by-category.handler";
 import { ProductViewRepository } from "./repositories/product-view.repository";
 import { GetProductByIdHandler } from "./queries/handlers/get-product-by-id.handler";
+import { GeocodingController } from "./geocodingcotroller";
+import { GeocodingService } from "./geocodingservice";
+import { NaverMapsClient } from "src/shared/infrastructure/database/navermap.config";
+import { HttpModule } from "@nestjs/axios";
 
 const CommandHandlers = [
   CreateProductHandler,
@@ -45,6 +49,7 @@ const EventsHandlers = [
       { name: "ProductView", schema: ProductSchema },
     ]),
     SellersModule,
+    HttpModule,
     MulterModule.register({
       limits: {
         // 바이트 단위로 입력
@@ -91,10 +96,14 @@ const EventsHandlers = [
     GetProductByDiscountRateHandler,
     GetCategoryHandler,
     Logger,
+    HttpModule,
+    GeocodingService,
+    NaverMapsClient,
+    QueryBus
   ],
-  controllers: [ProductController],
+  controllers: [ProductController,GeocodingController],
   exports: [ProductRepository, SellerRepository,
-     ProductViewRepository,
+     ProductViewRepository,NaverMapsClient
   ],
 })
 export class ProductModule {}
