@@ -38,7 +38,7 @@ export class NaverMapsClient {
         })
       );
 
-      if (response.data.addresses && response.data.addresses.length > 0) {
+      if (response.data.status === 'OK' && response.data.addresses && response.data.addresses.length > 0) {
         const { x, y } = response.data.addresses[0];
         return { x, y };
       } else {
@@ -50,38 +50,4 @@ export class NaverMapsClient {
     }
   }
 
-  calculateApproximateWalkingDistance(
-    lat1: number,
-    lon1: number,
-    lat2: number,
-    lon2: number
-  ): number {
-    const R = 6371; // 지구의 반경 (km)
-    
-    const dLat = this.toRadians(lat2 - lat1);
-    const dLon = this.toRadians(lon2 - lon1);
-    
-    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-              Math.cos(this.toRadians(lat1)) * Math.cos(this.toRadians(lat2)) * 
-              Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    
-    const directDistance = R * c;
-    
-    // Manhattan distance approximation
-    const latDistance = Math.abs(lat2 - lat1) * 111.32; // 1도의 위도 거리는 약 111.32km
-    const lonDistance = Math.abs(lon2 - lon1) * 111.32 * Math.cos(this.toRadians((lat1 + lat2) / 2));
-    
-    const manhattanDistance = latDistance + lonDistance;
-    
-    // 직선거리와 Manhattan distance의 평균을 사용
-    const approximateWalkingDistance = (directDistance + manhattanDistance) / 2;
-    
-    return approximateWalkingDistance * 1000; // 미터 단위로 변환
-  }
-
-  private toRadians(degrees: number): number {
-    return degrees * (Math.PI / 180);
-  }
 }

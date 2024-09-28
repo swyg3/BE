@@ -11,7 +11,7 @@ export class ProductCreatedHandler
   private readonly logger = new Logger(ProductCreatedHandler.name);
 
   constructor(
-    private readonly dyProductViewRepository: ProductViewRepository,
+    private readonly productViewRepository: ProductViewRepository,
   ) {}
 
   async handle(event: ProductCreatedEvent) {
@@ -19,7 +19,7 @@ export class ProductCreatedHandler
     this.logger.log(`evebt handler${event.data.productImageUrl}`);
 
     try {
-      await this.dyProductViewRepository.create({
+      await this.productViewRepository.create({
         productId: event.aggregateId,
         sellerId: event.data.sellerId,
         category: event.data.category,
@@ -33,6 +33,8 @@ export class ProductCreatedHandler
         expirationDate: event.data.expirationDate,
         createdAt: event.data.createdAt || new Date(), 
         updatedAt: event.data.updatedAt || new Date(), 
+        locationX: event.data.locationX,
+        locationY: event.data.locationY
       });
 
       this.logger.log(`ProductView 등록 성공: ${event.aggregateId}`);

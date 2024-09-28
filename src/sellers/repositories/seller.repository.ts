@@ -57,4 +57,20 @@ export class SellerRepository {
     seller.isBusinessNumberVerified = isVerified;
     return this.sellerRepository.save(seller);
   }
+
+  async getSellerAddress(sellerId: string): Promise<string | null> {
+    try {
+      const seller = await this.sellerRepository.findOne({ 
+        where: { id: sellerId },
+        select: ['storeAddress'] 
+      });
+      
+      if (seller) {
+        return seller.storeAddress || null;
+      }
+      return null;
+    } catch (error) {
+      throw new Error("판매자 주소가 존재하지 않습니다.");
+    }
+  }
 }

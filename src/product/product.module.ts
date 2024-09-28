@@ -28,6 +28,8 @@ import { GeocodingController } from "./geocodingcotroller";
 import { GeocodingService } from "./geocodingservice";
 import { NaverMapsClient } from "src/shared/infrastructure/database/navermap.config";
 import { HttpModule } from "@nestjs/axios";
+import { GetNearestProductsHandler } from "./queries/handlers/get-nearest-products.handler";
+import { SellerViewRepository } from "src/sellers/repositories/seller-view.repository";
 
 const CommandHandlers = [
   CreateProductHandler,
@@ -91,15 +93,15 @@ const EventsHandlers = [
     ProductRepository,
     SellerRepository,
     ProductViewRepository,
-    ProductViewRepository,
     GetProductByIdHandler,
     GetProductByDiscountRateHandler,
     GetCategoryHandler,
+    GetNearestProductsHandler,
     Logger,
     HttpModule,
     GeocodingService,
     NaverMapsClient,
-    QueryBus
+    QueryBus,
   ],
   controllers: [ProductController,GeocodingController],
   exports: [ProductRepository, SellerRepository,

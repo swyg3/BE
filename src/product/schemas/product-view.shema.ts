@@ -78,6 +78,15 @@ export const ProductSchema = new Schema(
       type: Date,
       required: true,
     },
+    // 위도 경도
+    locationX: {
+      type: String,
+      required: true,
+    },
+    locationY: {
+      type: String,
+      required: true,
+    },
   },
   {
     timestamps: {

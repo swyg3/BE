@@ -20,6 +20,9 @@ export interface ProductView {
   expirationDate: Date;
   createdAt: Date;
   updatedAt: Date;
+  locationX: string;
+  locationY: string;
+  
 }
 
 @Injectable()
@@ -128,6 +131,17 @@ export class ProductViewRepository {
     } catch (error) {
       this.logger.error(`ProductView 조회 실패: ${error.message}`, error.stack);
       return [];
+    }
+  }
+   // 모든 상품 조회
+   async findAll(): Promise<ProductView[]> {
+    try {
+      this.logger.log('모든 ProductView 조회');
+      const result = await this.productViewModel.scan().exec();
+      return result;
+    } catch (error) {
+      this.logger.error(`모든 ProductView 조회 실패: ${error.message}`, error.stack);
+      throw new InternalServerErrorException('모든 상품 조회 중 오류가 발생했습니다.');
     }
   }
 
