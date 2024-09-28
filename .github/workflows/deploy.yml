@@ -68,6 +68,12 @@ jobs:
             cd ~/app
             sed -i '/IMAGE_TAG/d' .env.prod
             echo "IMAGE_TAG=${{ github.sha }}" >> .env.prod
+
+            echo "기존 컨테이너 종료 중..."
             docker-compose -f docker-compose.prod.yml --env-file .env.prod down
+
+            echo "서비스 시작 중 (Nginx, Nest App)..."
             docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+
+            echo "이전 이미지 정리 중..."
             docker image prune -af
