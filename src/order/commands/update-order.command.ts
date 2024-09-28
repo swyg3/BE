@@ -1,3 +1,5 @@
+import { OrderItemDto } from "src/order-itmes/dtos/order-items.dto";
+
 export class UpdateOrderCommand {
     constructor(
         public readonly orderId: string,
@@ -6,5 +8,6 @@ export class UpdateOrderCommand {
         public readonly pickupTime?: Date,
         public readonly paymentMethod?: string,
         public readonly status?: string,
+        public readonly items?: OrderItemDto[]
     ) {}
 }

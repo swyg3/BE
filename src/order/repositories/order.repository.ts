@@ -78,4 +78,70 @@ export class CreateOrderRepository {
             throw new InternalServerErrorException(`주문 생성 중 오류 발생: ${error.message}`);
         }
     }
+
+    // 주문 삭제
+    async delete(orderId: string): Promise<void> {
+        try {
+            this.logger.log(`주문 삭제 시도: ${orderId}`);
+
+            // DynamoDB에서 주문 삭제
+            await this.orderViewModel.delete({ id: orderId });
+
+            // 해당 주문에 연관된 모든 주문 항목 삭제
+            await this.orderItemsViewModel.delete({ orderId }); // orderId로 삭제
+
+            this.logger.log(`주문 및 관련 주문 항목 삭제 완료: ${orderId}`);
+        } catch (error) {
+            this.logger.error(`주문 삭제 실패: ${error.message}`, error.stack);
+            throw new InternalServerErrorException(`주문 삭제 중 오류 발생: ${error.message}`);
+        }
+    }
+
+    // 주문 업데이트
+    async update(orderId: string, updateOrderDto: CreateOrderDto): Promise<OrderView> {
+        try {
+            this.logger.log(`주문 업데이트 시도: ${orderId}`);
+            this.logger.log(`업데이트 데이터: ${JSON.stringify(updateOrderDto)}`);
+
+            // 기존 주문 찾기
+            const existingOrder = await this.orderViewModel.get(orderId);
+            if (!existingOrder) {
+                throw new Error(`Order with ID ${orderId} not found.`);
+            }
+
+            // 주문 수정
+            const updatedOrder: OrderView = {
+                ...existingOrder,
+                ...updateOrderDto,
+                updatedAt: new Date(), // 수정 시각 업데이트
+            };
+
+            // DynamoDB에 업데이트된 주문 저장
+            await this.orderViewModel.update(updatedOrder);
+
+            // 주문 항목 업데이트 (선택 사항)
+            if (updateOrderDto.items) {
+                const orderItemsPromises = updateOrderDto.items.map(item => {
+                    const updatedOrderItem: OrderItemsView = {
+                        id: uuidv4(), // 새로운 UUID 생성 (기존의 항목을 유지하려면 이 부분 수정 필요)
+                        orderId: updatedOrder.id, // 업데이트된 주문 ID
+                        productId: item.productId, // 제품 ID
+                        quantity: item.quantity, // 수량
+                        price: item.price, // 가격
+                    };
+                    return this.orderItemsViewModel.update(updatedOrderItem); // DynamoDB에 주문 항목 업데이트
+                });
+
+                await Promise.all(orderItemsPromises); // 모든 주문 항목 업데이트 완료 대기
+                this.logger.log(`주문 항목 업데이트 완료: ${orderId}`);
+            }
+
+            return updatedOrder; // 최종적으로 업데이트된 주문 반환
+        } catch (error) {
+            this.logger.error(`주문 업데이트 실패: ${error.message}`, error.stack);
+            this.logger.error(`주문 업데이트 중 오류 발생: ${JSON.stringify(updateOrderDto)}`, error.stack);
+
+            throw new InternalServerErrorException(`주문 업데이트 중 오류 발생: ${error.message}`);
+        }
+    }
 }
