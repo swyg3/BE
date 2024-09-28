@@ -13,7 +13,7 @@ export const OrderItemsViewSchema = new Schema(
             required: true, // 연관된 주문 ID
         },
         productId: {
-            type: String,
+            type: Number,
             required: true, // 제품 ID
         },
         quantity: {
