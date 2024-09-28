@@ -41,7 +41,7 @@ services:
       resources:
         limits:
           cpus: "0.5"
-          memory: 700M
+          memory: 1G
 
   redis:
     image: redis:latest
@@ -89,25 +89,25 @@ services:
           memory: 300M
 
   dynamodb-local:
-      image: amazon/dynamodb-local:latest
-      container_name: dynamodb-local
-      env_file:
-        - .env.dev
-      ports:
-        - "${DYNAMODB_PORT}:${DYNAMODB_PORT}"
-      command: "-jar DynamoDBLocal.jar -sharedDb -port ${DYNAMODB_PORT}"
-      volumes:
-        - dynamodb_data:/home/dynamodblocal
-      healthcheck:
-        test: ["CMD-SHELL", "curl -f http://localhost:${DYNAMODB_PORT} || exit 1"]
-        interval: 10s
-        timeout: 5s
-        retries: 5
-      deploy:
-        resources:
-          limits:
-            cpus: "0.2"
-            memory: 300M
+    image: amazon/dynamodb-local:latest
+    container_name: dynamodb-local
+    env_file:
+      - .env.dev
+    ports:
+      - "${DYNAMODB_PORT}:${DYNAMODB_PORT}"
+    command: "-jar DynamoDBLocal.jar -sharedDb -port ${DYNAMODB_PORT}"
+    volumes:
+      - dynamodb_data:/home/dynamodblocal
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:${DYNAMODB_PORT} || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: "0.2"
+          memory: 300M
 
   dynamodb-admin:
     image: aaronshaf/dynamodb-admin
@@ -158,6 +158,7 @@ services:
         limits:
           cpus: "0.2"
           memory: 300M
+
 
   node-exporter:
     image: prom/node-exporter:latest

@@ -3,4 +3,6 @@ export enum Category {
   JAPANESE = "JAPANESE",
   CHINESE = "CHINESE",
   SNACK = "SNACK",
+  WESTERN="WESTERN",
+  DESSERT="DESSERT"
 }

@@ -98,6 +98,7 @@ services:
       - /sys:/host/sys:ro
       - /:/rootfs:ro
 
+
   grafana:
     image: grafana/grafana:8.2.2
     container_name: grafana_prod

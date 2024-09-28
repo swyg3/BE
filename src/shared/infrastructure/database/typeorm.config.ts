@@ -16,7 +16,7 @@ export const getTypeOrmConfig = async (
     database: configService.get("DB_DATABASE"),
     entities: [join(__dirname, "..", "..", "**", "*.entity.{ts,js}")],
     autoLoadEntities: true,
-    synchronize: isDev, // 개발 환경에서는 true, 프로덕션에서는 false
+    synchronize: true, //isDev, // 개발 환경에서는 true, 프로덕션에서는 false
     logging: isDev ? ["error", "warn", "query"] : ["error"], // 로깅 설정
   };
   if (!isDev) {

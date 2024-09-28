@@ -13,7 +13,7 @@ import { Category } from "../product.category";
 import { Seller } from "src/sellers/entities/seller.entity";
 
 export class CreateProductDto {
-  @IsNumber()
+  @IsString()
   sellerId: string;
 
   @IsEnum(Category, {
