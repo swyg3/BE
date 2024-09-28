@@ -19,10 +19,10 @@ export class OrderController {
     // 주문 생성
     @Post()
     createOrder(@Body() createOrderDto: CreateOrderDto) {
-        const { userId, totalAmount, totalPrice, pickupTime, paymentMethod, status, items } = createOrderDto;
+        const { id, userId, totalAmount, totalPrice, pickupTime, paymentMethod, status, items } = createOrderDto;
 
         return this.commandBus.execute(
-            new CreateOrderCommand(userId, totalAmount, totalPrice, pickupTime, paymentMethod, status, items)
+            new CreateOrderCommand(id, userId, totalAmount, totalPrice, pickupTime, paymentMethod, status, items)
         );
     }
 

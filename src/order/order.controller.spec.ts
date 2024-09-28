@@ -34,6 +34,7 @@ describe('OrderController', () => {
   describe('createOrder', () => {
     it('should execute CreateOrderCommand', async () => {
       const createOrderDto: CreateOrderDto = {
+        id: "",
         userId: 1,
         totalAmount: 100,
         totalPrice: 100,
@@ -44,6 +45,7 @@ describe('OrderController', () => {
       };
 
       const command = new CreateOrderCommand(
+        createOrderDto.id,
         createOrderDto.userId,
         createOrderDto.totalAmount,
         createOrderDto.totalPrice,

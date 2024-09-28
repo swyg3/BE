@@ -6,6 +6,7 @@ import { Order } from "src/order/entities/order.entity";
 import { CreateOrderEvent } from "src/order/events/create-order.event";
 import { EventBusService } from "src/shared/infrastructure/event-sourcing";
 import { Repository } from 'typeorm';
+import { v4 as uuidv4 } from 'uuid';
 import { CreateOrderCommand } from "../create-order.command";
 
 @Injectable()
@@ -23,9 +24,11 @@ export class CreateOrderCommandHandler implements ICommandHandler<CreateOrderCom
 
     async execute(command: CreateOrderCommand): Promise<any> {
         const { userId, totalAmount, totalPrice, pickupTime, items, paymentMethod, status } = command;
+        const id = uuidv4();
 
         // 1. 주문 생성
         const newOrder = this.orderRepository.create({
+            id,
             userId,
             totalAmount,
             totalPrice,
@@ -39,7 +42,7 @@ export class CreateOrderCommandHandler implements ICommandHandler<CreateOrderCom
         // 2. 주문 내역 생성
         const orderItems = items.map(item => {
             return this.orderItemsRepository.create({
-                orderId: savedOrder.id,
+                orderId: id,
                 productId: item.productId,
                 quantity: item.quantity,
                 price: item.price,
