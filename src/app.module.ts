@@ -19,6 +19,7 @@ import { PUBLIC_FOLDER_PATH } from "./product/const/path.const";
 import { DynamooseModule } from "nestjs-dynamoose";
 import { getDynamoConfig } from "./shared/infrastructure/database/dynamodb.config";
 import { HttpModule } from "@nestjs/axios";
+import { CqrsModule } from "@nestjs/cqrs";
 
 @Module({
   imports: [
@@ -67,6 +68,7 @@ import { HttpModule } from "@nestjs/axios";
     ProductModule,
     InventoryModule,
     HttpModule,
+    CqrsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
