@@ -39,6 +39,13 @@ services:
           cpus: "0.2"
           memory: 200M
 
+  # certbot:
+  #   image: certbot/certbot
+  #   volumes:
+  #     - ./certbot/conf:/etc/letsencrypt
+  #     - ./certbot/www:/var/www/certbot
+  #   command: certonly --webroot -w /var/www/certbot --force-renewal --email boogie.bogiegie@gmail.com -d api.dev.moonco.com --agree-tos
+
   prometheus:
     image: prom/prometheus:v2.30.3
     container_name: prometheus_prod
