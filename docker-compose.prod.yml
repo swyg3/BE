@@ -44,7 +44,7 @@ services:
   #   volumes:
   #     - ./certbot/conf:/etc/letsencrypt
   #     - ./certbot/www:/var/www/certbot
-  #   command: certonly --webroot -w /var/www/certbot --force-renewal --email boogie.bogiegie@gmail.com -d api.dev.moonco.com --agree-tos
+  #   entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
 
   prometheus:
     image: prom/prometheus:v2.30.3
@@ -97,7 +97,6 @@ services:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
       - /:/rootfs:ro
-
 
   grafana:
     image: grafana/grafana:8.2.2
