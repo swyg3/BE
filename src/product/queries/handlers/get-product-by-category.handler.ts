@@ -14,7 +14,7 @@ export class GetCategoryHandler implements IQueryHandler<GetCategoryQuery> {
   async execute(query: GetCategoryQuery): Promise<GetCategoryQueryOutputDto> {
     const { category, sortBy, order, limit, exclusiveStartKey,
       previousPageKey
-     } = query.dto;
+     } = query;
 
     const param = {
       category,

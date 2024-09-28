@@ -13,7 +13,7 @@ export class GetProductByDiscountRateHandler
   ) {}
 
   async execute(query: GetProductByDiscountRateQuery): Promise<GetProductByDiscountRateOutputDto> {
-    const { order, limit, exclusiveStartKey, previousPageKey } = query.dto;
+    const { order, limit, exclusiveStartKey, previousPageKey } = query;
     
     const param = {
       order,

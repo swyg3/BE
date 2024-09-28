@@ -1,5 +1,12 @@
-import { GetCategoryDto } from "src/product/dtos/get-category.dto";
+import { Category } from "src/product/product.category";
 
 export class GetCategoryQuery {
-    constructor(public readonly dto: GetCategoryDto ) {}
-  }
+  constructor(
+    public readonly category: Category,
+    public readonly sortBy: 'discountRate' | 'createdAt',
+    public readonly order: 'asc' | 'desc',
+    public readonly limit?: number,
+    public readonly exclusiveStartKey?: string,
+    public readonly previousPageKey?: string,
+  ) {}
+}

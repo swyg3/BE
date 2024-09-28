@@ -29,6 +29,7 @@ import { GetCategoryQuery } from "./queries/impl/get-product-by-category.query";
 import { GetProductByDiscountRateInputDto } from "./dtos/get-discountRate.dto";
 import { GetProductByIdQuery } from "./queries/impl/get-prouct-by-id.query";
 import { GetProductByDiscountRateQuery } from "./queries/impl/get-product-by-discountRate.query";
+import { GetNearestProductsQuery } from "./queries/impl/get-nearest-products";
 
 
 @ApiTags("Products")
@@ -169,19 +170,12 @@ export class ProductController {
   @ApiOperation({ summary: "상품 할인률 순 조회" })
   @ApiResponse({ status: 200, description: "상품 할인률 순 조회 성공" })
   @Get("discountrate")
-  async getProducts(@Query() query: GetProductByDiscountRateInputDto) {
-    console.log('Received query:', query);
-
-    const productQuery = new GetProductByDiscountRateInputDto();
-    productQuery.order = query.order;
-    productQuery.limit = Number(query.limit);
-    productQuery.exclusiveStartKey = query.exclusiveStartKey || '';
-    productQuery.previousPageKey = query.previousPageKey || '';
-    console.log('Processed query:', productQuery);
-
-    const result = await this.queryBus.execute(
-      new GetProductByDiscountRateQuery(productQuery)
-    );
+  async getProductsByDiscountRate(
+    @Query() queryDto: GetProductByDiscountRateInputDto,
+  ) {
+    const { order, limit, exclusiveStartKey, previousPageKey } = queryDto;
+    const query = new GetProductByDiscountRateQuery(order, limit, exclusiveStartKey, previousPageKey);
+    const result = await this.queryBus.execute(query);
 
     return {
       success: true,
@@ -195,13 +189,14 @@ export class ProductController {
   }
 
 
-  @ApiOperation({ summary: "상품 카테고리 조회" })
-  @ApiResponse({ status: 200, description: "상품 카테고리 조회 성공" })
-  @Get("category")
-  async getCategory(@Query() query: GetCategoryDto) {
-    console.log('Received query:', query);
+  @ApiOperation({ summary: '상품 카테고리 조회' })
+  @ApiResponse({ status: 200, description: '상품 카테고리 조회 성공' })
+  @Get('category')
+  async getCategory(@Query() queryDto: GetCategoryDto) {
+    console.log('Received query:', queryDto);
 
-    const productQuery = new GetCategoryQuery(query);
+    const { category, sortBy, order, limit, exclusiveStartKey, previousPageKey } = queryDto;
+    const productQuery = new GetCategoryQuery(category, sortBy, order, limit, exclusiveStartKey, previousPageKey);
 
     console.log('Processed query:', productQuery);
 
@@ -211,8 +206,8 @@ export class ProductController {
       return {
         success: true,
         message: product.items.length > 0
-          ? "해당 상품리스트 조회를 성공했습니다."
-          : "조건에 맞는 상품을 찾을 수 없습니다.",
+          ? '해당 상품리스트 조회를 성공했습니다.'
+          : '조건에 맞는 상품을 찾을 수 없습니다.',
         data: product,
       };
     } catch (error) {
@@ -220,9 +215,12 @@ export class ProductController {
       throw error;
     }
   }
-
-
-
-
+  
+  //위치허용 api
+  @Get('nearest')
+  async getNearestProducts(@Query('lat') lat: number, @Query('lon') lon: number): Promise<any[]> {
+    const query = new GetNearestProductsQuery(lat, lon);
+    return this.queryBus.execute(query);
+  }
 
 }

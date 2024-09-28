@@ -1,5 +1,8 @@
-import { GetProductByDiscountRateInputDto } from "src/product/dtos/get-discountRate.dto";
-
 export class GetProductByDiscountRateQuery {
-    constructor(public readonly dto: GetProductByDiscountRateInputDto ) {}
-  }
+  constructor(
+    public readonly order: 'asc' | 'desc',
+    public readonly limit: number,
+    public readonly exclusiveStartKey?: string,
+    public readonly previousPageKey?: string,
+  ) {}
+}
