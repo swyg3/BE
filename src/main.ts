@@ -22,13 +22,23 @@ async function bootstrap() {
   // 전역 접두사 설정
   app.setGlobalPrefix("api");
 
-  
-  app.enableCors({
-    origin: true,
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    credentials: true,
-  });
-  
+  // CORS 설정
+  if (process.env.NODE_ENV !== "production") {
+    // 개발 환경에서는 Nestjs에서 CORS를 처리
+    const corsOptions = {
+      origin: ["http://localhost:3000", "http://localhost:5174"],
+      methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization"],
+      credentials: true,
+    };
+    app.enableCors(corsOptions);
+    console.log("개발 환경: NestJS에서 CORS를 처리합니다.");
+    console.log("CORS 설정:", JSON.stringify(corsOptions, null, 2));
+  } else {
+    // 프로덕션 환경에서는 Nginx에서 CORS를 처리
+    console.log("프로덕션 환경: CORS는 Nginx에서 처리됩니다.");
+  }
+
   // HTTP 예외 필터
   app.useGlobalFilters(new HttpExceptionFilter());
 
