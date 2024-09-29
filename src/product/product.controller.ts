@@ -30,6 +30,7 @@ import { GetProductByDiscountRateInputDto } from "./dtos/get-discountRate.dto";
 import { GetProductByIdQuery } from "./queries/impl/get-prouct-by-id.query";
 import { GetProductByDiscountRateQuery } from "./queries/impl/get-product-by-discountRate.query";
 import { GetNearestProductsQuery } from "./queries/impl/get-nearest-products";
+import { SearchProductsQuery } from "./queries/impl/get-search-products";
 
 
 @ApiTags("Products")
@@ -223,4 +224,24 @@ export class ProductController {
     return this.queryBus.execute(query);
   }
 
+  
+  @Get('search')
+  async searchProducts(
+    @Query('term') searchTerm: string,
+    @Query('sortBy') sortBy: 'discountRate' | 'createdAt' = 'discountRate',
+    @Query('order') order: 'asc' | 'desc' = 'desc',
+    @Query('limit') limit: number = 10,
+    @Query('exclusiveStartKey') exclusiveStartKey?: string,
+    @Query('previousPageKey') previousPageKey?: string
+  ) {
+    const query = new SearchProductsQuery(
+      searchTerm,
+      sortBy,
+      order,
+      limit,
+      exclusiveStartKey,
+      previousPageKey
+    );
+    return this.queryBus.execute(query);
+  }
 }

@@ -352,5 +352,101 @@ export class ProductViewRepository {
       throw error;
     }
   }
+  //탐색
+  async searchProducts(param: {
+    searchTerm: string;
+    sortBy: 'discountRate' | 'createdAt';
+    order: 'asc' | 'desc';
+    limit: number;
+    exclusiveStartKey?: string;
+    previousPageKey?: string;
+  }): Promise<{
+    items: ProductView[];
+    lastEvaluatedUrl: string | null;
+    firstEvaluatedUrl: string | null;
+    prevPageUrl: string | null;
+    count: number;
+  }> {
+    try {
+      const { searchTerm, sortBy, order, limit, exclusiveStartKey, previousPageKey } = param;
+      const sortOrder = order === 'desc' ? SortOrder.descending : SortOrder.ascending;
+      let startKey: Record<string, any> | undefined;
+
+      if (exclusiveStartKey) {
+        startKey = JSON.parse(decodeURIComponent(exclusiveStartKey));
+      }
+
+      const lowercaseSearchTerm = searchTerm.toLowerCase().trim();
+      
+      let query = this.productViewModel
+        .query('GSI_KEY')
+        .eq('PRODUCT')
+        .where('searchableText')
+        .beginsWith(lowercaseSearchTerm)
+        .using('SearchableTextIndex');
+
+      
+        if (startKey) {
+          query = query.startAt(startKey);
+        }
+    
+
+      query = query.sort(sortOrder).limit(Number(limit) + 1);
+
+      const results: QueryResponse<ProductView> = await query.exec();
+      const items = Array.from(results).slice(0, Number(limit));
+
+      this.logger.log(`Pagination search result: ${items.length} items`);
+
+      const createMinimalKey = (item: any) => {
+        if (!item) return null;
+        return {
+          productId: item.productId,
+          GSI_KEY: 'PRODUCT',
+          [sortBy]: item[sortBy],
+          searchableText: item.searchableText
+        };
+      };
+
+      let firstEvaluatedKey = createMinimalKey(items[0]);
+      let lastEvaluatedKey = results.length > limit ? createMinimalKey(results[limit]) : null;
+
+      const appUrl = this.configService.get<string>('APP_URL');
+      const createUrlWithKey = (key: Record<string, any> | null, prevKey: string | null = null) => {
+        if (!key || !appUrl) return null;
+        const baseUrl = new URL("/api/products/search", appUrl);
+        baseUrl.searchParams.append('searchTerm', searchTerm);
+        baseUrl.searchParams.append('sortBy', sortBy);
+        baseUrl.searchParams.append('order', order);
+        baseUrl.searchParams.append('limit', limit.toString());
+        baseUrl.searchParams.append('exclusiveStartKey', encodeURIComponent(JSON.stringify(key)));
+        if (prevKey) {
+          baseUrl.searchParams.append('previousPageKey', encodeURIComponent(prevKey));
+        }
+        return baseUrl.toString();
+      };
+
+      const firstEvaluatedUrl = createUrlWithKey(firstEvaluatedKey, previousPageKey);
+      const lastEvaluatedUrl = lastEvaluatedKey ? createUrlWithKey(lastEvaluatedKey, JSON.stringify(firstEvaluatedKey)) : null;
+
+      let prevPageUrl: string | null = null;
+      if (previousPageKey) {
+        const prevKey = JSON.parse(decodeURIComponent(previousPageKey));
+        prevPageUrl = createUrlWithKey(prevKey, null);
+      }
+
+      return {
+        items,
+        lastEvaluatedUrl,
+        firstEvaluatedUrl,
+        prevPageUrl,
+        count: items.length
+      };
+
+    } catch (error) {
+      this.logger.error(`Pagination search query failed: ${error.message}`, error.stack);
+      throw new InternalServerErrorException('Failed to execute search query');
+    }
+  }
 
 }

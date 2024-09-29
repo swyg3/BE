@@ -13,11 +13,16 @@ export const ProductSchema = new Schema(
     GSI_KEY: {
       type: String,
       default: "PRODUCT",
-      index: {
+      index: [{
         name: "DiscountRateIndex",
         type: "global",
         rangeKey: "discountRate"
-      }
+      },
+      {
+        name: "SearchableTextIndex",
+        type: "global",
+        rangeKey: "searchableText"
+      }]
     },
     sellerId: {
       type: String,
@@ -87,7 +92,11 @@ export const ProductSchema = new Schema(
       type: String,
       required: true,
     },
-  },
+    searchableText: {
+      type: String,
+      required: false, // 이 필드는 Lambda 함수에 의해 채워질 것이므로 필수가 아님
+    }
+  }, 
   {
     timestamps: {
       createdAt: "createdAt",
@@ -100,5 +109,5 @@ export const ProductSchema = new Schema(
 export const Product = model("Product", ProductSchema, {
   create: false,
   update: true,
-  waitForActive: false,
+  waitForActive: true,
 });

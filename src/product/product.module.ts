@@ -29,6 +29,7 @@ import { HttpModule } from "@nestjs/axios";
 import { GetProductByDiscountRateHandler } from "./queries/handlers/get-products-by-discountRate.handler";
 import { GetCategoryHandler } from "./queries/handlers/get-product-by-category.handler";
 import { GetNearestProductsHandler } from "./queries/handlers/get-nearest-products.handler";
+import { SearchProductsHandler } from "./queries/handlers/get-search-products.handler";
 
 const CommandHandlers = [
   CreateProductHandler,
@@ -100,6 +101,7 @@ const EventsHandlers = [
     HttpModule,
     GeocodingService,
     NaverMapsClient,
+    SearchProductsHandler
     
   ],
   controllers: [ProductController,GeocodingController],
