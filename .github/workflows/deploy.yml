@@ -70,7 +70,7 @@ jobs:
             echo "IMAGE_TAG=${{ github.sha }}" >> .env.prod
 
             echo "기존 컨테이너 종료 중..."
-            docker-compose -f docker-compose.prod.yml --env-file .env.prod down
+            docker-compose -f docker-compose.prod.yml --env-file .env.prod down --remove-orphans
 
             echo "서비스 시작 중 (Nginx, Nest App)..."
             docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
