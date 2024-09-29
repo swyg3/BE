@@ -3,7 +3,7 @@ import { AppModule } from "./app.module";
 import { MetricsInterceptor } from "./metrics/metrics.interceptor";
 import { CustomMetricsService } from "./metrics/custom-metrics.service";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
-import { VersioningType } from "@nestjs/common";
+import { ValidationPipe, VersioningType } from "@nestjs/common";
 import { HttpExceptionFilter } from "./shared/filters/http-exception.filter";
 
 async function bootstrap() {
@@ -23,28 +23,31 @@ async function bootstrap() {
   app.setGlobalPrefix("api");
 
   // CORS 설정
-  const corsOptions =
-    process.env.NODE_ENV === "production"
-      ? {
-          origin: ["https://your-production-frontend.com"],
-          methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-          allowedHeaders: ["Content-Type", "Authorization"],
-        }
-      : {
-          origin: "*",
-          methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-        };
-  app.enableCors(corsOptions);
+  if (process.env.NODE_ENV !== "production") {
+    // 개발 환경에서는 Nestjs에서 CORS를 처리
+    const corsOptions = {
+      origin: ["http://localhost:3000", "http://localhost:5174"],
+      methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization"],
+      credentials: true,
+    };
+    app.enableCors(corsOptions);
+    console.log("개발 환경: NestJS에서 CORS를 처리합니다.");
+    console.log("CORS 설정:", JSON.stringify(corsOptions, null, 2));
+  } else {
+    // 프로덕션 환경에서는 Nginx에서 CORS를 처리
+    console.log("프로덕션 환경: CORS는 Nginx에서 처리됩니다.");
+  }
 
   // HTTP 예외 필터
   app.useGlobalFilters(new HttpExceptionFilter());
 
   // Swagger 설정
   const config = new DocumentBuilder()
-    .setTitle("Your API Title")
-    .setDescription("API description")
+    .setTitle("MOONCO Swagger UI")
+    .setDescription("v1.0 배포 버전 Swagger API 문서입니다.")
     .setVersion("1.0")
-    .addTag("your-tag")
+    .addTag("Tags")
     .addBearerAuth()
     .build();
 

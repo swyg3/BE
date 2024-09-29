@@ -20,9 +20,6 @@ export class User {
   @Column({ type: "boolean", default: false })
   isEmailVerified: boolean;
 
-  @Column({ nullable: true })
-  accessToken: string;
-
   @Column({ type: "timestamp", default: () => "CURRENT_TIMESTAMP" })
   createdAt: Date;
 

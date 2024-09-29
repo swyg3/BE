@@ -16,21 +16,21 @@ export class SellerRegisteredHandler
 
     try {
       await this.sellerViewRepository.create({
-        sellerId: event.aggregateId,
-        email: event.data.email,
-        name: event.data.name,
-        phoneNumber: event.data.phoneNumber,
-        storeName: event.data.storeName,
-        storeAddress: event.data.storeAddress,
-        storePhoneNumber: event.data.storePhoneNumber,
-        isEmailVerified: event.data.isEmailVerified,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
+          sellerId: event.aggregateId,
+          email: event.data.email,
+          name: event.data.name,
+          phoneNumber: event.data.phoneNumber,
+          storeName: event.data.storeName,
+          storeAddress: event.data.storeAddress,
+          storePhoneNumber: event.data.storePhoneNumber,
+          isBusinessNumberVerified: event.data.isBusinessNumberVerified,
+          isEmailVerified: event.data.isEmailVerified,
+    });
+
       this.logger.log(`Sellers-View 업데이트 성공: ${event.aggregateId}`);
     } catch (error) {
       this.logger.error(
-        `---Sellers-View 업데이트 실패: ${event.aggregateId}, ${error.message}`,
+        `Sellers-View 업데이트 실패: ${event.aggregateId}, ${error.message}`,
         error.stack,
       );
     }

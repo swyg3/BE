@@ -10,15 +10,6 @@ import {
 } from "class-validator";
 
 export class UpdateUserProfileDto {
-  @ApiProperty({
-    description: "수정할 구매자 이메일",
-    example: "user@example.com",
-    format: "email",
-    required: false,
-  })
-  @IsEmail()
-  @IsString()
-  email?: string;
 
   @ApiProperty({
     description: "수정할 구매자 이름",
@@ -46,6 +37,4 @@ export class UpdateUserProfileDto {
   })
   phoneNumber?: string;
 
-  @IsBoolean()
-  isEmailVerified?: boolean;
 }

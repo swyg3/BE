@@ -5,7 +5,6 @@ import {
   UseGuards,
   Req,
   Controller,
-  Res,
   Param,
   Query,
 } from "@nestjs/common";
@@ -14,25 +13,30 @@ import { Throttle, ThrottlerGuard } from "@nestjs/throttler";
 import { RequestEmailVerificationCommand } from "./commands/commands/request-email-verification.command";
 import { VerifyEmailCommand } from "./commands/commands/verify-email.command";
 import { LoginEmailCommand } from "./commands/commands/login-email.command";
-import { LoginOAuthCommand } from "./commands/commands/login-oauth.command";
 import { LogoutCommand } from "./commands/commands/logout.command";
 import { RefreshTokenCommand } from "./commands/commands/refresh-token.command";
 import { RequestEmailVerificationDto } from "./dtos/request-email-verify.dto";
 import { VerifyEmailDto } from "./dtos/verify-email.dto";
 import { LoginEmailDto } from "./dtos/login-email.dto";
-import { LoginOAuthDto } from "./dtos/login-oauth.dto";
 import { CompleteSellerProfileDto } from "./dtos/complete-seller-profile.dto";
 import { CompleteSellerProfileCommand } from "./commands/commands/complete-seller-profile.command";
 import { VerifyBusinessNumberCommand } from "./commands/commands/verify-business-number.command";
 import { VerifyBusinessNumberDto } from "./dtos/verify-business-number.dto";
-import { OAuthCallbackDto } from "./dtos/oauth-callback.dto";
-import { Response } from "express";
 import { OAuthCallbackCommand } from "./commands/commands";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { JwtPayload } from "src/shared/interfaces/jwt-payload.interface";
 import { GetUser } from "src/shared/decorators/get-user.decorator";
-import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
+import {
+  ApiBody,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from "@nestjs/swagger";
 import { CustomResponse } from "src/shared/interfaces/api-response.interface";
+import { UserTypes } from "src/shared/decorators/validate-user-type.decorator";
+import { UserType } from "./interfaces/user-type.type";
 
 @ApiTags("Auth")
 @Controller("auth")
@@ -42,6 +46,16 @@ export class AuthController {
 
   @ApiOperation({ summary: "이메일 인증 요청" })
   @ApiResponse({ status: 200, description: "인증 메일 발송 성공" })
+  @ApiBody({
+    type: RequestEmailVerificationDto,
+    description: "이메일 인증 요청 정보",
+    examples: {
+      example1: {
+        value: { email: "user@example.com" },
+        summary: "유효한 이메일 주소",
+      },
+    },
+  })
   @Post("request-verification")
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   async requestEmailVerification(
@@ -60,6 +74,16 @@ export class AuthController {
 
   @ApiOperation({ summary: "이메일 인증 확인" })
   @ApiResponse({ status: 200, description: "이메일 인증 성공" })
+  @ApiBody({
+    type: VerifyEmailDto,
+    description: "이메일 인증 확인 정보",
+    examples: {
+      example1: {
+        value: { email: "user@example.com", verificationCode: "123456" },
+        summary: "유효한 이메일 주소와 인증 코드",
+      },
+    },
+  })
   @Post("verify-email")
   async verifyEmail(@Body() dto: VerifyEmailDto): Promise<CustomResponse> {
     const result = await this.commandBus.execute(
@@ -73,11 +97,34 @@ export class AuthController {
 
   @ApiOperation({ summary: "이메일 로그인" })
   @ApiResponse({ status: 200, description: "로그인 성공" })
+  @ApiBody({
+    type: LoginEmailDto,
+    description: "이메일 로그인 정보",
+    examples: {
+      example1: {
+        value: {
+          email: "user@example.com",
+          password: "StrongPassword123!",
+          userType: "user",
+        },
+        summary: "구매자 로그인 예시",
+      },
+      example2: {
+        value: {
+          email: "seller@example.com",
+          password: "StrongPassword123!",
+          userType: "seller",
+        },
+        summary: "판매자 로그인 예시",
+      },
+    },
+  })
   @Post("login-email")
   async loginEmail(
     @Body() loginDto: LoginEmailDto,
     @Req() req,
   ): Promise<CustomResponse> {
+    req.body.userType = loginDto.userType;
     const result = await this.commandBus.execute(
       new LoginEmailCommand(loginDto, req),
     );
@@ -88,62 +135,58 @@ export class AuthController {
     };
   }
 
-  // Authorization code를 OAuth Token으로 교환하는 과정
-  @ApiOperation({ summary: "OAuth 콜백 처리" })
-  @ApiResponse({ status: 200, description: "OAuth 콜백 처리 성공" })
-  @Get("login/:provider/callback")
+  @ApiOperation({
+    summary: "OAuth 로그인 콜백",
+    description: "OAuth 프로바이더로부터 리다이렉트된 콜백 요청을 처리합니다.",
+  })
+  @ApiParam({
+    name: "provider",
+    description: "OAuth 제공자 이름 google 또는 kakao",
+    required: true,
+    type: String,
+  })
+  @ApiQuery({
+    name: "code",
+    description: "OAuth 제공자로부터 받은 인증 코드",
+    required: true,
+    type: String,
+  })
+  @ApiQuery({
+    name: "userType",
+    description: "userType: user 또는 seller",
+    required: true,
+    enum: UserType,
+    example: UserType.USER,
+  })
+  @Get("login-oauth/:provider/callback")
   async oauthCallback(
     @Param("provider") provider: string,
     @Query("code") code: string,
-    @Res() res: Response,
-    @Query("userType") userType?: string,
-    @Query("state") state?: string,
+    @UserTypes() userType: UserType,
   ): Promise<CustomResponse> {
-    const oauthCallbackDto: OAuthCallbackDto = { provider, code };
-    const result = await this.commandBus.execute(
-      new OAuthCallbackCommand(oauthCallbackDto),
-    );
+    try {
+      console.log(
+        `Received OAuth callback - Provider: ${provider}, Code: ${code}, userType: ${userType}`,
+      );
 
-    // state에서 userType 추출 - CSRF 공격 방지
-    const decodedState = JSON.parse(
-      Buffer.from(state, "base64").toString("utf-8"),
-    );
-    const decodedUserType = decodedState.userType;
+      const result = await this.commandBus.execute(
+        new OAuthCallbackCommand(provider, code, userType),
+      );
+      console.log(`Command created - userType: ${result.userType}`);
 
-    // 리다이렉트 시 userType을 명시적으로 전달
-    res.redirect(
-      `/login-oauth?provider=${provider}&access_token=${result.accessToken}&user_type=${userType || decodedUserType}`,
-    );
-
-    return {
-      success: true,
-      message: `${userType || decodedUserType} / ${provider} 콜백 처리 성공`,
-      data: result,
-    };
-  }
-
-  /**
-   * OAuth Token을 사용하여 소셜 사용자 정보(email, name, phone ...)을 가져와서
-   * (1) JWT 토큰을 발급하고,
-   * (2) 데이터베이스와 이벤트 저장소에 저장
-   * (3) 로그인 이벤트를 발행
-   */
-
-  @ApiOperation({ summary: "OAuth 로그인" })
-  @ApiResponse({ status: 200, description: "OAuth 로그인 성공" })
-  @Post("login-oauth")
-  async loginOAuth(
-    @Body() loginOAuthDto: LoginOAuthDto,
-  ): Promise<CustomResponse> {
-    console.log("Received DTO:", loginOAuthDto);
-    const result = await this.commandBus.execute(
-      new LoginOAuthCommand(loginOAuthDto),
-    );
-    return {
-      success: true,
-      message: `${loginOAuthDto.provider} 로그인에 성공하였습니다.`,
-      data: result,
-    };
+      return {
+        success: true,
+        message: `${provider} 로그인에 성공하였습니다.`,
+        data: result,
+      };
+    } catch (error) {
+      console.error(`로그인 처리 중 오류가 발생했습니다. ${error}`);
+      return {
+        success: false,
+        message: "로그인 처리 중 오류가 발생했습니다.",
+        data: error.message || "알 수 없는 오류입니다.", // 오류 메시지 추가
+      };
+    }
   }
 
   @ApiOperation({ summary: "로그아웃" })
@@ -163,6 +206,20 @@ export class AuthController {
 
   @ApiOperation({ summary: "AccessToken 재발급" })
   @ApiResponse({ status: 200, description: "AccessToken 재발급 성공" })
+  @ApiBody({
+    schema: {
+      type: "object",
+      properties: {
+        refreshToken: { type: "string" },
+      },
+    },
+    examples: {
+      example1: {
+        value: { refreshToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." },
+        summary: "유효한 Refresh Token",
+      },
+    },
+  })
   @Post("refresh-token")
   async refreshToken(
     @Body("refreshToken") refreshToken: string,
@@ -179,32 +236,50 @@ export class AuthController {
 
   @ApiOperation({ summary: "사업자등록번호 인증" })
   @ApiResponse({ status: 200, description: "사업자등록번호 인증 성공" })
+  @ApiBody({
+    type: VerifyBusinessNumberDto,
+    description:
+      "(임시)사업자등록번호 인증 정보: 임시로 'test' 입력하면 무조건 통과",
+    examples: {
+      example1: {
+        value: { email: "seller@example.com", businessNumber: "test" },
+        summary: "유효한 이메일과 사업자등록번호",
+      },
+    },
+  })
   @Post("verify-business-number")
-  @UseGuards(JwtAuthGuard)
   async verifyBusinessNumber(
-    @GetUser() user: JwtPayload,
     @Body() dto: VerifyBusinessNumberDto,
   ): Promise<CustomResponse> {
     const result = await this.commandBus.execute(
-      new VerifyBusinessNumberCommand(user.userId, dto.businessNumber),
+      new VerifyBusinessNumberCommand(dto.email, dto.businessNumber),
     );
-    return {
-      success: true,
-      message: "사업자 등록번호가 성공적으로 검증되었습니다.",
-      data: result,
-    };
+    return result;
   }
 
   @ApiOperation({ summary: "판매자 매장정보 추가" })
   @ApiResponse({ status: 200, description: "판매자 매장정보 추가 성공" })
+  @ApiBody({
+    type: CompleteSellerProfileDto,
+    description: "판매자 추가 정보",
+    examples: {
+      example1: {
+        value: {
+          email: "seller@example.com",
+          storeName: "맥도날드",
+          storeAddress: "서울특별시 강남구 테헤란로 123",
+          storePhoneNumber: "01012341234",
+        },
+        summary: "판매자 추가 정보 예시",
+      },
+    },
+  })
   @Post("complete-profile")
-  @UseGuards(JwtAuthGuard)
   async completeProfile(
-    @GetUser() user: JwtPayload,
     @Body() profileDto: CompleteSellerProfileDto,
   ): Promise<CustomResponse> {
     const result = await this.commandBus.execute(
-      new CompleteSellerProfileCommand(user.userId, profileDto),
+      new CompleteSellerProfileCommand(profileDto),
     );
     return {
       success: true,

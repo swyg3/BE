@@ -8,8 +8,6 @@ import { User } from "src/users/entities/user.entity";
 import { Seller } from "src/sellers/entities/seller.entity";
 import { AuthController } from "./auth.controller";
 import { JwtStrategy } from "./strategies/jwt.strategy";
-import { GoogleStrategy } from "./strategies/google.strategy";
-import { KakaoStrategy } from "./strategies/kakao.strategy";
 import { TokenService } from "./services/token.service";
 import { EmailVerificationService } from "./services/email-verification.service";
 import { RefreshTokenService } from "./services/refresh-token.service";
@@ -53,8 +51,6 @@ import { JwtAuthGuard } from "./guards/jwt-auth.guard";
     ...Object.values(EventHandlers),
     JwtStrategy,
     JwtAuthGuard,
-    GoogleStrategy,
-    KakaoStrategy,
     TokenService,
     RefreshTokenService,
     EmailVerificationService,

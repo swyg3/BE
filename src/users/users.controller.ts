@@ -19,7 +19,14 @@ import { ValidateUUID } from "src/shared/decorators/validate-uuid.decorator";
 import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
 import { GetUser } from "src/shared/decorators/get-user.decorator";
 import { JwtPayload } from "src/shared/interfaces/jwt-payload.interface";
-import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+} from "@nestjs/swagger";
 
 @ApiTags("Users")
 @Controller("users")
@@ -30,7 +37,41 @@ export class UsersController {
   ) {}
 
   @ApiOperation({ summary: "사용자 등록" })
-  @ApiResponse({ status: 201, description: "사용자 등록 성공" })
+  @ApiResponse({
+    status: 201,
+    description: "사용자 등록 성공",
+    schema: {
+      type: "object",
+      properties: {
+        success: { type: "boolean", example: true },
+        data: {
+          type: "object",
+          properties: {
+            userId: {
+              type: "string",
+              example: "123e4567-e89b-12d3-a456-426614174000",
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiBody({
+    type: RegisterUserDto,
+    description: "사용자 등록 정보",
+    examples: {
+      example1: {
+        value: {
+          email: "user@example.com",
+          password: "StrongPassword123!",
+          pwConfirm: "StrongPassword123!",
+          name: "홍길동",
+          phoneNumber: "01012345678",
+        },
+        summary: "유효한 사용자 등록 정보",
+      },
+    },
+  })
   @Post("register")
   async registerUser(
     @Body() registerUserDto: RegisterUserDto,
@@ -48,7 +89,30 @@ export class UsersController {
   }
 
   @ApiOperation({ summary: "사용자 프로필 조회" })
-  @ApiResponse({ status: 200, description: "프로필 조회 성공" })
+  @ApiResponse({
+    status: 200,
+    description: "프로필 조회 성공",
+    schema: {
+      type: "object",
+      properties: {
+        success: { type: "boolean", example: true },
+        data: {
+          type: "object",
+          properties: {
+            userId: {
+              type: "string",
+              example: "123e4567-e89b-12d3-a456-426614174000",
+            },
+            email: { type: "string", example: "user@example.com" },
+            name: { type: "string", example: "홍길동" },
+            phoneNumber: { type: "string", example: "01012345678" },
+          },
+        },
+      },
+    },
+  })
+  @ApiParam({ name: "id", type: "string", description: "사용자 ID" })
+  @ApiBearerAuth()
   @Get("profile/:id")
   @UseGuards(JwtAuthGuard)
   async getUserProfile(
@@ -68,9 +132,37 @@ export class UsersController {
   }
 
   @ApiOperation({ summary: "사용자 프로필 수정" })
-  @ApiResponse({ status: 200, description: "프로필 수정 성공" })
-  @UseGuards(JwtAuthGuard)
+  @ApiResponse({
+    status: 200,
+    description: "프로필 수정 성공",
+    schema: {
+      type: "object",
+      properties: {
+        success: { type: "boolean", example: true },
+        message: {
+          type: "string",
+          example: "성공적으로 프로필 정보를 수정하였습니다.",
+        },
+      },
+    },
+  })
+  @ApiParam({ name: "id", type: "string", description: "사용자 ID" })
+  @ApiBody({
+    type: UpdateUserProfileDto,
+    description: "수정할 사용자 프로필 정보",
+    examples: {
+      example1: {
+        value: {
+          name: "김철수",
+          phoneNumber: "01098765432",
+        },
+        summary: "수정할 프로필 정보 예시",
+      },
+    },
+  })
+  @ApiBearerAuth()
   @Patch("profile/:id")
+  @UseGuards(JwtAuthGuard)
   async updateUserProfile(
     @ValidateUUID("id") id: string,
     @GetUser() user: JwtPayload,

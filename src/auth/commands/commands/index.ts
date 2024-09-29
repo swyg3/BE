@@ -1,5 +1,4 @@
 export * from "./login-email.command";
-export * from "./login-oauth.command";
 export * from "./logout.command";
 export * from "./refresh-token.command";
 export * from "./request-email-verification.command";

@@ -31,7 +31,12 @@ export class LoginEmailCommandHandler
 
   async execute(command: LoginEmailCommand) {
     const { loginDto, req } = command;
-    const userType = req.path.includes("seller") ? "seller" : "user";
+    const userType =
+      loginDto.userType || (req.path.includes("seller") ? "seller" : "user");
+
+    this.logger.debug(
+      `Login attempt - Path: ${req.path}, UserType: ${userType}`,
+    );
 
     try {
       this.logger.log(`${userType} 로그인 시도 - 이메일: ${loginDto.email}`);
@@ -44,15 +49,20 @@ export class LoginEmailCommandHandler
       );
 
       // 2. 토큰 생성
-      this.logger.log(`${userType} 사용자 ID ${user.id}에 대한 토큰 생성`);
-      const tokens = await this.tokenService.generateTokens(
+      const {
+        accessToken,
+        refreshToken,
+        accessTokenExpiresIn,
+        refreshTokenExpiresIn
+      } = await this.tokenService.generateTokens(
         user.id,
         user.email,
         userType,
       );
+      this.logger.log(`JWT 생성: ${accessToken}, ${accessTokenExpiresIn}, ${refreshToken}, ${refreshTokenExpiresIn}`);
       await this.refreshTokenService.storeRefreshToken(
         user.id,
-        tokens.refreshToken,
+        refreshToken,
       );
 
       // 3. 로그인 이벤트 생성 및 발행
@@ -63,18 +73,21 @@ export class LoginEmailCommandHandler
       await this.eventBusService.publishAndSave(event);
 
       // 4. 결과 반환
-      this.logger.log(`${userType} 사용자 ID ${user.id} 로그인 성공`);
       return {
-        success: true,
-        data: {
-          user: {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            userType: userType,
+          [userType === "user" ? "userId" : "sellerId"]: user.id,
+          email: user.email,
+          name: user.name,
+          userType: userType,
+          tokens: {
+            access: {
+              token: accessToken,
+              expiresIn: accessTokenExpiresIn
+            },
+            refresh: {
+              token: refreshToken,
+              expiresIn: refreshTokenExpiresIn
+            }
           },
-          ...tokens,
-        },
       };
     } catch (error) {
       this.logger.error("로그인 실패", error.stack);
@@ -94,6 +107,9 @@ export class LoginEmailCommandHandler
 
     const repository =
       userType === "user" ? this.userRepository : this.sellerRepository;
+
+    this.logger.debug(`Selected repository: ${repository.constructor.name}`);
+
     const user = await repository.findByEmail(email);
     if (!user) {
       this.logger.warn(
@@ -101,6 +117,7 @@ export class LoginEmailCommandHandler
       );
       throw new UnauthorizedException("등록되지 않은 이메일 주소입니다.");
     }
+    this.logger.debug(`User found: ${user ? "Yes" : "No"}`);
 
     const isPasswordValid = await this.passwordService.verifyPassword(
       user.password,
@@ -117,9 +134,12 @@ export class LoginEmailCommandHandler
   private createLoggedInEvent(user: any, userType: string, provider: string) {
     const timestamp = new Date();
     const eventData = {
-      email: user.email,
       provider,
+      email: user.email,
+      name: user.name,
+      phoneNumber: user.phoneNumber,
       isNewUser: false,
+      isEmailVerified: user.isEmailVerified,
       timestamp,
     };
 
@@ -131,6 +151,9 @@ export class LoginEmailCommandHandler
         {
           ...eventData,
           isNewSeller: false,
+          storeName: user.storeName,
+          storeAddress: user.storeAddress,
+          storePhoneNumber: user.storePhoneNumber,
           isBusinessNumberVerified: user.isBusinessNumberVerified,
         },
         user.version || 1,

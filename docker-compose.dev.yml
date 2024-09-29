@@ -18,6 +18,10 @@ services:
       - MONGODB_URI=${MONGODB_URI}
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}
+      - DYNAMODB_ENDPOINT=${DYNAMODB_ENDPOINT}
+      - AWS_REGION=${AWS_REGION}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
     ports:
       - "${NODE_PORT}:${NODE_PORT}"
     command: npm run start:dev
@@ -27,6 +31,7 @@ services:
     depends_on:
       - postgres
       - redis
+      - dynamodb-local
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:${NODE_PORT}/health"]
       interval: 30s
@@ -36,7 +41,7 @@ services:
       resources:
         limits:
           cpus: "0.5"
-          memory: 700M
+          memory: 1G
 
   redis:
     image: redis:latest
@@ -83,6 +88,41 @@ services:
           cpus: "0.3"
           memory: 300M
 
+  dynamodb-local:
+    image: amazon/dynamodb-local:latest
+    container_name: dynamodb-local
+    env_file:
+      - .env.dev
+    ports:
+      - "${DYNAMODB_PORT}:${DYNAMODB_PORT}"
+    command: "-jar DynamoDBLocal.jar -sharedDb -port ${DYNAMODB_PORT}"
+    volumes:
+      - dynamodb_data:/home/dynamodblocal
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:${DYNAMODB_PORT} || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: "0.2"
+          memory: 300M
+
+  dynamodb-admin:
+    image: aaronshaf/dynamodb-admin
+    env_file:
+      - .env.dev
+    ports:
+      - "${DYNAMODB_ADMIN_PORT}:${DYNAMODB_ADMIN_PORT}"
+    environment:
+      DYNAMO_ENDPOINT: "${DYNAMODB_ENDPOINT}"
+      AWS_REGION: "${AWS_REGION}"
+      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
+      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
+    depends_on:
+      - dynamodb-local
+
   prometheus:
     image: prom/prometheus:v2.30.3
     container_name: prometheus
@@ -118,6 +158,7 @@ services:
         limits:
           cpus: "0.2"
           memory: 300M
+
 
   node-exporter:
     image: prom/node-exporter:latest
@@ -169,5 +210,6 @@ services:
 
 volumes:
   postgres_data_dev:
+  dynamodb_data:
   prometheus_data:
   grafana_data:

@@ -18,6 +18,14 @@ export class UserRepository {
     return this.userRepository.findOne({ where: { email } });
   }
 
+  create(userData: Partial<User>): User {
+    return this.userRepository.create(userData);
+  }
+
+  async save(user: User): Promise<User> {
+    return this.userRepository.save(user);
+  }
+
   async upsert(
     email: string,
     userData: Partial<User>,
@@ -35,9 +43,5 @@ export class UserRepository {
       const savedUser = await this.userRepository.save(newUser);
       return { user: savedUser, isNewUser: true };
     }
-  }
-
-  async updateAccessToken(userId: string, accessToken: string): Promise<void> {
-    await this.userRepository.update(userId, { accessToken });
   }
 }

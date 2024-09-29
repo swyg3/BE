@@ -12,5 +12,5 @@ export class LoginEmailDto {
 
   @ApiProperty({ description: "사용자 유형" })
   @IsIn(["user", "seller"])
-  userType: "user" | "seller";
+  userType: string;
 }
