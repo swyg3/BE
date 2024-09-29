@@ -52,10 +52,19 @@ jobs:
             sudo mkdir -p /etc/letsencrypt/live/api.bogiegie.shop
             sudo mkdir -p /etc/letsencrypt/archive/api.bogiegie.shop
 
+      - name: Check and fix volume permissions
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
             sudo chown -R root:root ~/app/certbot/conf
             sudo chmod -R 755 ~/app/certbot/conf
             sudo chown -R www-data:www-data ~/app/certbot/www
             sudo chmod -R 755 ~/app/certbot/www
+            ls -la ~/app/certbot/conf
+            ls -la ~/app/certbot/www
 
       - name: Copy files to EC2
         uses: appleboy/scp-action@master
@@ -86,17 +95,17 @@ jobs:
             echo "서비스 시작 중 (Nginx, Nest App)..."
             docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d nginx nest_app
 
-            # Certbot 인증서 발급/갱신 체크
-            CERT_PATH="/home/ubuntu/app/certbot/conf/live/api.bogiegie.shop/fullchain.pem"
-            if [ ! -f "$CERT_PATH" ]; then
-              echo "SSL 인증서가 없습니다. 새로 발급을 시도합니다."
-              docker-compose -f docker-compose.prod.yml --env-file .env.prod run --rm certbot certonly --webroot -w /var/www/certbot --email boogie.bogiegie@gmail.com -d api.bogiegie.shop --agree-tos --non-interactive --force-renewal
-            else
-              echo "SSL 인증서가 이미 존재합니다. 갱신을 시도합니다."
-              docker-compose -f docker-compose.prod.yml --env-file .env.prod run --rm certbot renew --force-renewal
-            fi
+            echo "Nginx 상태 확인 중..."
+            docker-compose -f docker-compose.prod.yml --env-file .env.prod ps nginx
+            docker-compose -f docker-compose.prod.yml --env-file .env.prod logs nginx
 
-            # 인증서 발급/갱신 결과 확인
+            echo "Certbot 실행 중..."
+            docker-compose -f docker-compose.prod.yml --env-file .env.prod run --rm certbot
+
+            echo "인증서 발급 중..."
+            sleep 30 
+
+            CERT_PATH="/home/ubuntu/app/certbot/conf/live/api.bogiegie.shop/fullchain.pem"
             if [ -f "$CERT_PATH" ]; then
               echo "SSL 인증서가 성공적으로 발급/갱신되었습니다."
               echo "Nginx 재시작 중..."
