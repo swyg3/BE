@@ -73,7 +73,18 @@ jobs:
             docker-compose -f docker-compose.prod.yml --env-file .env.prod down
 
             echo "서비스 시작 중 (Nginx, Nest App)..."
-            docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+            docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d nginx nest_app
+
+            if [ ! -f ~/app/certbot/conf/live/api.bogiegie.shop/fullchain.pem ]; then
+              echo "SSL 인증서가 없습니다. Certbot을 통해 생성합니다..."
+              docker-compose -f docker-compose.prod.yml --env-file .env.prod run --rm certbot certonly --webroot -w /var/www/certbot --force-renewal --email boogie.bogiegie@gmail.com -d api.bogiegie.shop --agree-tos
+
+              echo "Nginx 재시작 중..."
+              docker-compose -f docker-compose.prod.yml --env-file .env.prod restart nginx
+            fi
+
+            echo "Certbot 자동 갱신 서비스 시작 중..."
+            docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d certbot
 
             echo "이전 이미지 정리 중..."
             docker image prune -af
