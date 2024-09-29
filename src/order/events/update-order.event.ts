@@ -1,8 +1,8 @@
 import { BaseEvent } from "src/shared/infrastructure/event-sourcing";
 
 export class UpdateOrderEvent implements BaseEvent {
-    eventType: string;
-    aggregateType: string;
+    eventType = "OrderUpdated";
+    aggregateType = "OrderUpdate";
     
     constructor(
         public readonly aggregateId: string,
