@@ -9,7 +9,6 @@ import { DeleteProductHandler } from "./commands/handlers/delete-product.handler
 import { InventoryCreatedEvent } from "src/inventory/events/impl/inventory-created.event";
 import { EventSourcingModule } from "src/shared/infrastructure/event-sourcing";
 import { RedisModule } from "src/shared/infrastructure/redis/redis.config";
-import { GetProductByDiscountRateHandler } from "./queries/handlers/get-products-by-discountRate.handler";
 import { Seller } from "src/sellers/entities/seller.entity";
 import { SellerRepository } from "src/sellers/repositories/seller.repository";
 import { MulterModule } from "@nestjs/platform-express";
@@ -21,15 +20,15 @@ import { DynamooseModule } from "nestjs-dynamoose";
 import { ProductSchema } from "./schemas/product-view.shema";
 import { ProductCreatedHandler } from "./events/handlers/product-created.handler";
 import { SellersModule } from "src/sellers/sellers.module";
-import { GetCategoryHandler } from "./queries/handlers/get-product-by-category.handler";
 import { ProductViewRepository } from "./repositories/product-view.repository";
 import { GetProductByIdHandler } from "./queries/handlers/get-product-by-id.handler";
 import { GeocodingController } from "./geocodingcotroller";
 import { GeocodingService } from "./geocodingservice";
 import { NaverMapsClient } from "src/shared/infrastructure/database/navermap.config";
 import { HttpModule } from "@nestjs/axios";
+import { GetProductByDiscountRateHandler } from "./queries/handlers/get-products-by-discountRate.handler";
+import { GetCategoryHandler } from "./queries/handlers/get-product-by-category.handler";
 import { GetNearestProductsHandler } from "./queries/handlers/get-nearest-products.handler";
-import { SellerViewRepository } from "src/sellers/repositories/seller-view.repository";
 
 const CommandHandlers = [
   CreateProductHandler,
@@ -101,7 +100,7 @@ const EventsHandlers = [
     HttpModule,
     GeocodingService,
     NaverMapsClient,
-    QueryBus,
+    
   ],
   controllers: [ProductController,GeocodingController],
   exports: [ProductRepository, SellerRepository,
