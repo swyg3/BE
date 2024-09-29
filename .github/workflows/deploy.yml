@@ -88,16 +88,22 @@ jobs:
 
             # Certbot 인증서 발급/갱신 체크
             CERT_PATH="/home/ubuntu/app/certbot/conf/live/api.bogiegie.shop/fullchain.pem"
-            echo "SSL 인증서를 새로 발급합니다."
-            docker-compose -f docker-compose.prod.yml --env-file .env.prod run --rm certbot certonly --webroot -w /var/www/certbot --email boogie.bogiegie@gmail.com -d api.bogiegie.shop --agree-tos --non-interactive --force-renewal
+            if [ ! -f "$CERT_PATH" ]; then
+              echo "SSL 인증서가 없습니다. 새로 발급을 시도합니다."
+              docker-compose -f docker-compose.prod.yml --env-file .env.prod run --rm certbot certonly --webroot -w /var/www/certbot --email boogie.bogiegie@gmail.com -d api.bogiegie.shop --agree-tos --non-interactive
+            else
+              echo "SSL 인증서가 이미 존재합니다. 갱신을 시도합니다."
+              docker-compose -f docker-compose.prod.yml --env-file .env.prod run --rm certbot renew
+            fi
 
-            # 인증서 발급 확인
+            # 인증서 발급/갱신 결과 확인
             if [ -f "$CERT_PATH" ]; then
-              echo "SSL 인증서가 성공적으로 발급되었습니다."
+              echo "SSL 인증서가 성공적으로 발급/갱신되었습니다."
               echo "Nginx 재시작 중..."
               docker-compose -f docker-compose.prod.yml --env-file .env.prod restart nginx
             else
-              echo "SSL 인증서 발급에 실패했습니다."
+              echo "SSL 인증서 발급/갱신에 실패했습니다. 로그를 확인해주세요."
+              docker-compose -f docker-compose.prod.yml --env-file .env.prod logs certbot
             fi
 
             echo "이전 이미지 정리 중..."
