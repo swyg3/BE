@@ -13,7 +13,7 @@ export class GetOrderQueryHandler implements IQueryHandler<GetOrderQuery> {
 
     async execute(query: GetOrderQuery): Promise<OrderView[]> {
         const result = await this.orderViewModel.query("userId")
-            .eq(query.userId)
+            .eq(Number(query.userId))
             .exec();
 
         return result;
