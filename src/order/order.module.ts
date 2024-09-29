@@ -5,7 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { DynamooseModule } from 'nestjs-dynamoose';
 import { OrderItems } from 'src/order-itmes/entities/order-items.entity';
 import { OrderItemsViewSchema } from 'src/order-itmes/schemas/order-items-view.schema';
-import { EventBusService } from 'src/shared/infrastructure/event-sourcing';
+import { Event, EventBusService } from 'src/shared/infrastructure/event-sourcing';
 import { Repository } from 'typeorm';
 import { CreateOrderCommandHandler } from './commands/handlers/create-order.command-handler';
 import { DeleteOrderCommandHandler } from './commands/handlers/delete-order.command-handler';
