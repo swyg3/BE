@@ -369,32 +369,35 @@ export class ProductViewRepository {
   }> {
     try {
       const { searchTerm, sortBy, order, limit, exclusiveStartKey, previousPageKey } = param;
-      const sortOrder = order === 'desc' ? SortOrder.descending : SortOrder.ascending;
-      let startKey: Record<string, any> | undefined;
-
-      if (exclusiveStartKey) {
-        startKey = JSON.parse(decodeURIComponent(exclusiveStartKey));
-      }
-
       const lowercaseSearchTerm = searchTerm.toLowerCase().trim();
-      
-      let query = this.productViewModel
-        .query('GSI_KEY')
-        .eq('PRODUCT')
-        .where('searchableText')
-        .beginsWith(lowercaseSearchTerm)
-        .using('SearchableTextIndex');
 
+      // 전체 스캔 수행
+      const results = await this.productViewModel.scan().exec();
       
-        if (startKey) {
-          query = query.startAt(startKey);
+      // 메모리에서 필터링 및 정렬 수행
+      let filteredItems = results.filter(item => 
+        item.name.toLowerCase().includes(lowercaseSearchTerm) || 
+        item.description.toLowerCase().includes(lowercaseSearchTerm)
+      );
+
+      filteredItems.sort((a, b) => {
+        if (sortBy === 'discountRate') {
+          return order === 'desc' ? b.discountRate - a.discountRate : a.discountRate - b.discountRate;
+        } else {
+          return order === 'desc' 
+            ? new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            : new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
         }
-    
+      });
 
-      query = query.sort(sortOrder).limit(Number(limit) + 1);
-
-      const results: QueryResponse<ProductView> = await query.exec();
-      const items = Array.from(results).slice(0, Number(limit));
+      // 페이지네이션 적용
+      let startIndex = 0;
+      if (exclusiveStartKey) {
+        const startKey = JSON.parse(decodeURIComponent(exclusiveStartKey));
+        startIndex = filteredItems.findIndex(item => item.productId === startKey.productId) + 1;
+      }
+      
+      const items = filteredItems.slice(startIndex, startIndex + Number(limit));
 
       this.logger.log(`Pagination search result: ${items.length} items`);
 
@@ -402,14 +405,13 @@ export class ProductViewRepository {
         if (!item) return null;
         return {
           productId: item.productId,
-          GSI_KEY: 'PRODUCT',
-          [sortBy]: item[sortBy],
-          searchableText: item.searchableText
+          name: item.name,
+          [sortBy]: item[sortBy]
         };
       };
 
       let firstEvaluatedKey = createMinimalKey(items[0]);
-      let lastEvaluatedKey = results.length > limit ? createMinimalKey(results[limit]) : null;
+      let lastEvaluatedKey = items.length === Number(limit) ? createMinimalKey(items[items.length - 1]) : null;
 
       const appUrl = this.configService.get<string>('APP_URL');
       const createUrlWithKey = (key: Record<string, any> | null, prevKey: string | null = null) => {
