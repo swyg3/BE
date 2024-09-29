@@ -80,23 +80,24 @@ jobs:
 
             # 기존 서비스 중지 및 포트 충돌 방지
             echo "기존 프로세스 정리 중..."
-            sudo lsof -ti:80,443 | xargs sudo kill -9
+            sudo lsof -ti:80,443 | xargs sudo kill -9 || true
             docker-compose -f docker-compose.prod.yml --env-file .env.prod down --remove-orphans
 
             echo "서비스 시작 중 (Nginx, Nest App)..."
             docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d nginx nest_app
 
             # Certbot 인증서 발급/갱신 체크
-            if [ ! -f ~/app/certbot/conf/live/api.bogiegie.shop/fullchain.pem ]; then
-              echo "SSL 인증서가 없습니다. Certbot을 통해 첫 발급을 진행합니다."
-              docker-compose -f docker-compose.prod.yml --env-file .env.prod run --rm certbot certonly --webroot -w /var/www/certbot --email boogie.bogiegie@gmail.com -d api.bogiegie.shop --agree-tos --non-interactive
+            CERT_PATH="/home/ubuntu/app/certbot/conf/live/api.bogiegie.shop/fullchain.pem"
+            echo "SSL 인증서를 새로 발급합니다."
+            docker-compose -f docker-compose.prod.yml --env-file .env.prod run --rm certbot certonly --webroot -w /var/www/certbot --email boogie.bogiegie@gmail.com -d api.bogiegie.shop --agree-tos --non-interactive --force-renewal
+
+            # 인증서 발급 확인
+            if [ -f "$CERT_PATH" ]; then
+              echo "SSL 인증서가 성공적으로 발급되었습니다."
               echo "Nginx 재시작 중..."
               docker-compose -f docker-compose.prod.yml --env-file .env.prod restart nginx
             else
-              echo "SSL 인증서가 존재합니다. 강제로 인증서를 재발급합니다."
-              docker-compose -f docker-compose.prod.yml --env-file .env.prod run --rm certbot certonly --webroot -w /var/www/certbot --email boogie.bogiegie@gmail.com -d api.bogiegie.shop --agree-tos --non-interactive --force-renewal
-              echo "Nginx 재시작 중..."
-              docker-compose -f docker-compose.prod.yml --env-file .env.prod restart nginx
+              echo "SSL 인증서 발급에 실패했습니다."
             fi
 
             echo "이전 이미지 정리 중..."
