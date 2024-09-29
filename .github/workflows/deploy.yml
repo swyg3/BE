@@ -48,6 +48,10 @@ jobs:
               touch ~/app/.env.prod
             fi
 
+            # Create directories for SSL certificates
+            sudo mkdir -p /etc/letsencrypt/live/api.bogiegie.shop
+            sudo mkdir -p /etc/letsencrypt/archive/api.bogiegie.shop
+
             sudo chown -R root:root ~/app/certbot/conf
             sudo chmod -R 755 ~/app/certbot/conf
             sudo chown -R www-data:www-data ~/app/certbot/www
