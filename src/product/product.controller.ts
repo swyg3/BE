@@ -20,7 +20,7 @@ import { DeleteProductCommand } from "./commands/impl/delete-product.command";
 import { UpdateProductCommand } from "./commands/impl/update-product.command";
 import { CustomResponse } from "src/shared/interfaces/api-response.interface";
 import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
-import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { ThrottlerGuard } from "@nestjs/throttler";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { Express } from "express";
@@ -113,6 +113,7 @@ export class ProductController {
 
   @ApiOperation({ summary: "상품 상세 조회" })
   @ApiResponse({ status: 200, description: "상품 상세 조회 성공" })
+  @ApiParam({ name: "id", description: "조회할 상품의 ID" })
   @Get("get/:id")
   @UseGuards(JwtAuthGuard)
   async getProductById(@Param("id") id: string): Promise<CustomResponse> {
@@ -171,6 +172,7 @@ export class ProductController {
   @ApiOperation({ summary: "상품 할인률 순 조회" })
   @ApiResponse({ status: 200, description: "상품 할인률 순 조회 성공" })
   @Get("discountrate")
+  @UseGuards(JwtAuthGuard)
   async getProductsByDiscountRate(
     @Query() queryDto: GetProductByDiscountRateInputDto,
   ) {
@@ -193,6 +195,7 @@ export class ProductController {
   @ApiOperation({ summary: '상품 카테고리 조회' })
   @ApiResponse({ status: 200, description: '상품 카테고리 조회 성공' })
   @Get('category')
+  @UseGuards(JwtAuthGuard)
   async getCategory(@Query() queryDto: GetCategoryDto) {
     console.log('Received query:', queryDto);
 
@@ -219,6 +222,11 @@ export class ProductController {
   
   //위치허용 api
   @Get('nearest')
+  @ApiOperation({ summary: '가까운 상품 조회', description: '사용자 위치 기반으로 가까운 상품을 조회합니다.' })
+  @ApiResponse({ status: 200, description: '가까운 상품 조회 성공' })
+  @ApiQuery({ name: 'lat', type: Number, description: '위도' })
+  @ApiQuery({ name: 'lon', type: Number, description: '경도' })
+  @UseGuards(JwtAuthGuard)
   async getNearestProducts(@Query('lat') lat: number, @Query('lon') lon: number): Promise<any[]> {
     const query = new GetNearestProductsQuery(lat, lon);
     return this.queryBus.execute(query);
@@ -226,6 +234,15 @@ export class ProductController {
 
   
   @Get('search')
+  @ApiOperation({ summary: '상품 검색', description: '검색어를 기반으로 상품을 검색합니다.' })
+  @ApiResponse({ status: 200, description: '상품 검색 성공' })
+  @ApiQuery({ name: 'term', description: '검색어' })
+  @ApiQuery({ name: 'sortBy', enum: ['discountRate', 'createdAt'], description: '정렬 기준' })
+  @ApiQuery({ name: 'order', enum: ['asc', 'desc'], description: '정렬 순서' })
+  @ApiQuery({ name: 'limit', type: Number, description: '결과 제한 수' })
+  @ApiQuery({ name: 'exclusiveStartKey', required: false, description: '다음 페이지 키' })
+  @ApiQuery({ name: 'previousPageKey', required: false, description: '이전 페이지 키' })
+  @UseGuards(JwtAuthGuard)
   async searchProducts(
     @Query('term') searchTerm: string,
     @Query('sortBy') sortBy: 'discountRate' | 'createdAt' = 'discountRate',
