@@ -89,8 +89,10 @@ jobs:
               echo "Nginx 재시작 중..."
               docker-compose -f docker-compose.prod.yml --env-file .env.prod restart nginx
             else
-              echo "SSL 인증서가 존재합니다. Certbot 자동 갱신을 활성화합니다."
-              docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d certbot
+              echo "SSL 인증서가 존재합니다. 강제로 인증서를 재발급합니다."
+              docker-compose -f docker-compose.prod.yml --env-file .env.prod run --rm certbot certonly --webroot -w /var/www/certbot --email boogie.bogiegie@gmail.com -d api.bogiegie.shop --agree-tos --non-interactive --force-renewal
+              echo "Nginx 재시작 중..."
+              docker-compose -f docker-compose.prod.yml --env-file .env.prod restart nginx
             fi
 
             echo "이전 이미지 정리 중..."
