@@ -19,9 +19,9 @@ export const ProductSchema = new Schema(
         rangeKey: "discountRate"
       },
       {
-        name: "SearchableTextIndex",
+        name: "ProductNameIndex",
         type: "global",
-        rangeKey: "searchableText"
+        rangeKey: "name"
       }]
     },
     sellerId: {
@@ -92,10 +92,6 @@ export const ProductSchema = new Schema(
       type: String,
       required: true,
     },
-    searchableText: {
-      type: String,
-      required: false, // 이 필드는 Lambda 함수에 의해 채워질 것이므로 필수가 아님
-    }
   }, 
   {
     timestamps: {
