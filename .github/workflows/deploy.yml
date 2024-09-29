@@ -90,10 +90,10 @@ jobs:
             CERT_PATH="/home/ubuntu/app/certbot/conf/live/api.bogiegie.shop/fullchain.pem"
             if [ ! -f "$CERT_PATH" ]; then
               echo "SSL 인증서가 없습니다. 새로 발급을 시도합니다."
-              docker-compose -f docker-compose.prod.yml --env-file .env.prod run --rm certbot certonly --webroot -w /var/www/certbot --email boogie.bogiegie@gmail.com -d api.bogiegie.shop --agree-tos --non-interactive
+              docker-compose -f docker-compose.prod.yml --env-file .env.prod run --rm certbot certonly --webroot -w /var/www/certbot --email boogie.bogiegie@gmail.com -d api.bogiegie.shop --agree-tos --non-interactive --force-renewal
             else
               echo "SSL 인증서가 이미 존재합니다. 갱신을 시도합니다."
-              docker-compose -f docker-compose.prod.yml --env-file .env.prod run --rm certbot renew
+              docker-compose -f docker-compose.prod.yml --env-file .env.prod run --rm certbot renew --force-renewal
             fi
 
             # 인증서 발급/갱신 결과 확인
