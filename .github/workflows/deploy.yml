@@ -17,7 +17,7 @@ jobs:
         uses: docker/setup-buildx-action@v1
 
       - name: Login to DockerHub
-        uses: docker/login-action@v2
+        uses: docker/login-action@v1
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
@@ -43,28 +43,10 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            mkdir -p ~/app ~/app/certbot/conf ~/app/certbot/www
+            mkdir -p ~/app
             if [ ! -f ~/app/.env.prod ]; then
               touch ~/app/.env.prod
             fi
-
-            # Create directories for SSL certificates
-            sudo mkdir -p /etc/letsencrypt/live/api.bogiegie.shop
-            sudo mkdir -p /etc/letsencrypt/archive/api.bogiegie.shop
-
-      - name: Check and fix volume permissions
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            sudo chown -R root:root ~/app/certbot/conf
-            sudo chmod -R 755 ~/app/certbot/conf
-            sudo chown -R www-data:www-data ~/app/certbot/www
-            sudo chmod -R 755 ~/app/certbot/www
-            ls -la ~/app/certbot/conf
-            ls -la ~/app/certbot/www
 
       - name: Copy files to EC2
         uses: appleboy/scp-action@master
@@ -87,33 +69,11 @@ jobs:
             sed -i '/IMAGE_TAG/d' .env.prod
             echo "IMAGE_TAG=${{ github.sha }}" >> .env.prod
 
-            # 기존 서비스 중지 및 포트 충돌 방지
-            echo "기존 프로세스 정리 중..."
-            sudo lsof -ti:80,443 | xargs sudo kill -9 || true
+            echo "기존 컨테이너 종료 중..."
             docker-compose -f docker-compose.prod.yml --env-file .env.prod down --remove-orphans
 
             echo "서비스 시작 중 (Nginx, Nest App)..."
-            docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d nginx nest_app
-
-            echo "Nginx 상태 확인 중..."
-            docker-compose -f docker-compose.prod.yml --env-file .env.prod ps nginx
-            docker-compose -f docker-compose.prod.yml --env-file .env.prod logs nginx
-
-            echo "Certbot 실행 중..."
-            docker-compose -f docker-compose.prod.yml --env-file .env.prod run --rm certbot
-
-            echo "인증서 발급 중..."
-            sleep 30 
-
-            CERT_PATH="/home/ubuntu/app/certbot/conf/live/api.bogiegie.shop/fullchain.pem"
-            if [ -f "$CERT_PATH" ]; then
-              echo "SSL 인증서가 성공적으로 발급/갱신되었습니다."
-              echo "Nginx 재시작 중..."
-              docker-compose -f docker-compose.prod.yml --env-file .env.prod restart nginx
-            else
-              echo "SSL 인증서 발급/갱신에 실패했습니다. 로그를 확인해주세요."
-              docker-compose -f docker-compose.prod.yml --env-file .env.prod logs certbot
-            fi
+            docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
 
             echo "이전 이미지 정리 중..."
             docker image prune -af
