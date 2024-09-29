@@ -10,6 +10,7 @@ import { AppService } from "./app.service";
 import { AuthModule } from "./auth/auth.module";
 import { InventoryModule } from "./inventory/inventory.module";
 import { MetricsModule } from "./metrics/metrics.module";
+import { OrderItemsModule } from "./order-items/order-items.module";
 import { OrderModule } from "./order/order.module";
 import { PUBLIC_FOLDER_PATH } from "./product/const/path.const";
 import { ProductModule } from "./product/product.module";
@@ -67,6 +68,7 @@ import { UsersModule } from "./users/users.module";
     ProductModule,
     InventoryModule,
     OrderModule,
+    OrderItemsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

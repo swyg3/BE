@@ -3,7 +3,7 @@ import { QueryBus } from '@nestjs/cqrs';
 import { GetOrderItemQuery } from './queries/get-order-item.query';
 
 @Controller('order-items')
-export class OrderItmesController {
+export class OrderItemsController {
     constructor(
         private readonly queryBus: QueryBus,
     ) {}

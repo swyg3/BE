@@ -1,4 +1,4 @@
-import { OrderItemDto } from "src/order-itmes/dtos/order-items.dto";
+import { OrderItemDto } from "src/order-items/dtos/order-items.dto";
 
 export class UpdateOrderCommand {
     constructor(

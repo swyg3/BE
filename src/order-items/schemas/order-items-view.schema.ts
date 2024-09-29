@@ -11,6 +11,10 @@ export const OrderItemsViewSchema = new Schema(
         orderId: {
             type: String,
             required: true, // 연관된 주문 ID
+            index: { // 글로벌 보조 인덱스 설정
+                name: "OrderIdIndex",
+                type: "global",
+            },
         },
         productId: {
             type: Number,

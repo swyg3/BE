@@ -1,7 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { CommandHandler, ICommandHandler } from "@nestjs/cqrs";
 import { InjectRepository } from "@nestjs/typeorm";
-import { OrderItems } from "src/order-itmes/entities/order-items.entity";
+import { OrderItems } from "src/order-items/entities/order-items.entity";
 import { Order } from "src/order/entities/order.entity";
 import { CreateOrderEvent } from "src/order/events/create-order.event";
 import { EventBusService } from "src/shared/infrastructure/event-sourcing";

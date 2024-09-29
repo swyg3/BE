@@ -12,8 +12,9 @@ export class GetOrderItemQueryHandler implements IQueryHandler<GetOrderItemQuery
 
     async execute(query: GetOrderItemQuery): Promise<OrderItemsView[]> {
         const result = await this.orderItemsViewModel.query("orderId")
-            .eq(query.orderId) // orderId에 해당하는 항목을 쿼리
-            .exec(); // Dynamoose 쿼리 실행
+        .using("OrderIdIndex")
+        .eq(query.orderId) // orderId에 해당하는 항목을 쿼리
+        .exec(); // Dynamoose 쿼리 실행
 
         return result; // 결과 반환
     }
