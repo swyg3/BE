@@ -46,45 +46,64 @@ export class LoginOAuthCallbackCommandHandler
     const { provider, code, userType } = command;
 
     this.logger.log(
-      `OAuth 로그인 요청 받음: provider=${provider}, userType=${UserType[userType]}`,
+      `OAuth 로그인 요청 시작: 제공자=${provider}, 사용자 유형=${UserType[userType]}, 코드=${code.substring(0, 10)}...`,
     );
 
     try {
       // 1. 인증 코드로 액세스 토큰 요청
+      this.logger.log(`1단계 시작: 액세스 토큰 요청 (제공자: ${provider})`);
       const oauthAccessToken = await this.getAccessToken(provider, code);
+      this.logger.log(
+        `1단계 완료: 액세스 토큰 획득 성공 (토큰 길이: ${oauthAccessToken})`,
+      );
 
       // 2. 액세스 토큰으로 사용자 정보 요청
+      this.logger.log(`2단계 시작: 사용자 정보 요청 (제공자: ${provider})`);
       const userInfo = await this.getUserInfo(provider, oauthAccessToken);
+      this.logger.log(
+        `2단계 완료: 사용자 정보 획득 성공 (이메일: ${userInfo.email})`,
+      );
 
       // 3. 사용자 생성 또는 업데이트
+      this.logger.log(`3단계 시작: 사용자 정보 처리 (유형: ${userType})`);
       const result = await this.handleUserOrSellerLogin(userType, userInfo);
       this.logger.log(
-        `사용자 생성 또는 업데이트: ${result.id} email: ${result.email}, userType: ${userType}`,
+        `3단계 완료: 사용자 정보 처리 완료 (ID: ${result.id}, 이메일: ${result.email}, 신규 여부: ${result.isNew})`,
       );
 
       // 4. JWT 생성
+      this.logger.log(`4단계 시작: JWT 토큰 생성`);
       const {
         accessToken,
         refreshToken,
         accessTokenExpiresIn,
-        refreshTokenExpiresIn
+        refreshTokenExpiresIn,
       } = await this.tokenService.generateTokens(
         result.id,
         result.email,
         userType,
       );
-      this.logger.log(`JWT 생성: ${accessToken}, ${accessTokenExpiresIn}, ${refreshToken}, ${refreshTokenExpiresIn}`);
-      await this.refreshTokenService.storeRefreshToken(
-        result.id,
-        refreshToken,
+
+      this.logger.log(
+        `4단계 완료: JWT 토큰 생성 완료 ${accessToken}, ${accessTokenExpiresIn}, ${refreshToken}, ${refreshTokenExpiresIn}`,
       );
 
+      await this.refreshTokenService.storeRefreshToken(result.id, refreshToken);
+
+      this.logger.log(`리프레시 토큰 저장 완료 (사용자 ID: ${result.id})`);
+
       // 5. 이벤트 발행
+      this.logger.log(`5단계 시작: 로그인 이벤트 발행`);
       const event = this.createEvent(userType, result, provider);
       await this.eventBusService.publishAndSave(event);
 
+      this.logger.log(
+        `5단계 완료: 로그인 이벤트 발행 완료 (이벤트 타입: ${event.constructor.name})`,
+      );
+
       // 6. JWT 및 사용자 정보 반환
-      return {
+      this.logger.log(`6단계: 최종 응답 데이터 준비`);
+      const response = {
         provider,
         [userType === UserType.USER ? "userId" : "sellerId"]: result.id,
         email: result.email,
@@ -93,16 +112,26 @@ export class LoginOAuthCallbackCommandHandler
         tokens: {
           access: {
             token: accessToken,
-            expiresIn: accessTokenExpiresIn
+            expiresIn: accessTokenExpiresIn,
           },
           refresh: {
             token: refreshToken,
-            expiresIn: refreshTokenExpiresIn
-          }
+            expiresIn: refreshTokenExpiresIn,
+          },
         },
       };
+      this.logger.log(
+        `OAuth 로그인 프로세스 완료: 사용자 ${response.email} 로그인 성공`,
+      );
+
+      return response;
     } catch (error) {
-      this.logger.error(`OAuth Callback 처리 중 오류 발생: ${error.message}`);
+      this.logger.error(
+        `OAuthCallbackCommandHandler 처리 중 오류 발생: ${error.message}`,
+      );
+      this.logger.error(
+        `OAuthCallbackCommandHandler 오류 상세 정보: ${JSON.stringify(error.response?.data || error)}`,
+      );
       throw new Error(`OAuth Callback 실패: ${error.message}`);
     }
   }
@@ -124,6 +153,10 @@ export class LoginOAuthCallbackCommandHandler
       `${provider.toUpperCase()}_CALLBACK_URL`,
     );
 
+    this.logger.log(`액세스 토큰 요청 시작 (제공자: ${provider})`);
+    this.logger.log(`토큰 URL: ${tokenUrl}`);
+    this.logger.log(`리다이렉트 URI: ${redirectUri}`);
+
     try {
       const response = await axios.post(tokenUrl, null, {
         params: {
@@ -134,15 +167,20 @@ export class LoginOAuthCallbackCommandHandler
           grant_type: "authorization_code",
         },
       });
-      this.logger.log(`getAccessToken: response=${response}`);
+      this.logger.log(`액세스 토큰 요청 성공 (상태 코드: ${response.status})`);
+      this.logger.log(`응답 데이터: ${JSON.stringify(response.data)}`);
+
       return response.data.access_token;
     } catch (error) {
       if (axios.isAxiosError(error)) {
         this.logger.error(
-          `Failed to get access token. Status: ${error.response?.status}`,
+          `액세스 토큰 요청 실패. 상태 코드: ${error.response?.status}`,
         );
         this.logger.error(
-          `Error data: ${JSON.stringify(error.response?.data)}`,
+          `액세스 토큰 요청 오류 상세 정보: ${JSON.stringify(error.response?.data)}`,
+        );
+        this.logger.error(
+          `액세스 토큰 요청 설정: ${JSON.stringify(error.config)}`,
         );
       }
       throw error;
@@ -156,17 +194,28 @@ export class LoginOAuthCallbackCommandHandler
     const userInfoUrl = this.configService.get<string>(
       `${provider.toUpperCase()}_USER_INFO_URL`,
     );
+    this.logger.log(`사용자 정보 요청 시작 (제공자: ${provider})`);
+    this.logger.log(`사용자 정보 URL: ${userInfoUrl}`);
+
     try {
       const response = await axios.get(userInfoUrl, {
         headers: { Authorization: `Bearer ${oauthAccessToken}` },
       });
-      return this.normalizeUserInfo(provider, response.data);
-    } catch (error) {
-      this.logger.error(
-        `Failed to get user info: ${error.message}`,
-        error.response?.data,
+
+      this.logger.log(`사용자 정보 요청 성공 (상태 코드: ${response.status})`);
+
+      const normalizedInfo = this.normalizeUserInfo(provider, response.data);
+      this.logger.log(
+        `정규화된 사용자 정보: ${JSON.stringify(normalizedInfo)}`,
       );
-      throw new Error(`Failed to get user info: ${error.message}`);
+
+      return normalizedInfo;
+    } catch (error) {
+      this.logger.error(`사용자 정보 획득 실패: ${error.message}`);
+      this.logger.error(
+        `오류 응답 데이터: ${JSON.stringify(error.response?.data)}`,
+      );
+      throw new Error(`사용자 정보 획득 실패: ${error.message}`);
     }
   }
 

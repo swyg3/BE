@@ -39,6 +39,14 @@ services:
           cpus: "0.2"
           memory: 200M
 
+  certbot:
+    image: certbot/certbot
+    container_name: certbot_prod
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    command: certonly --webroot -w /var/www/certbot --email boogie.bogiegie@gmail.com -d api.bogiegie.shop --agree-tos --non-interactive --keep-until-expiring --expand
+
   prometheus:
     image: prom/prometheus:v2.30.3
     container_name: prometheus_prod
@@ -90,7 +98,6 @@ services:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
       - /:/rootfs:ro
-
 
   grafana:
     image: grafana/grafana:8.2.2
