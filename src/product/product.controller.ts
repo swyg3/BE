@@ -21,7 +21,7 @@ import { DeleteProductCommand } from "./commands/impl/delete-product.command";
 import { UpdateProductCommand } from "./commands/impl/update-product.command";
 import { CustomResponse } from "src/shared/interfaces/api-response.interface";
 import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
-import { ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { ApiConsumes, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { ThrottlerGuard } from "@nestjs/throttler";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { Express } from "express";
@@ -49,6 +49,7 @@ export class ProductController {
   @ApiOperation({ summary: "상품 등록" })
   @ApiResponse({ status: 201, description: "상품 생성 성공" })
   @ApiResponse({ status: 400, description: "상품 생성 실패" })
+  @ApiConsumes('multipart/form-data')
   @Post("create")
   @UseInterceptors(FileInterceptor('image'))
   async createProduct(
