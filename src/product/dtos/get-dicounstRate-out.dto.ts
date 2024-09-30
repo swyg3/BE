@@ -1,6 +1,6 @@
 import { ProductView } from "../repositories/product-view.repository";
 
-export class GetCategoryQueryOutputDto {
+export class GetProductByDiscountRateOutputDto {
     items: ProductView[];
     lastEvaluatedUrl: string | undefined;
     firstEvaluatedUrl: string | undefined;

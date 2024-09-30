@@ -1,40 +1,47 @@
 import { QueryHandler, IQueryHandler } from "@nestjs/cqrs";
-import { InjectModel } from "@nestjs/mongoose";
-import { Model } from "mongoose";
-import { ProductView } from "../../schemas/product-view.schema";
-import { GetProductByIdQuery } from "../impl/get-product-by-id.query";
 import { NotFoundException } from "@nestjs/common";
+import { GetProductByIdQuery } from "../impl/get-prouct-by-id.query";
+import { ProductViewRepository } from "../../repositories/product-view.repository";
 import { PRODUCTS_PUBLIC_IMAGE_PATH } from "../../const/path.const";
+import { UserRepository } from "src/users/repositories/user.repository";
+import { SellerViewRepository } from "src/sellers/repositories/seller-view.repository";
 
 @QueryHandler(GetProductByIdQuery)
 export class GetProductByIdHandler
-  implements IQueryHandler<GetProductByIdQuery>
-{
+  implements IQueryHandler<GetProductByIdQuery> {
   constructor(
-    @InjectModel(ProductView.name)
-    private readonly productViewModel: Model<ProductView>,
-  ) {}
+    private readonly ProductViewRepository: ProductViewRepository,
+    private readonly sellerViewRepository: SellerViewRepository,
+  ) { }
 
   async execute(query: GetProductByIdQuery): Promise<any> {
-    const { id } = query;
-
-    const product = await this.productViewModel.findOne({ id }).exec();
+    const product = await this.ProductViewRepository.findByProductId(
+      query.productId,
+    );
 
     if (!product) {
-      throw new NotFoundException(`Product with ID ${id} not found`);
+      throw new NotFoundException(
+        `상품 ID ${query.productId}를 찾을 수 없습니다.`,
+      );
     }
 
-    const transformedProduct = {
-      ...product.toObject(),
-      productImageUrl: product.productImageUrl
-        ? `/${PRODUCTS_PUBLIC_IMAGE_PATH}/${product.productImageUrl}`
-        : null,
+    const seller = await this.sellerViewRepository.findBySellerId(
+      product.sellerId,
+    );
+
+    if (!seller) {
+      throw new NotFoundException(
+        `판매자 ID ${product.sellerId}를 찾을 수 없습니다.`,
+      );
+    }
+    return {
+
+      ...product,
+      storeName: seller.storeName,
+      storeAddress: seller.storeAddress,
+      storeNumber: seller.storePhoneNumber,
     };
 
-    return {
-      success: true,
-      message: "해당 상품 상세 조회를 성공했습니다.",
-      data: transformedProduct,
-    };
+
   }
 }

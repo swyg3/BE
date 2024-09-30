@@ -1,7 +1,7 @@
 import { EventsHandler, IEventHandler } from "@nestjs/cqrs";
-import { ProductViewRepository } from "../../repositories/product-view.repository";
 import { Logger } from "@nestjs/common";
 import { ProductDeletedEvent } from "../impl/product-deleted.event";
+import { ProductViewRepository } from "../../repositories/product-view.repository";
 
 @EventsHandler(ProductDeletedEvent)
 export class ProductDeletedHandler
@@ -9,18 +9,22 @@ export class ProductDeletedHandler
 {
   private readonly logger = new Logger(ProductDeletedHandler.name);
 
-  constructor(private readonly productViewRepository: ProductViewRepository) {}
+  constructor(
+    private readonly dyProductViewRepository: ProductViewRepository,
+  ) {}
 
   async handle(event: ProductDeletedEvent) {
-    const id = event.aggregateId;
+    const productId = event.aggregateId;
     try {
-      this.logger.log(`Handling ProductDeletedEvent for product: ${id}`);
+      this.logger.log(`ProductDeletedEvent 처리중: ${productId}`);
 
-      // MongoDB에서 제품 삭제
-      await this.productViewRepository.deleteProduct({ id });
-    } catch {
-      this.logger.log(
-        `Handling ProductDeletedEvent can not find product view: ${id}`,
+      await this.dyProductViewRepository.delete({ productId });
+
+      this.logger.log(`ProductView 삭제 성공: ${productId}`);
+    } catch (error) {
+      this.logger.error(
+        `ProductView 삭제 실패: ${productId}, ${error.message}`,
+        error.stack,
       );
     }
   }

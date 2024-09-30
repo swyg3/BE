@@ -3,13 +3,16 @@ import { ProductRepository } from "../../repositories/product.repository";
 import { Product } from "src/product/entities/product.entity";
 import { CreateInventoryCommand } from "src/inventory/commands/impl/create-inventory.command";
 import { InjectRepository } from "@nestjs/typeorm";
-import { ProductCreatedEvent } from "src/product/events/impl/product-created.event";
 import { CommandBus, CommandHandler, ICommandHandler } from "@nestjs/cqrs";
 import { BadRequestException, Inject, Logger } from "@nestjs/common";
 import { EventBusService } from "src/shared/infrastructure/event-sourcing/event-bus.service";
 import { SellerRepository } from "src/sellers/repositories/seller.repository";
-import { Seller } from "src/sellers/entities/seller.entity";
-import { DyProductCreatedEvent } from "src/product/events/impl/dy-product-created.event";
+import { ProductCreatedEvent } from "src/product/events/impl/product-created.event";
+import { NaverMapsClient } from "src/shared/infrastructure/database/navermap.config";
+interface GeocodingResult {
+  x: string;
+  y: string;
+}
 
 @CommandHandler(CreateProductCommand)
 export class CreateProductHandler
@@ -20,6 +23,7 @@ export class CreateProductHandler
     @InjectRepository(Product)
     private readonly productRepository: ProductRepository,
     private readonly sellerRepository: SellerRepository,
+    private readonly naverMapsClient: NaverMapsClient,
     private readonly eventBusService: EventBusService,
     @Inject(CommandBus) private readonly commandBus: CommandBus,
   ) { }
@@ -41,6 +45,21 @@ export class CreateProductHandler
     if (!seller) {
       throw new Error("존재하지 않는 판매자입니다.");
     }
+    // 판매자 주소 조회
+    const sellerAddress = await this.sellerRepository.getSellerAddress(sellerId);
+
+    if (!sellerAddress) {
+      throw new Error(`판매자 주소를 찾을 수 없습니다: ${sellerId}`);
+    }
+
+    // 주소로 지오코딩 정보 얻기
+    let geocodingResult: GeocodingResult;
+    try {
+      geocodingResult = await this.naverMapsClient.getGeocode(sellerAddress);
+    } catch (error) {
+      this.logger.error(`지오코딩 실패: ${error.message}`);
+      throw error;
+    }
 
     let savedProduct: Product | null = null;
 
@@ -54,6 +73,8 @@ export class CreateProductHandler
         description,
         originalPrice,
         discountedPrice,
+        locationX: geocodingResult.x,  
+        locationY: geocodingResult.y   
       });
       this.logger.log(`command handler${productImageUrl}`);
 
@@ -74,7 +95,7 @@ export class CreateProductHandler
       this.logger.log(expirationDate);
 
       // ProductCreatedEvent 생성 및 발행
-      const event = new DyProductCreatedEvent(
+      const event = new ProductCreatedEvent(
         product.id,
         {
           sellerId: product.sellerId,
@@ -89,6 +110,8 @@ export class CreateProductHandler
           expirationDate: expirationDate,
           createdAt: new Date(),
           updatedAt: new Date(),
+          locationX: geocodingResult.x,
+          locationY: geocodingResult.y,
         },
         1,
       );

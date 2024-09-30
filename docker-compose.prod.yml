@@ -119,3 +119,4 @@ services:
 volumes:
   prometheus_data:
   grafana_data:
+  es_data:
