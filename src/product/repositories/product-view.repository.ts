@@ -346,7 +346,7 @@ export class ProductViewRepository {
     }
   }
 
-  
+
   async searchProducts(param: {
     searchTerm: string;
     sortBy: 'discountRate' | 'distance' | 'distanceDiscountScore';
@@ -363,7 +363,6 @@ export class ProductViewRepository {
   }> {
     try {
       const { searchTerm, sortBy, order, limit, exclusiveStartKey, previousPageKey } = param;
-      const sortOrder = order === 'desc' ? SortOrder.descending : SortOrder.ascending;
 
       if (!searchTerm) {
         throw new Error("searchTerm is required.");
@@ -371,24 +370,42 @@ export class ProductViewRepository {
 
       const lowercaseSearchTerm = searchTerm.toLowerCase().trim();
 
-      // 전체 스캔
+      // 스캔 시작
       let scan = this.productViewModel.scan();
 
-      // Scan 연산에는 limit을 적용할 수 있습니다.
+      // GSI_KEY를 사용하여 스캔 범위를 제한
+      scan = scan.where('GSI_KEY').eq('PRODUCT');
+
+      // 적절한 인덱스 선택
+      switch (sortBy) {
+        case 'discountRate':
+          scan = scan.using('DiscountRateIndex');
+          break;
+        case 'distance':
+          scan = scan.using('DistanceIndex');
+          break;
+        case 'distanceDiscountScore':
+          scan = scan.using('DistanceDiscountIndex');
+          break;
+        default:
+          scan = scan.using('ProductNameIndex');
+      }
+
+      // Scan 연산에 limit 적용
       scan = scan.limit(1000);  // 적절한 값으로 조정하세요.
 
       if (exclusiveStartKey) {
-        scan = scan.startAt(JSON.parse(decodeURIComponent(exclusiveStartKey)));
+        const startKey = JSON.parse(decodeURIComponent(exclusiveStartKey));
+        scan = scan.startAt(startKey);
       }
 
       const results: ScanResponse<ProductView> = await scan.exec();
 
-      // 검색어로 필터링
-      let filteredItems = (results as unknown as ProductView[]).filter(item => 
+      // 검색어로 필터링 및 정렬
+      let filteredItems = (results as unknown as ProductView[]).filter(item =>
         item.name.toLowerCase().includes(lowercaseSearchTerm)
       );
 
-      // 메모리 내에서 정렬
       filteredItems.sort((a, b) => {
         if (order === 'asc') {
           return a[sortBy] - b[sortBy];
@@ -403,7 +420,8 @@ export class ProductViewRepository {
       const createMinimalKey = (item: ProductView | null) => {
         if (!item) return null;
         return {
-          name: item.name,
+          GSI_KEY: 'PRODUCT',
+          productId: item.productId,
           [sortBy]: item[sortBy]
         };
       };
