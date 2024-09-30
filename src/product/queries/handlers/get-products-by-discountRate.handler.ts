@@ -1,24 +1,26 @@
-import { QueryHandler, IQueryHandler } from "@nestjs/cqrs";
-import { DyProductViewRepository } from "src/product/repositories/dy-product-view.repository";
-import { DyGetProductByDiscountRateQuery } from "../impl/dy-get-product-by-discountRate.query";
+import { IQueryHandler, QueryHandler } from "@nestjs/cqrs";
+import { GetProductByDiscountRateQuery } from "../impl/get-product-by-discountRate.query";
+import { ProductViewRepository } from "src/product/repositories/product-view.repository";
 import { Logger } from "@nestjs/common";
-import { DyGetProductByDiscountRateOutputDto } from "src/product/dtos/dy-get-product-by-dicounstRateout.dto";
+import { GetProductByDiscountRateOutputDto } from "src/product/dtos/get-dicounstRate-out.dto";
 
-@QueryHandler(DyGetProductByDiscountRateQuery)
-export class DyGetProductByDiscountRateHandler 
-  implements IQueryHandler<DyGetProductByDiscountRateQuery> {
+
+@QueryHandler(GetProductByDiscountRateQuery)
+export class GetProductByDiscountRateHandler 
+  implements IQueryHandler<GetProductByDiscountRateQuery> {
   constructor(
-    private readonly dyProductViewRepository: DyProductViewRepository,
+    private readonly dyProductViewRepository: ProductViewRepository,
     private readonly logger: Logger
   ) {}
 
-  async execute(query: DyGetProductByDiscountRateQuery): Promise<DyGetProductByDiscountRateOutputDto> {
-    const { order, limit, exclusiveStartKey } = query.dto;
+  async execute(query: GetProductByDiscountRateQuery): Promise<GetProductByDiscountRateOutputDto> {
+    const { order, limit, exclusiveStartKey, previousPageKey } = query;
     
     const param = {
       order,
       limit: Number(limit),
       ...(exclusiveStartKey && { exclusiveStartKey }),
+      ...(previousPageKey &&{previousPageKey})
     };
 
     this.logger.log(`Executing query with parameters: ${JSON.stringify(param)}`);
@@ -31,6 +33,7 @@ export class DyGetProductByDiscountRateHandler
       items: result.items,
       lastEvaluatedUrl: result.lastEvaluatedUrl || null,
       firstEvaluatedUrl: result.firstEvaluatedUrl || null,
+      prevPageUrl:result.prevPageUrl||null,
       count: result.count,
     };
   }

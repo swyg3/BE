@@ -51,6 +51,18 @@ export class Product {
   @Column({ type: "bigint", name: "discounted_price", nullable: true })
   discountedPrice: number;
 
+  @Column({ type: "int", nullable: true })
+  quantity: number;
+
+  @Column({ type: "timestamp", nullable: true })
+  expirationDate: Date;
+
+  @Column({ type: 'varchar', nullable: true })
+  locationX: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  locationY: string;
+
   @CreateDateColumn({
     type: "timestamp",
     name: "created_at",

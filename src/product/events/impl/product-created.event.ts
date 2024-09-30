@@ -1,6 +1,5 @@
 import { BaseEvent } from "src/shared/infrastructure/event-sourcing";
 import { Category } from "src/product/product.category";
-import { Seller } from "src/sellers/entities/seller.entity";
 
 export class ProductCreatedEvent implements BaseEvent {
   readonly eventType = "ProductCreated";
@@ -9,7 +8,7 @@ export class ProductCreatedEvent implements BaseEvent {
   constructor(
     public readonly aggregateId: string,
     public readonly data: {
-      sellerId: Seller;
+      sellerId: string;
       category: Category;
       name: string;
       productImageUrl: string;
@@ -21,6 +20,8 @@ export class ProductCreatedEvent implements BaseEvent {
       expirationDate: Date;
       createdAt: Date;
       updatedAt: Date;
+      locationX: string,
+      locationY: string,
     },
     public readonly version: number,
   ) {}

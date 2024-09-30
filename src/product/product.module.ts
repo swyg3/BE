@@ -4,20 +4,11 @@ import { Product } from "./entities/product.entity";
 import { ProductController } from "./product.controller";
 import { ProductRepository } from "./repositories/product.repository";
 import { CreateProductHandler } from "./commands/handlers/create-product.handler";
-import { ProductView, ProductViewSchema } from "./schemas/product-view.schema";
-import { MongooseModule } from "@nestjs/mongoose";
-import { CommandHandler, CqrsModule, EventsHandler } from "@nestjs/cqrs";
-import { ProductViewRepository } from "./repositories/product-view.repository";
-import { GetProductByIdHandler } from "./queries/handlers/get-product-by-id.handler";
+import { CommandHandler, CqrsModule, EventsHandler, QueryBus } from "@nestjs/cqrs";
 import { DeleteProductHandler } from "./commands/handlers/delete-product.handler";
-import { UpdateProductHandler } from "./commands/handlers/update-product.handler";
-import { ProductUpdatedEventHandler } from "./events/handlers/product-update.handler";
-import { ProductDeletedHandler } from "./events/handlers/product-deleted.handler";
 import { InventoryCreatedEvent } from "src/inventory/events/impl/inventory-created.event";
-import { ProductCreatedHandler } from "./events/handlers/product-created.handler";
 import { EventSourcingModule } from "src/shared/infrastructure/event-sourcing";
 import { RedisModule } from "src/shared/infrastructure/redis/redis.config";
-import { DyGetProductByDiscountRateHandler } from "./queries/handlers/get-products-by-discountRate.handler";
 import { Seller } from "src/sellers/entities/seller.entity";
 import { SellerRepository } from "src/sellers/repositories/seller.repository";
 import { MulterModule } from "@nestjs/platform-express";
@@ -26,29 +17,28 @@ import { v4 as uuid } from "uuid";
 import * as multer from "multer";
 import { PRODUCTS_IMAGE_PATH, TEMP_FOLDER_PATH } from "./const/path.const";
 import { DynamooseModule } from "nestjs-dynamoose";
-import { ProductSchema } from "./schemas/dy-product-view.shema";
-import { DyProductViewRepository } from "./repositories/dy-product-view.repository";
-import { APP_PIPE } from "@nestjs/core";
-import { Client } from "@elastic/elasticsearch";
-import { DySearchProductViewModel, DySearchProductViewSchema } from "./schemas/dy-product-search-view.schema";
-import { DyProductCreatedHandler } from "./events/handlers/dy-product-created.handler";
-import { DyGetProductByIdHandler } from "./queries/handlers/dy-get-product-by-id.handler";
-import { UserViewRepository } from "src/users/repositories/user-view.repository";
-import { UsersModule } from "src/users/users.module";
+import { ProductSchema } from "./schemas/product-view.shema";
+import { ProductCreatedHandler } from "./events/handlers/product-created.handler";
 import { SellersModule } from "src/sellers/sellers.module";
-import { GetCategoryHandler } from "./queries/handlers/dy-get-product-by-category.handler";
+import { ProductViewRepository } from "./repositories/product-view.repository";
+import { GetProductByIdHandler } from "./queries/handlers/get-product-by-id.handler";
+import { GeocodingController } from "./geocodingcotroller";
+import { GeocodingService } from "./geocodingservice";
+import { NaverMapsClient } from "src/shared/infrastructure/database/navermap.config";
+import { HttpModule } from "@nestjs/axios";
+import { GetNearestProductsHandler } from "./queries/handlers/get-nearest-products.handler";
+import { FindProductsByCategoryHandler } from "./queries/handlers/get-product-by-category.handler";
+import { SearchProductsHandler } from "./queries/handlers/get-search-products.handler";
+import { GetProductByDiscountRateHandler } from "./queries/handlers/get-products-by-discountRate.handler";
 
 const CommandHandlers = [
   CreateProductHandler,
-  UpdateProductHandler,
+  //UpdateProductHandler,
   DeleteProductHandler,
 ];
 const EventsHandlers = [
   InventoryCreatedEvent,
   ProductCreatedHandler,
-  ProductUpdatedEventHandler,
-  ProductDeletedHandler,
-  DyProductCreatedHandler
 ];
 
 @Module({
@@ -56,15 +46,12 @@ const EventsHandlers = [
     CqrsModule,
     EventSourcingModule,
     RedisModule,
-    MongooseModule.forFeature([
-      { name: ProductView.name, schema: ProductViewSchema },
-    ]),
     TypeOrmModule.forFeature([Product, Seller]),
     DynamooseModule.forFeature([
-      { name: "DyProductView", schema: ProductSchema },
-      { name: 'DySearchProductView', schema: DySearchProductViewSchema },
+      { name: "ProductView", schema: ProductSchema },
     ]),
     SellersModule,
+    HttpModule,
     MulterModule.register({
       limits: {
         // 바이트 단위로 입력
@@ -106,17 +93,21 @@ const EventsHandlers = [
     ProductRepository,
     SellerRepository,
     ProductViewRepository,
-    DyProductViewRepository,
     GetProductByIdHandler,
-    DyGetProductByDiscountRateHandler,
-    GetCategoryHandler,
-    DyGetProductByIdHandler,
+    FindProductsByCategoryHandler,
+    GetNearestProductsHandler,
     Logger,
+    HttpModule,
+    GeocodingService,
+    NaverMapsClient,
+    SearchProductsHandler,
+    GetProductByDiscountRateHandler
+    
+    
   ],
-  controllers: [ProductController],
+  controllers: [ProductController,GeocodingController],
   exports: [ProductRepository, SellerRepository,
-     DyProductViewRepository,
-    DynamooseModule.forFeature([{ name: 'DySearchProductView', schema: DySearchProductViewSchema }]), // 외부로 내보내기
+     ProductViewRepository,NaverMapsClient
   ],
 })
 export class ProductModule {}

@@ -13,11 +13,18 @@ export const ProductSchema = new Schema(
     GSI_KEY: {
       type: String,
       default: "PRODUCT",
-      index: {
-        name: "DiscountRateIndex",
-        type: "global",
-        rangeKey: "discountRate"
-      }
+      index: [
+        {
+          name: "DiscountRateIndex",
+          type: "global",
+          rangeKey: "discountRate"
+        },
+        {
+          name: "ProductNameIndex",
+          type: "global",
+          rangeKey: "name"
+        }
+      ]
     },
     sellerId: {
       type: String,
@@ -33,20 +40,42 @@ export const ProductSchema = new Schema(
       enum: Object.values(Category),
       index: [
         {
-          name: "CategoryCreatedAtIndex",
-          type: "global",
-          rangeKey: "createdAt"
-        },
-        {
           name: "CategoryDiscountRateIndex",
           type: "global",
           rangeKey: "discountRate"
+        },
+        {
+          name: "CategoryDistanceIndex",
+          type: "global",
+          rangeKey: "distance"
+        },
+        {
+          name: "CategoryDistanceDiscountIndex",
+          type: "global",
+          rangeKey: "distanceDiscountScore"
         }
       ]
     },
     name: {
       type: String,
       required: true,
+      index: [
+        {
+          name: "NameDiscountRateIndex",
+          type: "global",
+          rangeKey: "discountRate",
+        },
+        {
+          name: "NameDistanceIndex",
+          type: "global",
+          rangeKey: "distance",
+        },
+        {
+          name: "NameDistanceDiscountIndex",
+          type: "global",
+          rangeKey: "distanceDiscountScore",
+        },
+      ],
     },
     productImageUrl: {
       type: String,
@@ -78,6 +107,32 @@ export const ProductSchema = new Schema(
       type: Date,
       required: true,
     },
+    locationX: {
+      type: String,
+      required: true,
+    },
+    locationY: {
+      type: String,
+      required: true,
+    },
+    distance: {
+      type: Number,
+      required: false,
+      default: 0,
+      index: {
+        name: "DistanceIndex",
+        type: "global",
+      }
+    },
+    distanceDiscountScore: {
+      type: Number,
+      required: false,
+      default: 0,
+      index: {
+        name: "DistanceDiscountIndex",
+        type: "global",
+      }
+    }
   },
   {
     timestamps: {
@@ -91,5 +146,5 @@ export const ProductSchema = new Schema(
 export const Product = model("Product", ProductSchema, {
   create: false,
   update: true,
-  waitForActive: false,
+  waitForActive: true,
 });
