@@ -1,8 +1,8 @@
 import { IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 import { GetProductByDiscountRateQuery } from "../impl/get-product-by-discountRate.query";
 import { ProductViewRepository } from "src/product/repositories/product-view.repository";
-import { GetProductByDiscountRateOutputDto } from "src/product/dtos/get-dicounstRate-out.dto";
 import { Logger } from "@nestjs/common";
+import { GetProductByDiscountRateOutputDto } from "src/product/dtos/get-dicounstRate-out.dto";
 
 
 @QueryHandler(GetProductByDiscountRateQuery)

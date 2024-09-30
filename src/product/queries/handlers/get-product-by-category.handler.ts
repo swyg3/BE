@@ -1,45 +1,42 @@
-import { QueryHandler, IQueryHandler } from "@nestjs/cqrs";
+import { IQueryHandler, QueryHandler } from "@nestjs/cqrs";
+import { FindProductsByCategoryDto } from "src/product/dtos/get-category.dto";
 import { ProductViewRepository } from "src/product/repositories/product-view.repository";
 import { Logger } from "@nestjs/common";
-import { GetCategoryQueryOutputDto } from "src/product/dtos/get-category-out-dto";
-import { GetCategoryQuery } from "../impl/get-product-by-category.query";
+import { FindProductsByCategoryQuery } from "../impl/get-product-by-category.query";
+import { GetProductByDiscountRateOutputDto } from "src/product/dtos/get-dicounstRate-out.dto";
+import { Category } from "src/product/product.category";
 
-@QueryHandler(GetCategoryQuery)
-export class GetCategoryHandler implements IQueryHandler<GetCategoryQuery> {
+
+@QueryHandler(FindProductsByCategoryQuery)
+export class FindProductsByCategoryHandler implements IQueryHandler<FindProductsByCategoryQuery> {
   constructor(
     private readonly productViewRepository: ProductViewRepository,
     private readonly logger: Logger
   ) {}
 
-  async execute(query: GetCategoryQuery): Promise<GetCategoryQueryOutputDto> {
-    const { category, sortBy, order, limit, exclusiveStartKey,
-      previousPageKey
-     } = query;
+  async execute(query: FindProductsByCategoryQuery): Promise<GetProductByDiscountRateOutputDto>{
+    const { category, sortBy, order, limit, exclusiveStartKey, previousPageKey } = query;
 
     const param = {
-      category,
-      sortBy,
+      category:category as Category,
+      sortBy:sortBy as "discountRate" | "distance" | "distanceDiscountScore",
       order,
-      limit: Number(limit) || 10,
+      limit: Number(limit),
       ...(exclusiveStartKey && { exclusiveStartKey }),
-      ...(previousPageKey && { previousPageKey }),
+      ...(previousPageKey && { previousPageKey })
     };
 
-    this.logger.log(`Executing query with parameters: ${JSON.stringify(param)}`);
+    this.logger.log(`Executing find products by category query with parameters: ${JSON.stringify(param)}`);
 
-    let result;
-    if (sortBy === 'discountRate') {
-      result = await this.productViewRepository.findProductsByCategoryAndDiscountRate(param);
-    } else {
-        console.log("아직 개발못한 지오코딩")
-     // result = await this.dyProductViewRepository.findProductsByCategoryAndCreatedAt(param);
-    }
+    const result = await this.productViewRepository.findProductsByCategoryAndSort(param);
+
+    this.logger.log(`Query result: ${result.count} items found`);
 
     return {
       items: result.items,
       lastEvaluatedUrl: result.lastEvaluatedUrl || null,
       firstEvaluatedUrl: result.firstEvaluatedUrl || null,
-      prevPageUrl: result.prevPageUrl,
+      prevPageUrl: result.prevPageUrl || null,
       count: result.count,
     };
   }

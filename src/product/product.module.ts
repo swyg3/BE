@@ -26,10 +26,10 @@ import { GeocodingController } from "./geocodingcotroller";
 import { GeocodingService } from "./geocodingservice";
 import { NaverMapsClient } from "src/shared/infrastructure/database/navermap.config";
 import { HttpModule } from "@nestjs/axios";
-import { GetProductByDiscountRateHandler } from "./queries/handlers/get-products-by-discountRate.handler";
-import { GetCategoryHandler } from "./queries/handlers/get-product-by-category.handler";
 import { GetNearestProductsHandler } from "./queries/handlers/get-nearest-products.handler";
+import { FindProductsByCategoryHandler } from "./queries/handlers/get-product-by-category.handler";
 import { SearchProductsHandler } from "./queries/handlers/get-search-products.handler";
+import { GetProductByDiscountRateHandler } from "./queries/handlers/get-products-by-discountRate.handler";
 
 const CommandHandlers = [
   CreateProductHandler,
@@ -94,14 +94,15 @@ const EventsHandlers = [
     SellerRepository,
     ProductViewRepository,
     GetProductByIdHandler,
-    GetProductByDiscountRateHandler,
-    GetCategoryHandler,
+    FindProductsByCategoryHandler,
     GetNearestProductsHandler,
     Logger,
     HttpModule,
     GeocodingService,
     NaverMapsClient,
-    SearchProductsHandler
+    SearchProductsHandler,
+    GetProductByDiscountRateHandler
+    
     
   ],
   controllers: [ProductController,GeocodingController],

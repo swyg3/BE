@@ -24,12 +24,13 @@ import { ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from "@nestjs/
 import { ThrottlerGuard } from "@nestjs/throttler";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { Express } from "express";
-import { GetCategoryDto } from "./dtos/get-category.dto";
-import { GetCategoryQuery } from "./queries/impl/get-product-by-category.query";
 import { GetProductByDiscountRateInputDto } from "./dtos/get-discountRate.dto";
 import { GetProductByIdQuery } from "./queries/impl/get-prouct-by-id.query";
 import { GetProductByDiscountRateQuery } from "./queries/impl/get-product-by-discountRate.query";
 import { GetNearestProductsQuery } from "./queries/impl/get-nearest-products";
+import { FindProductsByCategoryDto } from "./dtos/get-category.dto";
+import { SearchProductsDto } from "./dtos/get-search.dto";
+import { FindProductsByCategoryQuery } from "./queries/impl/get-product-by-category.query";
 import { SearchProductsQuery } from "./queries/impl/get-search-products";
 
 
@@ -186,40 +187,31 @@ export class ProductController {
       data: result.items,
       lastEvaluatedUrl: result.lastEvaluatedUrl,
       firstEvaluatedUrl: result.firstEvaluatedUrl,
-      prevPageUrl:result.prevPageUrl,
+      prevPageUrl: result.prevPageUrl,
       count: result.count
     };
   }
 
-
-  @ApiOperation({ summary: '상품 카테고리 조회' })
-  @ApiResponse({ status: 200, description: '상품 카테고리 조회 성공' })
   @Get('category')
-  @UseGuards(JwtAuthGuard)
-  async getCategory(@Query() queryDto: GetCategoryDto) {
-    console.log('Received query:', queryDto);
-
-    const { category, sortBy, order, limit, exclusiveStartKey, previousPageKey } = queryDto;
-    const productQuery = new GetCategoryQuery(category, sortBy, order, limit, exclusiveStartKey, previousPageKey);
-
-    console.log('Processed query:', productQuery);
-
-    try {
-      const product = await this.queryBus.execute(productQuery);
-
-      return {
-        success: true,
-        message: product.items.length > 0
-          ? '해당 상품리스트 조회를 성공했습니다.'
-          : '조건에 맞는 상품을 찾을 수 없습니다.',
-        data: product,
-      };
-    } catch (error) {
-      console.error('Error in getCategory:', error);
-      throw error;
-    }
+  @ApiOperation({ summary: '카테고리별 제품 조회', description: '지정된 카테고리의 제품을 조회하고 정렬합니다.' })
+  @ApiResponse({ status: 200, description: '성공적으로 제품 목록을 반환함', type: [Object] })
+  async findProductsByCategoryAndSort(@Query() findProductsByCategoryDto: FindProductsByCategoryDto) {
+    const {category, sortBy, order, limit, exclusiveStartKey, previousPageKey } = findProductsByCategoryDto;
+    const query = new FindProductsByCategoryQuery(category, sortBy, order, limit, exclusiveStartKey, previousPageKey);
+    return this.queryBus.execute(query);
   }
-  
+ 
+
+  @Get('search')
+  @ApiOperation({ summary: '제품 검색', description: '검색어를 기반으로 제품을 검색하고 정렬합니다.' })
+  @ApiResponse({ status: 200, description: '성공적으로 검색 결과를 반환함', type: [Object] })
+  async searchProducts(@Query() searchProductsDto: SearchProductsDto) {
+    const {searchTerm, sortBy, order, limit, exclusiveStartKey, previousPageKey } = searchProductsDto;
+    const query = new SearchProductsQuery(searchTerm, sortBy, order, limit, exclusiveStartKey, previousPageKey);
+    return this.queryBus.execute(query);
+  }
+
+
   //위치허용 api
   @Get('nearest')
   @ApiOperation({ summary: '가까운 상품 조회', description: '사용자 위치 기반으로 가까운 상품을 조회합니다.' })
@@ -232,33 +224,6 @@ export class ProductController {
     return this.queryBus.execute(query);
   }
 
-  
-  @Get('search')
-  @ApiOperation({ summary: '상품 검색', description: '검색어를 기반으로 상품을 검색합니다.' })
-  @ApiResponse({ status: 200, description: '상품 검색 성공' })
-  @ApiQuery({ name: 'term', description: '검색어' })
-  @ApiQuery({ name: 'sortBy', enum: ['discountRate', 'createdAt'], description: '정렬 기준' })
-  @ApiQuery({ name: 'order', enum: ['asc', 'desc'], description: '정렬 순서' })
-  @ApiQuery({ name: 'limit', type: Number, description: '결과 제한 수' })
-  @ApiQuery({ name: 'exclusiveStartKey', required: false, description: '다음 페이지 키' })
-  @ApiQuery({ name: 'previousPageKey', required: false, description: '이전 페이지 키' })
-  @UseGuards(JwtAuthGuard)
-  async searchProducts(
-    @Query('term') searchTerm: string,
-    @Query('sortBy') sortBy: 'discountRate' | 'createdAt' = 'discountRate',
-    @Query('order') order: 'asc' | 'desc' = 'desc',
-    @Query('limit') limit: number = 10,
-    @Query('exclusiveStartKey') exclusiveStartKey?: string,
-    @Query('previousPageKey') previousPageKey?: string
-  ) {
-    const query = new SearchProductsQuery(
-      searchTerm,
-      sortBy,
-      order,
-      limit,
-      exclusiveStartKey,
-      previousPageKey
-    );
-    return this.queryBus.execute(query);
-  }
+
+
 }

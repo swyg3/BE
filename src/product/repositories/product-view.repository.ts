@@ -22,12 +22,12 @@ export interface ProductView {
   updatedAt: Date;
   locationX: string;
   locationY: string;
-  
+
 }
 
 @Injectable()
 export class ProductViewRepository {
-  
+
   private readonly logger = new Logger(ProductViewRepository.name);
 
   constructor(
@@ -99,7 +99,7 @@ export class ProductViewRepository {
       return null;
     }
   }
-  
+
   findById(id: string): ProductView | PromiseLike<ProductView> {
     throw new Error("Method not implemented.");
   }
@@ -133,8 +133,8 @@ export class ProductViewRepository {
       return [];
     }
   }
-   // 모든 상품 조회
-   async findAll(): Promise<ProductView[]> {
+  // 모든 상품 조회
+  async findAll(): Promise<ProductView[]> {
     try {
       this.logger.log('모든 ProductView 조회');
       const result = await this.productViewModel.scan().exec();
@@ -241,8 +241,9 @@ export class ProductViewRepository {
     }
   }
 
-  async findProductsByCategoryAndDiscountRate(param: {
+  async findProductsByCategoryAndSort(param: {
     category: Category;
+    sortBy: 'discountRate' | 'distance' | 'distanceDiscountScore';
     order: 'asc' | 'desc';
     limit: number;
     exclusiveStartKey?: string;
@@ -255,56 +256,63 @@ export class ProductViewRepository {
     count: number
   }> {
     try {
-      const { category, order, limit, exclusiveStartKey, previousPageKey } = param;
+      const { category, sortBy, order, limit, exclusiveStartKey, previousPageKey } = param;
       const sortOrder = order === 'desc' ? SortOrder.descending : SortOrder.ascending;
       let startKey: Record<string, any> | undefined;
-  
+
       if (exclusiveStartKey) {
         startKey = JSON.parse(decodeURIComponent(exclusiveStartKey));
       }
-  
+
       const queryLimit = Number(limit) + 1;
-  
-      let query = this.productViewModel
-        .query('category').eq(category)
-        .using('CategoryDiscountRateIndex')
-        .sort(sortOrder)
-        .limit(queryLimit);
-  
-      if (startKey && startKey.discountRate !== undefined && startKey.category === category) {
+
+      let query = this.productViewModel.query('category').eq(category);
+
+      switch (sortBy) {
+        case 'discountRate':
+          query = query.using('CategoryDiscountRateIndex');
+          break;
+        case 'distance':
+          query = query.using('CategoryDistanceIndex');
+          break;
+        case 'distanceDiscountScore':
+          query = query.using('CategoryDistanceDiscountIndex');
+          break;
+      }
+
+      query = query.sort(sortOrder).limit(queryLimit);
+
+      if (startKey && startKey[sortBy] !== undefined && startKey.category === category) {
         if (sortOrder === SortOrder.ascending) {
-          query = query.where('discountRate').ge(startKey.discountRate);
+          query = query.where(sortBy).ge(startKey[sortBy]);
         } else {
-          query = query.where('discountRate').le(startKey.discountRate);
+          query = query.where(sortBy).le(startKey[sortBy]);
         }
       }
-  
-      console.log('Query object:', JSON.stringify(query.getRequest(), null, 2));
-  
+
       const results: QueryResponse<ProductView> = await query.exec();
-      console.log('Query results:', JSON.stringify(results, null, 2));
-  
+
       const items = Array.from(results).slice(0, limit);
-  
+
       const createMinimalKey = (item: any) => {
         if (!item) return null;
         return {
           productId: item.productId,
           GSI_KEY: 'PRODUCT',
           category: item.category,
-          discountRate: item.discountRate,
+          [sortBy]: item[sortBy],
         };
       };
-  
+
       let firstEvaluatedKey = createMinimalKey(items[0]);
       let lastEvaluatedKey = results.length > limit ? createMinimalKey(results[limit]) : null;
-  
+
       const appUrl = this.configService.get<string>('APP_URL');
       const createUrlWithKey = (key: Record<string, any> | null, prevKey: string | null = null) => {
         if (!key || !appUrl) return null;
         const baseUrl = new URL(`/api/products/category`, appUrl);
         baseUrl.searchParams.append('category', category);
-        baseUrl.searchParams.append('sortBy', 'discountRate');
+        baseUrl.searchParams.append('sortBy', sortBy);
         baseUrl.searchParams.append('order', order);
         baseUrl.searchParams.append('limit', limit.toString());
         baseUrl.searchParams.append('exclusiveStartKey', encodeURIComponent(JSON.stringify(key)));
@@ -313,16 +321,16 @@ export class ProductViewRepository {
         }
         return baseUrl.toString();
       };
-  
+
       const firstEvaluatedUrl = createUrlWithKey(firstEvaluatedKey, previousPageKey);
       const lastEvaluatedUrl = lastEvaluatedKey ? createUrlWithKey(lastEvaluatedKey, JSON.stringify(firstEvaluatedKey)) : null;
-  
+
       let prevPageUrl: string | null = null;
       if (previousPageKey) {
         const prevKey = JSON.parse(decodeURIComponent(previousPageKey));
         prevPageUrl = createUrlWithKey(prevKey, null);
       }
-  
+
       return {
         items,
         lastEvaluatedUrl,
@@ -330,32 +338,17 @@ export class ProductViewRepository {
         prevPageUrl,
         count: items.length
       };
-  
+
     } catch (error) {
       console.error(`Query failed: ${error.message}`, error.stack);
       console.error(`Query parameters:`, param);
       throw new InternalServerErrorException('Failed to execute query');
     }
   }
-  async scanProducts(limit: number = 10): Promise<ProductView[]> {
-    try {
-      const order: 'desc' | 'asc' = 'desc';
-      let query = this.productViewModel.query('discountRate')
-        .using('DiscountRateIndex')
-      query = query.sort(order === 'desc' ? SortOrder.ascending : SortOrder.descending);
-      const results = await query.limit(limit).exec();
 
-      this.logger.log(`스캔 결과: ${results.length} 항목`);
-      return results;
-    } catch (error) {
-      this.logger.error(`스캔 실패: ${error.message}`, error.stack);
-      throw error;
-    }
-  }
-  //탐색
   async searchProducts(param: {
     searchTerm: string;
-    sortBy: 'discountRate' | 'createdAt';
+    sortBy: 'discountRate' | 'distance' | 'distanceDiscountScore';
     order: 'asc' | 'desc';
     limit: number;
     exclusiveStartKey?: string;
@@ -369,24 +362,28 @@ export class ProductViewRepository {
   }> {
     try {
       const { searchTerm, sortBy, order, limit, exclusiveStartKey, previousPageKey } = param;
+
+      // searchTerm이 undefined인 경우 예외 처리
+      if (!searchTerm) {
+        throw new Error("searchTerm is required.");
+      }
       const lowercaseSearchTerm = searchTerm.toLowerCase().trim();
 
       // 전체 스캔 수행
       const results = await this.productViewModel.scan().exec();
-      
+
       // 메모리에서 필터링 및 정렬 수행
-      let filteredItems = results.filter(item => 
-        item.name.toLowerCase().includes(lowercaseSearchTerm) || 
-        item.description.toLowerCase().includes(lowercaseSearchTerm)
-      );
+      const filteredItems = results.filter(item => {
+        const nameMatch = item.name && item.name.includes(searchTerm);
+        const descriptionMatch = item.description && item.description.includes(searchTerm);
+        return nameMatch || descriptionMatch;
+      });
 
       filteredItems.sort((a, b) => {
-        if (sortBy === 'discountRate') {
-          return order === 'desc' ? b.discountRate - a.discountRate : a.discountRate - b.discountRate;
+        if (order === 'desc') {
+          return b[sortBy] - a[sortBy];
         } else {
-          return order === 'desc' 
-            ? new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-            : new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          return a[sortBy] - b[sortBy];
         }
       });
 
@@ -396,10 +393,8 @@ export class ProductViewRepository {
         const startKey = JSON.parse(decodeURIComponent(exclusiveStartKey));
         startIndex = filteredItems.findIndex(item => item.productId === startKey.productId) + 1;
       }
-      
-      const items = filteredItems.slice(startIndex, startIndex + Number(limit));
 
-      this.logger.log(`Pagination search result: ${items.length} items`);
+      const items = filteredItems.slice(startIndex, startIndex + Number(limit));
 
       const createMinimalKey = (item: any) => {
         if (!item) return null;
@@ -446,7 +441,7 @@ export class ProductViewRepository {
       };
 
     } catch (error) {
-      this.logger.error(`Pagination search query failed: ${error.message}`, error.stack);
+      console.error(`Search query failed: ${error.message}`, error.stack);
       throw new InternalServerErrorException('Failed to execute search query');
     }
   }

@@ -1,12 +1,10 @@
-import { IQuery } from '@nestjs/cqrs';
-
-export class SearchProductsQuery implements IQuery {
+export class SearchProductsQuery {
   constructor(
     public readonly searchTerm: string,
-    public readonly sortBy: 'discountRate' | 'createdAt' = 'discountRate',
-    public readonly order: 'asc' | 'desc' = 'desc',
-    public readonly limit: number = 10,
+    public readonly sortBy: string,
+    public readonly order: 'asc' | 'desc',
+    public readonly limit: number,
     public readonly exclusiveStartKey?: string,
-    public readonly previousPageKey?: string
+    public readonly previousPageKey?: string,
   ) {}
 }

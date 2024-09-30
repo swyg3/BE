@@ -1,57 +1,37 @@
-import { IsEnum, IsInt, IsOptional, IsString } from 'class-validator';
-import { Category } from '../product.category';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty } from "@nestjs/swagger";
+import { IsEnum, IsInt, IsOptional, IsString, Min } from "class-validator";
+import { Category } from "../product.category";
+import { Type } from "class-transformer";
 
-export class GetCategoryDto {
-  @ApiProperty({
-    enum: Category,
-    description: '조회할 상품의 카테고리',
-    example: Category,
-  })
+export class FindProductsByCategoryDto {
+  @ApiProperty({ enum: Category, description: '제품 카테고리' })
   @IsEnum(Category)
   category: Category;
 
-  @ApiProperty({
-    enum: ['discountRate', 'createdAt'],
-    description: '정렬 기준',
-    example: 'discountRate',
+  @ApiProperty({ 
+    enum: ['discountRate', 'distance', 'distanceDiscountScore'], 
+    description: '정렬 기준' 
   })
-  @IsEnum(['discountRate', 'createdAt'])
-  sortBy: 'discountRate' | 'createdAt';
+  @IsEnum(['discountRate', 'distance', 'distanceDiscountScore'])
+  sortBy: 'discountRate' | 'distance' | 'distanceDiscountScore';
 
-  @ApiProperty({
-    enum: ['asc', 'desc'],
-    description: '정렬 순서',
-    example: 'desc',
-  })
+  @ApiProperty({ enum: ['asc', 'desc'], description: '정렬 순서' })
   @IsEnum(['asc', 'desc'])
   order: 'asc' | 'desc';
 
-  @ApiProperty({
-    type: Number,
-    description: '반환할 최대 항목 수',
-    required: false,
-    example: 10,
-  })
+  @ApiProperty({ minimum: 1, description: '한 페이지당 항목 수' })
   @IsInt()
-  @IsOptional()
-  limit?: number;
+  @Min(1)
+  @Type(() => Number)
+  limit: number;
 
-  @ApiProperty({
-    type: String,
-    description: '다음 페이지 조회를 위한 시작 키',
-    required: false,
-  })
-  @IsString()
+  @ApiProperty({ required: false, description: '다음 페이지 시작 키' })
   @IsOptional()
+  @IsString()
   exclusiveStartKey?: string;
 
-  @ApiProperty({
-    type: String,
-    description: '이전 페이지 조회를 위한 키',
-    required: false,
-  })
-  @IsString()
+  @ApiProperty({ required: false, description: '이전 페이지 키' })
   @IsOptional()
+  @IsString()
   previousPageKey?: string;
 }
