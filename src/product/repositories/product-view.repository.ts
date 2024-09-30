@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, InternalServerErrorException, Logger } from "@nestjs/common";
-import { InjectModel, Model, QueryResponse } from "nestjs-dynamoose";
+import { InjectModel, Model, QueryResponse, ScanResponse } from "nestjs-dynamoose";
 import { SortOrder } from "dynamoose/dist/General";
 import { ConfigService } from "@nestjs/config/dist/config.service";
 import { Item } from 'dynamoose/dist/Item';
@@ -346,6 +346,7 @@ export class ProductViewRepository {
     }
   }
 
+
   async searchProducts(param: {
     searchTerm: string;
     sortBy: 'discountRate' | 'distance' | 'distanceDiscountScore';
@@ -363,44 +364,64 @@ export class ProductViewRepository {
     try {
       const { searchTerm, sortBy, order, limit, exclusiveStartKey, previousPageKey } = param;
 
-      // searchTerm이 undefined인 경우 예외 처리
       if (!searchTerm) {
         throw new Error("searchTerm is required.");
       }
+
       const lowercaseSearchTerm = searchTerm.toLowerCase().trim();
 
-      // 전체 스캔 수행
-      const results = await this.productViewModel.scan().exec();
+      // 스캔 시작
+      let scan = this.productViewModel.scan();
 
-      // 메모리에서 필터링 및 정렬 수행
-      const filteredItems = results.filter(item => {
-        const nameMatch = item.name && item.name.includes(searchTerm);
-        const descriptionMatch = item.description && item.description.includes(searchTerm);
-        return nameMatch || descriptionMatch;
-      });
+      // GSI_KEY를 사용하여 스캔 범위를 제한
+      scan = scan.where('GSI_KEY').eq('PRODUCT');
+
+      // 적절한 인덱스 선택
+      switch (sortBy) {
+        case 'discountRate':
+          scan = scan.using('DiscountRateIndex');
+          break;
+        case 'distance':
+          scan = scan.using('DistanceIndex');
+          break;
+        case 'distanceDiscountScore':
+          scan = scan.using('DistanceDiscountIndex');
+          break;
+        default:
+          scan = scan.using('ProductNameIndex');
+      }
+
+      // Scan 연산에 limit 적용
+      scan = scan.limit(1000);  // 적절한 값으로 조정하세요.
+
+      if (exclusiveStartKey) {
+        const startKey = JSON.parse(decodeURIComponent(exclusiveStartKey));
+        scan = scan.startAt(startKey);
+      }
+
+      const results: ScanResponse<ProductView> = await scan.exec();
+
+      // 검색어로 필터링 및 정렬
+      let filteredItems = (results as unknown as ProductView[]).filter(item =>
+        item.name.toLowerCase().includes(lowercaseSearchTerm)
+      );
 
       filteredItems.sort((a, b) => {
-        if (order === 'desc') {
-          return b[sortBy] - a[sortBy];
-        } else {
+        if (order === 'asc') {
           return a[sortBy] - b[sortBy];
+        } else {
+          return b[sortBy] - a[sortBy];
         }
       });
 
       // 페이지네이션 적용
-      let startIndex = 0;
-      if (exclusiveStartKey) {
-        const startKey = JSON.parse(decodeURIComponent(exclusiveStartKey));
-        startIndex = filteredItems.findIndex(item => item.productId === startKey.productId) + 1;
-      }
+      const items = filteredItems.slice(0, Number(limit));
 
-      const items = filteredItems.slice(startIndex, startIndex + Number(limit));
-
-      const createMinimalKey = (item: any) => {
+      const createMinimalKey = (item: ProductView | null) => {
         if (!item) return null;
         return {
+          GSI_KEY: 'PRODUCT',
           productId: item.productId,
-          name: item.name,
           [sortBy]: item[sortBy]
         };
       };
@@ -445,5 +466,5 @@ export class ProductViewRepository {
       throw new InternalServerErrorException('Failed to execute search query');
     }
   }
-
 }
+
