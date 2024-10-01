@@ -64,15 +64,7 @@ export class UserLocationRepository {
   }
 
 
-  async getCurrentLocation(userId: string): Promise<string | null> {
-    try {
-      const user = await this.repository.findOne({ where: { id: userId }, select: ['currentLocationId'] });
-      return user ? user.currentLocationId : null;
-    } catch (error) {
-      this.logger.error(`Failed to get user current location: ${error.message}`, error.stack);
-      throw error;
-    }
-  }
+  
 
   //현 위치 해제
   async unsetCurrentLocation(userId: string): Promise<void> {

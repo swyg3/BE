@@ -3,6 +3,7 @@ import { GetNearestProductsQuery } from "../impl/get-nearest-products";
 import { ProductView, ProductViewRepository } from "src/product/repositories/product-view.repository";
 import { Logger, InternalServerErrorException } from '@nestjs/common';
 import { DistanceCalculator } from "src/product/util/distance-calculator";
+import { string } from "joi";
 
 interface ProductWithDistance extends ProductView {
   distance: number;
@@ -50,12 +51,9 @@ export class GetNearestProductsHandler implements IQueryHandler<GetNearestProduc
   private calculateDistances(products: ProductView[], lat: number, lon: number): ProductWithDistance[] {
     return products.map(product => ({
       ...product,
-      distance: DistanceCalculator.vincentyDistance(
-        lat,
-        lon,
-        Number(product.locationY),
-        Number(product.locationX)
-      )
+      // distance: DistanceCalculator.vincentyDistance(
+        
+      // )
     }));
   }
 

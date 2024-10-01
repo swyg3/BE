@@ -2,14 +2,18 @@ import { BadRequestException, Injectable, InternalServerErrorException, Logger }
 import { InjectModel, Model, QueryResponse, ScanResponse } from "nestjs-dynamoose";
 import { SortOrder } from "dynamoose/dist/General";
 import { ConfigService } from "@nestjs/config/dist/config.service";
-import { Item } from 'dynamoose/dist/Item';
-import { v4 as uuidv4 } from 'uuid';
-import { Category } from "../product.category";
 import { DistanceCalculator } from "../util/distance-calculator";
 import { Polygon } from "typeorm";
 
+export enum SortByOption {
+  DiscountRate = 'discountRate',
+  Distance = 'distance',
+  DistanceDiscountScore = 'distanceDiscountScore'
+}
+
 export interface ProductView {
   productId: string;
+  GSI_KEY: string; 
   sellerId: string;
   category: string;
   name: string;
@@ -25,7 +29,7 @@ export interface ProductView {
   locationX: string;
   locationY: string;
   distance: number;
-
+  distanceDiscountScore: number;
 }
 
 @Injectable()
@@ -244,9 +248,11 @@ export class ProductViewRepository {
     }
   }
 
+  
+
   async findProductsByCategoryAndSort(param: {
     category: string;
-    sortBy: string;
+    sortBy: SortByOption;
     order: 'asc' | 'desc';
     limit: number;
     exclusiveStartKey?: string;
@@ -261,64 +267,77 @@ export class ProductViewRepository {
     count: number
   }> {
     const { category, sortBy, order, limit, exclusiveStartKey, previousPageKey, latitude, longitude } = param;
-    const sortOrder = order === 'desc' ? SortOrder.descending : SortOrder.ascending;
-    let startKey: Record<string, any> | undefined;
+    
+    // 카테고리로 먼저 필터링
+    const query = this.productViewModel.query('category').eq(category);
+    let items: ProductView[] = await query.exec();
 
-    if (exclusiveStartKey) {
-      startKey = JSON.parse(decodeURIComponent(exclusiveStartKey));
+    // 거리 관련 정렬일 경우 거리 계산
+    if ((sortBy === SortByOption.Distance || sortBy === SortByOption.DistanceDiscountScore) && latitude && longitude) {
+      const userLocation = this.createPolygonFromCoordinates(Number(latitude), Number(longitude));
+      items = await this.calculateDistances(items, userLocation);
     }
 
-    const queryLimit = Number(limit) + 1;
+    // 정렬 적용
+    items = this.sortItems(items, sortBy, order);
 
-    let query = this.productViewModel.query('category').eq(category);
+    // 페이지네이션 적용
+    const { paginatedItems, lastEvaluatedKey } = this.applyPagination(items, limit, exclusiveStartKey);
 
-    switch (sortBy) {
-      case 'discountRate':
-        query = query.using('CategoryDiscountRateIndex');
-        break;
-      case 'distance':
-        if (latitude !== undefined && longitude !== undefined) {
-          const userLocation = this.createPolygonFromCoordinates(Number(latitude), Number(longitude));
-          
-          const items = await query.exec();
-          items.forEach(item => {
-            if (item.locationX !== undefined && item.locationY !== undefined) {
-              const itemLocation = this.createPolygonFromCoordinates(Number(item.locationX), Number(item.locationY));
-              item.distance = DistanceCalculator.vincentyDistance(userLocation, itemLocation);
-            } else {
-              item.distance = Infinity; // 위치 정보가 없는 경우 가장 멀리 정렬
-            }
-          });
-          items.sort((a, b) => (a.distance || 0) - (b.distance || 0));
-          if (order === 'desc') {
-            items.reverse();
-          }
-          return this.formatResult(items.slice(0, limit), queryLimit, sortBy, previousPageKey);
-        }
-        query = query.using('CategoryDistanceIndex');
-        break;
-      case 'distanceDiscountScore':
-        query = query.using('CategoryDistanceDiscountIndex');
-        break;
-    }
-
-    query = query.sort(sortOrder).limit(queryLimit);
-
-    if (startKey && startKey[sortBy] !== undefined && startKey.category === category) {
-      query = query.startAt(startKey);
-    }
-
-    const result = await query.exec();
-
-    return this.formatResult(result, queryLimit, sortBy, previousPageKey);
+    return this.formatResult(paginatedItems, lastEvaluatedKey, sortBy, previousPageKey);
   }
 
-  private formatResult(result: ProductView[], queryLimit: number, sortBy: string, previousPageKey?: string) {
-    const items = result.slice(0, queryLimit - 1);
-    const lastEvaluatedUrl = result.length === queryLimit ? this.createPageUrl(result[queryLimit - 1], sortBy) : null;
-    const firstEvaluatedUrl = items.length > 0 ? this.createPageUrl(items[0], sortBy) : null;
-    
+  private async calculateDistances(items: ProductView[], userLocation: any): Promise<ProductView[]> {
+    return Promise.all(items.map(async (item) => {
+      if (item.locationX && item.locationY) {
+        const itemLocation = this.createPolygonFromCoordinates(Number(item.locationX), Number(item.locationY));
+        const distance = DistanceCalculator.vincentyDistance(userLocation, itemLocation);
+        const score = this.calculateRecommendationScore({...item, distance});
+        
+        await this.updateItemWithDistanceAndScore(item.productId, distance, score);
+        return { ...item, distance, distanceDiscountScore: score };
+      }
+      return item;
+    }));
+  }
+
+  private sortItems(items: ProductView[], sortBy: SortByOption, order: 'asc' | 'desc'): ProductView[] {
+    return items.sort((a, b) => {
+      let comparison = 0;
+      switch (sortBy) {
+        case SortByOption.DiscountRate:
+          comparison = (a.discountRate || 0) - (b.discountRate || 0);
+          break;
+        case SortByOption.Distance:
+          comparison = (a.distance || Infinity) - (b.distance || Infinity);
+          break;
+        case SortByOption.DistanceDiscountScore:
+          comparison = (b.distanceDiscountScore || -Infinity) - (a.distanceDiscountScore || -Infinity);
+          break;
+      }
+      return order === 'asc' ? comparison : -comparison;
+    });
+  }
+
+  private applyPagination(items: ProductView[], limit: number, exclusiveStartKey?: string): { paginatedItems: ProductView[], lastEvaluatedKey: any } {
+    let startIndex = 0;
+    if (exclusiveStartKey) {
+      const startKey = JSON.parse(decodeURIComponent(exclusiveStartKey));
+      startIndex = items.findIndex(item => item.productId === startKey.productId);
+      startIndex = startIndex === -1 ? 0 : startIndex + 1;
+    }
+
+    const paginatedItems = items.slice(startIndex, startIndex + limit);
+    const lastEvaluatedKey = paginatedItems.length === limit ? { productId: paginatedItems[paginatedItems.length - 1].productId } : null;
+
+    return { paginatedItems, lastEvaluatedKey };
+  }
+
+  private formatResult(items: ProductView[], lastEvaluatedKey: any, sortBy: SortByOption, previousPageKey?: string) {
+    const lastEvaluatedUrl = lastEvaluatedKey ? this.createPageUrl(lastEvaluatedKey, sortBy) : null;
+    const firstEvaluatedUrl = items.length > 0 ? this.createPageUrl({ productId: items[0].productId }, sortBy) : null;
     let prevPageUrl = null;
+
     if (previousPageKey) {
       const previousItem = JSON.parse(decodeURIComponent(previousPageKey));
       prevPageUrl = this.createPageUrl(previousItem, sortBy);
@@ -333,35 +352,21 @@ export class ProductViewRepository {
     };
   }
 
-  private createPageUrl(item: ProductView, sortBy: string): string {
-    const urlParams: Record<string, any> = {
-      category: item.category
-    };
-
-    switch (sortBy) {
-      case 'distance':
-        urlParams[sortBy] = item.distance;
-        break;
-      case 'discountRate':
-        urlParams[sortBy] = (item as any).discountRate;
-        break;
-      case 'distanceDiscountScore':
-        urlParams[sortBy] = (item as any).distanceDiscountScore;
-        break;
-      // 필요한 경우 다른 정렬 기준에 대한 case를 추가하세요
-    }
-
-    return encodeURIComponent(JSON.stringify(urlParams));
+  private createPageUrl(key: { productId: string }, sortBy: SortByOption): string {
+    return encodeURIComponent(JSON.stringify({ ...key, sortBy }));
   }
- 
+
+
 
   async searchProducts(param: {
     searchTerm: string;
-    sortBy: 'discountRate' | 'distance' | 'distanceDiscountScore';
+    sortBy: SortByOption;
     order: 'asc' | 'desc';
     limit: number;
     exclusiveStartKey?: string;
     previousPageKey?: string;
+    latitude?: string;
+    longitude?: string;
   }): Promise<{
     items: ProductView[];
     lastEvaluatedUrl: string | null;
@@ -370,7 +375,7 @@ export class ProductViewRepository {
     count: number;
   }> {
     try {
-      const { searchTerm, sortBy, order, limit, exclusiveStartKey, previousPageKey } = param;
+      const { searchTerm, sortBy, order, limit, exclusiveStartKey, previousPageKey, latitude, longitude } = param;
 
       if (!searchTerm) {
         throw new Error("searchTerm is required.");
@@ -378,96 +383,36 @@ export class ProductViewRepository {
 
       const lowercaseSearchTerm = searchTerm.toLowerCase().trim();
 
-      // 스캔 시작
-      let scan = this.productViewModel.scan();
-
-      // GSI_KEY를 사용하여 스캔 범위를 제한
-      scan = scan.where('GSI_KEY').eq('PRODUCT');
-
-      // 적절한 인덱스 선택
-      switch (sortBy) {
-        case 'discountRate':
-          scan = scan.using('DiscountRateIndex');
-          break;
-        case 'distance':
-          scan = scan.using('DistanceIndex');
-          break;
-        case 'distanceDiscountScore':
-          scan = scan.using('DistanceDiscountIndex');
-          break;
-        default:
-          scan = scan.using('ProductNameIndex');
-      }
-
-      // Scan 연산에 limit 적용
-      scan = scan.limit(1000);  // 적절한 값으로 조정하세요.
+      // Scan operation
+      let scan = this.productViewModel.scan().where('GSI_KEY').eq('PRODUCT');
+      scan = scan.limit(1000);  // Adjust this value as needed
 
       if (exclusiveStartKey) {
         const startKey = JSON.parse(decodeURIComponent(exclusiveStartKey));
         scan = scan.startAt(startKey);
       }
 
-      const results: ScanResponse<ProductView> = await scan.exec();
+      const results: ProductView[] = await scan.exec();
 
-      // 검색어로 필터링 및 정렬
-      let filteredItems = (results as unknown as ProductView[]).filter(item =>
+      // Filter by search term
+      let filteredItems = results.filter(item =>
         item.name.toLowerCase().includes(lowercaseSearchTerm)
       );
 
-      filteredItems.sort((a, b) => {
-        if (order === 'asc') {
-          return a[sortBy] - b[sortBy];
-        } else {
-          return b[sortBy] - a[sortBy];
-        }
-      });
-
-      // 페이지네이션 적용
-      const items = filteredItems.slice(0, Number(limit));
-
-      const createMinimalKey = (item: ProductView | null) => {
-        if (!item) return null;
-        return {
-          GSI_KEY: 'PRODUCT',
-          productId: item.productId,
-          [sortBy]: item[sortBy]
-        };
-      };
-
-      let firstEvaluatedKey = createMinimalKey(items[0]);
-      let lastEvaluatedKey = items.length === Number(limit) ? createMinimalKey(items[items.length - 1]) : null;
-
-      const appUrl = this.configService.get<string>('APP_URL');
-      const createUrlWithKey = (key: Record<string, any> | null, prevKey: string | null = null) => {
-        if (!key || !appUrl) return null;
-        const baseUrl = new URL("/api/products/search", appUrl);
-        baseUrl.searchParams.append('searchTerm', searchTerm);
-        baseUrl.searchParams.append('sortBy', sortBy);
-        baseUrl.searchParams.append('order', order);
-        baseUrl.searchParams.append('limit', limit.toString());
-        baseUrl.searchParams.append('exclusiveStartKey', encodeURIComponent(JSON.stringify(key)));
-        if (prevKey) {
-          baseUrl.searchParams.append('previousPageKey', encodeURIComponent(prevKey));
-        }
-        return baseUrl.toString();
-      };
-
-      const firstEvaluatedUrl = createUrlWithKey(firstEvaluatedKey, previousPageKey);
-      const lastEvaluatedUrl = lastEvaluatedKey ? createUrlWithKey(lastEvaluatedKey, JSON.stringify(firstEvaluatedKey)) : null;
-
-      let prevPageUrl: string | null = null;
-      if (previousPageKey) {
-        const prevKey = JSON.parse(decodeURIComponent(previousPageKey));
-        prevPageUrl = createUrlWithKey(prevKey, null);
+      // Calculate distances if necessary
+      if ((sortBy === SortByOption.Distance || sortBy === SortByOption.DistanceDiscountScore) && latitude && longitude) {
+        const userLocation = this.createPolygonFromCoordinates(Number(latitude), Number(longitude));
+        filteredItems = await this.calculateDistances(filteredItems, userLocation);
       }
 
-      return {
-        items,
-        lastEvaluatedUrl,
-        firstEvaluatedUrl,
-        prevPageUrl,
-        count: items.length
-      };
+      // Sort items
+      filteredItems = this.sortItems(filteredItems, sortBy, order);
+
+      // Apply pagination
+      const { paginatedItems, lastEvaluatedKey } = this.applyPagination(filteredItems, limit, exclusiveStartKey);
+
+      // Format result
+      return this.formatResult2(paginatedItems, lastEvaluatedKey, searchTerm, sortBy, order, limit, latitude, longitude, previousPageKey);
 
     } catch (error) {
       console.error(`Search query failed: ${error.message}`, error.stack);
@@ -475,11 +420,72 @@ export class ProductViewRepository {
     }
   }
 
+
+  private formatResult2(
+    items: ProductView[], 
+    lastEvaluatedKey: any, 
+    searchTerm: string, 
+    sortBy: SortByOption, 
+    order: 'asc' | 'desc', 
+    limit: number, 
+    latitude?: string, 
+    longitude?: string, 
+    previousPageKey?: string
+  ) {
+    const appUrl = this.configService.get<string>('APP_URL');
+    const createUrlWithKey = (key: Record<string, any> | null, prevKey: string | null = null) => {
+      if (!key || !appUrl) return null;
+      const baseUrl = new URL("/api/products/search", appUrl);
+      baseUrl.searchParams.append('searchTerm', searchTerm);
+      baseUrl.searchParams.append('sortBy', sortBy);
+      baseUrl.searchParams.append('order', order);
+      baseUrl.searchParams.append('limit', limit.toString());
+      if (latitude) baseUrl.searchParams.append('latitude', latitude);
+      if (longitude) baseUrl.searchParams.append('longitude', longitude);
+      baseUrl.searchParams.append('exclusiveStartKey', encodeURIComponent(JSON.stringify(key)));
+      if (prevKey) {
+        baseUrl.searchParams.append('previousPageKey', encodeURIComponent(prevKey));
+      }
+      return baseUrl.toString();
+    };
+
+    const firstEvaluatedKey = items.length > 0 ? { productId: items[0].productId } : null;
+    const firstEvaluatedUrl = createUrlWithKey(firstEvaluatedKey, previousPageKey);
+    const lastEvaluatedUrl = lastEvaluatedKey ? createUrlWithKey(lastEvaluatedKey, JSON.stringify(firstEvaluatedKey)) : null;
+
+    let prevPageUrl: string | null = null;
+    if (previousPageKey) {
+      const prevKey = JSON.parse(decodeURIComponent(previousPageKey));
+      prevPageUrl = createUrlWithKey(prevKey, null);
+    }
+
+    return {
+      items,
+      lastEvaluatedUrl,
+      firstEvaluatedUrl,
+      prevPageUrl,
+      count: items.length
+    };
+  }
+
+  private calculateRecommendationScore(product: ProductView): number {
+    const distanceScore = 1 / (1 + (product.distance || Infinity));
+    const discountScore = (product.discountRate || 0) / 100;
+    return (distanceScore + discountScore) / 2;
+  }
+
   private createPolygonFromCoordinates(latitude: number, longitude: number): Polygon {
     return {
       type: 'Polygon',
-      coordinates: [[[longitude, latitude]]]
+      coordinates: [[[longitude, latitude], [longitude, latitude], [longitude, latitude], [longitude, latitude]]]
     };
   }
+  
+  private async updateItemWithDistanceAndScore(productId: string, distance: number, score: number) {
+    await this.productViewModel.update({ productId }, { distance, distanceDiscountScore: score });
+  }
+
+  
+ 
 }
 

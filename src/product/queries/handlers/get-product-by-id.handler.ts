@@ -2,8 +2,6 @@ import { QueryHandler, IQueryHandler } from "@nestjs/cqrs";
 import { NotFoundException } from "@nestjs/common";
 import { GetProductByIdQuery } from "../impl/get-prouct-by-id.query";
 import { ProductViewRepository } from "../../repositories/product-view.repository";
-import { PRODUCTS_PUBLIC_IMAGE_PATH } from "../../const/path.const";
-import { UserRepository } from "src/users/repositories/user.repository";
 import { SellerViewRepository } from "src/sellers/repositories/seller-view.repository";
 
 @QueryHandler(GetProductByIdQuery)

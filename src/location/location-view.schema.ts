@@ -36,10 +36,6 @@ export const UserLocationSchema = new Schema(
       type: Boolean,
       default: false,
     },
-    updatedAt: {
-      type: Date,
-      required: true,
-    }
   },
   {
     timestamps: {

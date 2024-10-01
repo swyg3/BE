@@ -74,7 +74,8 @@ export class CreateProductHandler
         originalPrice,
         discountedPrice,
         locationX: geocodingResult.x,  
-        locationY: geocodingResult.y   
+        locationY: geocodingResult.y,
+        distance: 0
       });
       this.logger.log(`command handler${productImageUrl}`);
 
@@ -112,6 +113,7 @@ export class CreateProductHandler
           updatedAt: new Date(),
           locationX: geocodingResult.x,
           locationY: geocodingResult.y,
+          distance:0
         },
         1,
       );
