@@ -20,7 +20,7 @@ import { DeleteProductCommand } from "./commands/impl/delete-product.command";
 import { UpdateProductCommand } from "./commands/impl/update-product.command";
 import { CustomResponse } from "src/shared/interfaces/api-response.interface";
 import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
-import { ApiConsumes, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { ThrottlerGuard } from "@nestjs/throttler";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { Express } from "express";
@@ -48,7 +48,29 @@ export class ProductController {
   @ApiOperation({ summary: "상품 등록" })
   @ApiResponse({ status: 201, description: "상품 생성 성공" })
   @ApiResponse({ status: 400, description: "상품 생성 실패" })
+  @ApiBearerAuth()
   @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        sellerId: { type: 'string', example: 'seller123' },
+        category: { type: 'string', example: 'electronics' },
+        name: { type: 'string', example: '최신 스마트폰' },
+        description: { type: 'string', example: '고성능 카메라가 탑재된 최신형 스마트폰입니다.' },
+        originalPrice: { type: 'number', example: 1000000 },
+        discountedPrice: { type: 'number', example: 900000 },
+        quantity: { type: 'number', example: 50 },
+        expirationDate: { type: 'string', format: 'date-time', example: '2024-12-31T23:59:59Z' },
+        image: {
+          type: 'string',
+          format: 'binary',
+          description: '상품 이미지 파일 (JPG, PNG 형식 지원)'
+        }
+      },
+      required: ['sellerId', 'category', 'name', 'description', 'originalPrice', 'discountedPrice', 'quantity', 'expirationDate', 'image']
+    }
+  })
   @Post("create")
   @UseInterceptors(FileInterceptor('image'))
   async createProduct(
@@ -97,6 +119,7 @@ export class ProductController {
         : "상품 등록에 실패했습니다.",
     };
   }
+
   @ApiOperation({ summary: "상품 삭제" })
   @ApiResponse({ status: 200, description: "상품 삭제 성공" })
   @ApiResponse({ status: 404, description: "상품을 찾을 수 없습니다." })
@@ -118,6 +141,7 @@ export class ProductController {
   @ApiParam({ name: "id", description: "조회할 상품의 ID" })
   @Get("get/:id")
   @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   async getProductById(@Param("id") id: string): Promise<CustomResponse> {
     const product = await this.queryBus.execute(new GetProductByIdQuery(id));
 
@@ -175,6 +199,7 @@ export class ProductController {
   @ApiResponse({ status: 200, description: "상품 할인률 순 조회 성공" })
   @Get("discountrate")
   @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   async getProductsByDiscountRate(
     @Query() queryDto: GetProductByDiscountRateInputDto,
   ) {
