@@ -44,11 +44,16 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            echo "Preparing EC2 environment..."
             mkdir -p ~/app
             mkdir -p ~/app/public/products  # products 폴더 생성
             if [ ! -f ~/app/.env.prod ]; then
               touch ~/app/.env.prod
+              echo ".env.prod 파일이 생성되었습니다."
+            else
+              echo ".env.prod 파일이 이미 존재합니다."
             fi
+            echo "EC2 환경 준비 완료."
 
       - name: Copy files to EC2
         uses: appleboy/scp-action@master
@@ -67,17 +72,25 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            echo "Deploying to EC2..."
             cd ~/app
 
             # IMAGE_TAG 업데이트
+            echo "Updating IMAGE_TAG in .env.prod..."
             sed -i '/IMAGE_TAG/d' .env.prod
             echo "IMAGE_TAG=${{ github.sha }}" >> .env.prod
 
-            echo "기존 컨테이너 종료 중..."
+            echo "Stopping existing containers..."
             docker-compose -f docker-compose.prod.yml --env-file .env.prod down --remove-orphans
 
-            echo "서비스 시작 중 (Nginx, Nest App)..."
+            echo "Starting services (Nginx, Nest App)..."
             docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
 
-            echo "이전 이미지 정리 중..."
+            echo "Pruning unused Docker images..."
             docker image prune -af
+
+            echo "Creating public/products folder if it doesn't exist..."
+            mkdir -p ~/app/public/products
+            echo "public/products 폴더 생성 완료."
+
+            echo "Deployment 완료."
