@@ -157,6 +157,6 @@ export class CreateProductHandler
     }
 
     // 컨트롤러에 응답 반환
-    return name;
+    return savedProduct.id;
   }
 }
