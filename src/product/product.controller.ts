@@ -113,12 +113,18 @@ export class ProductController {
     );
 
     return {
-      success: !!result,
-      message: result
-        ? "상품 등록에 성공했습니다."
-        : "상품 등록에 실패했습니다.",
-        id:result.id || null,
+      success: true,
+      message: "상품 등록에 성공했습니다.",
+      id: result.id,
     };
+  } catch (error) {
+    this.logger.error(`Failed to create product: ${error.message}`);
+    return {
+      success: false,
+      message: "상품 등록에 실패했습니다.",
+      id: null,
+    };
+  
   }
 
   @ApiOperation({ summary: "상품 삭제" })
