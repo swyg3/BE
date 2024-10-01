@@ -28,6 +28,7 @@ jobs:
           context: .
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/moonco:${{ github.sha }}
+
   deploy:
     needs: build
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -44,6 +45,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             mkdir -p ~/app
+            mkdir -p ~/app/public/products  # products 폴더 생성
             if [ ! -f ~/app/.env.prod ]; then
               touch ~/app/.env.prod
             fi
@@ -66,6 +68,8 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd ~/app
+
+            # IMAGE_TAG 업데이트
             sed -i '/IMAGE_TAG/d' .env.prod
             echo "IMAGE_TAG=${{ github.sha }}" >> .env.prod
 
