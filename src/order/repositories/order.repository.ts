@@ -55,6 +55,7 @@ export class CreateOrderRepository {
 
             // DynamoDB에 주문 저장
             await this.orderViewModel.create(newOrder);
+            this.logger.log(`DynamoDB에 주문 저장 완료: ${JSON.stringify(newOrder)}`);
 
             // 주문 항목 저장
             const orderItemsPromises = createOrderDto.items.map(item => {
@@ -69,6 +70,7 @@ export class CreateOrderRepository {
             });
 
             await Promise.all(orderItemsPromises); // 모든 주문 항목 저장 완료 대기
+            this.logger.log(`DynamoDB에 모든 주문 항목 저장 완료: ${JSON.stringify(createOrderDto.items)}`);
 
             return newOrder; // 최종적으로 생성된 주문 반환
         } catch (error) {
@@ -86,11 +88,12 @@ export class CreateOrderRepository {
 
             // DynamoDB에서 주문 삭제
             await this.orderViewModel.delete({ id: orderId });
+            this.logger.log(`DynamoDB에서 주문 삭제 완료: ${orderId}`);
 
             // 해당 주문에 연관된 모든 주문 항목 삭제
             await this.orderItemsViewModel.delete({ orderId }); // orderId로 삭제
+            this.logger.log(`DynamoDB에서 관련 주문 항목 삭제 완료: ${orderId}`);
 
-            this.logger.log(`주문 및 관련 주문 항목 삭제 완료: ${orderId}`);
         } catch (error) {
             this.logger.error(`주문 삭제 실패: ${error.message}`, error.stack);
             throw new InternalServerErrorException(`주문 삭제 중 오류 발생: ${error.message}`);
@@ -118,6 +121,7 @@ export class CreateOrderRepository {
 
             // DynamoDB에 업데이트된 주문 저장
             await this.orderViewModel.update(updatedOrder);
+            this.logger.log(`DynamoDB에 업데이트된 주문 저장 완료: ${JSON.stringify(updatedOrder)}`);
 
             // 주문 항목 업데이트 (선택 사항)
             if (updateOrderDto.items) {
