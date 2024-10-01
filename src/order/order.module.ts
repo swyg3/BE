@@ -5,7 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { DynamooseModule } from 'nestjs-dynamoose';
 import { OrderItems } from 'src/order-items/entities/order-items.entity';
 import { OrderItemsViewSchema } from 'src/order-items/schemas/order-items-view.schema';
-import { Event, EventBusService } from 'src/shared/infrastructure/event-sourcing';
+import { Event, EventBusService, EventSourcingModule } from 'src/shared/infrastructure/event-sourcing';
 import { Repository } from 'typeorm';
 import { CreateOrderCommandHandler } from './commands/handlers/create-order.command-handler';
 import { DeleteOrderCommandHandler } from './commands/handlers/delete-order.command-handler';
@@ -23,6 +23,7 @@ import { OrderViewSchema } from './schemas/order-view.schema';
     DynamooseModule.forFeature([{ name: "OrderItemsView", schema: OrderItemsViewSchema }]),
     CqrsModule,
     ConfigModule.forRoot(),
+    EventSourcingModule,
   ],
   controllers: [OrderController],
   providers: [CreateOrderCommandHandler, GetOrderQueryHandler, DeleteOrderCommandHandler, CreateOrderEventHandler, CreateOrderRepository, Repository, EventBusService, EventBus]

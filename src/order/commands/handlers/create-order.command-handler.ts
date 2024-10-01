@@ -78,7 +78,7 @@ export class CreateOrderCommandHandler implements ICommandHandler<CreateOrderCom
             );
 
             // 4. 이벤트 발행
-            this.eventBusService.publishAndSave(event);
+            await this.eventBusService.publishAndSave(event);
             this.logger.log(`Order event published: ${JSON.stringify(event)}`);
         } catch (error) {
             this.logger.error(`Failed to create order: ${error.message}`);
