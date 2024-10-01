@@ -83,14 +83,14 @@ jobs:
             echo "Stopping existing containers..."
             docker-compose -f docker-compose.prod.yml --env-file .env.prod down --remove-orphans
 
+            echo "Creating public/products folder if it doesn't exist..."
+            mkdir -p ~/app/public/products
+            echo "public/products 폴더 생성 완료."
+
             echo "Starting services (Nginx, Nest App)..."
             docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
 
             echo "Pruning unused Docker images..."
             docker image prune -af
-
-            echo "Creating public/products folder if it doesn't exist..."
-            mkdir -p ~/app/public/products
-            echo "public/products 폴더 생성 완료."
 
             echo "Deployment 완료."
