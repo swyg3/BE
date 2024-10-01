@@ -54,10 +54,10 @@ export class ProductController {
     schema: {
       type: 'object',
       properties: {
-        sellerId: { type: 'string', example: 'seller123' },
-        category: { type: 'string', example: 'electronics' },
-        name: { type: 'string', example: '최신 스마트폰' },
-        description: { type: 'string', example: '고성능 카메라가 탑재된 최신형 스마트폰입니다.' },
+        sellerId: { type: 'string', example: 'uuid로 발행된 sellerID' },
+        category: { type: 'string', example: 'KOREAN' },
+        name: { type: 'string', example: '딸기 타르트' },
+        description: { type: 'string', example: '맛있어요' },
         originalPrice: { type: 'number', example: 1000000 },
         discountedPrice: { type: 'number', example: 900000 },
         quantity: { type: 'number', example: 50 },
@@ -221,6 +221,8 @@ export class ProductController {
   @Get('category')
   @ApiOperation({ summary: '카테고리별 제품 조회', description: '지정된 카테고리의 제품을 조회하고 정렬합니다.' })
   @ApiResponse({ status: 200, description: '성공적으로 제품 목록을 반환함', type: [Object] })
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   async findProductsByCategoryAndSort(@Query() findProductsByCategoryDto: FindProductsByCategoryDto) {
     const {category, sortBy, order, limit, exclusiveStartKey, previousPageKey } = findProductsByCategoryDto;
     const query = new FindProductsByCategoryQuery(category, sortBy, order, limit, exclusiveStartKey, previousPageKey);
@@ -231,6 +233,8 @@ export class ProductController {
   @Get('search')
   @ApiOperation({ summary: '제품 검색', description: '검색어를 기반으로 제품을 검색하고 정렬합니다.' })
   @ApiResponse({ status: 200, description: '성공적으로 검색 결과를 반환함', type: [Object] })
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   async searchProducts(@Query() searchProductsDto: SearchProductsDto) {
     const {searchTerm, sortBy, order, limit, exclusiveStartKey, previousPageKey } = searchProductsDto;
     const query = new SearchProductsQuery(searchTerm, sortBy, order, limit, exclusiveStartKey, previousPageKey);
@@ -245,6 +249,7 @@ export class ProductController {
   @ApiQuery({ name: 'lat', type: Number, description: '위도' })
   @ApiQuery({ name: 'lon', type: Number, description: '경도' })
   @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   async getNearestProducts(@Query('lat') lat: number, @Query('lon') lon: number): Promise<any[]> {
     const query = new GetNearestProductsQuery(lat, lon);
     return this.queryBus.execute(query);
