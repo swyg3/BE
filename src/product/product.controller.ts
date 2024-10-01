@@ -76,7 +76,7 @@ export class ProductController {
   async createProduct(
     @Body() createProductDto: CreateProductDto,
     @UploadedFile() file: Express.Multer.File,
-  ): Promise<CustomResponse> {
+  ): Promise<CreateProductResponse> {
     const {
       sellerId,
       category,
@@ -117,6 +117,7 @@ export class ProductController {
       message: result
         ? "상품 등록에 성공했습니다."
         : "상품 등록에 실패했습니다.",
+        id:result.id || null,
     };
   }
 
