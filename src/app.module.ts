@@ -20,6 +20,7 @@ import { DynamooseModule } from "nestjs-dynamoose";
 import { getDynamoConfig } from "./shared/infrastructure/database/dynamodb.config";
 import { HttpModule } from "@nestjs/axios";
 import { CqrsModule } from "@nestjs/cqrs";
+import { LocationModule } from './location/location.module';
 
 @Module({
   imports: [
@@ -69,6 +70,7 @@ import { CqrsModule } from "@nestjs/cqrs";
     InventoryModule,
     HttpModule,
     CqrsModule,
+    LocationModule,
   ],
   controllers: [AppController],
   providers: [AppService],

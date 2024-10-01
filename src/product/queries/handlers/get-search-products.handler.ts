@@ -12,13 +12,16 @@ export class SearchProductsHandler implements IQueryHandler<SearchProductsQuery>
   ) {}
 
   async execute(query: SearchProductsQuery): Promise<SearchProductsOutputDto> {
-    const { searchTerm, sortBy, order, limit, exclusiveStartKey, previousPageKey } = query;
+    const { searchTerm, sortBy, order, limit, latitude,
+      longitude,exclusiveStartKey, previousPageKey  } = query;
 
     const param = {
       searchTerm,
       sortBy:sortBy as "discountRate" | "distance" | "distanceDiscountScore",
       order,
       limit: Number(limit),
+      latitude,
+      longitude,
       ...(exclusiveStartKey && { exclusiveStartKey }),
       ...(previousPageKey && { previousPageKey })
     };

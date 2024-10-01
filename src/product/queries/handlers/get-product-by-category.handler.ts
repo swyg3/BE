@@ -15,13 +15,15 @@ export class FindProductsByCategoryHandler implements IQueryHandler<FindProducts
   ) {}
 
   async execute(query: FindProductsByCategoryQuery): Promise<GetProductByDiscountRateOutputDto>{
-    const { category, sortBy, order, limit, exclusiveStartKey, previousPageKey } = query;
+    const { category, sortBy, order, limit, latitude, longitude,exclusiveStartKey, previousPageKey } = query;
 
     const param = {
       category:category as Category,
       sortBy:sortBy as "discountRate" | "distance" | "distanceDiscountScore",
       order,
       limit: Number(limit),
+      latitude,
+      longitude,
       ...(exclusiveStartKey && { exclusiveStartKey }),
       ...(previousPageKey && { previousPageKey })
     };

@@ -5,6 +5,8 @@ import { ConfigService } from "@nestjs/config/dist/config.service";
 import { Item } from 'dynamoose/dist/Item';
 import { v4 as uuidv4 } from 'uuid';
 import { Category } from "../product.category";
+import { DistanceCalculator } from "../util/distance-calculator";
+import { Polygon } from "typeorm";
 
 export interface ProductView {
   productId: string;
@@ -22,6 +24,7 @@ export interface ProductView {
   updatedAt: Date;
   locationX: string;
   locationY: string;
+  distance: number;
 
 }
 
@@ -242,12 +245,14 @@ export class ProductViewRepository {
   }
 
   async findProductsByCategoryAndSort(param: {
-    category: Category;
-    sortBy: 'discountRate' | 'distance' | 'distanceDiscountScore';
+    category: string;
+    sortBy: string;
     order: 'asc' | 'desc';
     limit: number;
     exclusiveStartKey?: string;
     previousPageKey?: string;
+    latitude?: string;
+    longitude?: string;
   }): Promise<{
     items: ProductView[];
     lastEvaluatedUrl: string | null;
@@ -255,97 +260,100 @@ export class ProductViewRepository {
     prevPageUrl: string | null;
     count: number
   }> {
-    try {
-      const { category, sortBy, order, limit, exclusiveStartKey, previousPageKey } = param;
-      const sortOrder = order === 'desc' ? SortOrder.descending : SortOrder.ascending;
-      let startKey: Record<string, any> | undefined;
+    const { category, sortBy, order, limit, exclusiveStartKey, previousPageKey, latitude, longitude } = param;
+    const sortOrder = order === 'desc' ? SortOrder.descending : SortOrder.ascending;
+    let startKey: Record<string, any> | undefined;
 
-      if (exclusiveStartKey) {
-        startKey = JSON.parse(decodeURIComponent(exclusiveStartKey));
-      }
-
-      const queryLimit = Number(limit) + 1;
-
-      let query = this.productViewModel.query('category').eq(category);
-
-      switch (sortBy) {
-        case 'discountRate':
-          query = query.using('CategoryDiscountRateIndex');
-          break;
-        case 'distance':
-          query = query.using('CategoryDistanceIndex');
-          break;
-        case 'distanceDiscountScore':
-          query = query.using('CategoryDistanceDiscountIndex');
-          break;
-      }
-
-      query = query.sort(sortOrder).limit(queryLimit);
-
-      if (startKey && startKey[sortBy] !== undefined && startKey.category === category) {
-        if (sortOrder === SortOrder.ascending) {
-          query = query.where(sortBy).ge(startKey[sortBy]);
-        } else {
-          query = query.where(sortBy).le(startKey[sortBy]);
-        }
-      }
-
-      const results: QueryResponse<ProductView> = await query.exec();
-
-      const items = Array.from(results).slice(0, limit);
-
-      const createMinimalKey = (item: any) => {
-        if (!item) return null;
-        return {
-          productId: item.productId,
-          GSI_KEY: 'PRODUCT',
-          category: item.category,
-          [sortBy]: item[sortBy],
-        };
-      };
-
-      let firstEvaluatedKey = createMinimalKey(items[0]);
-      let lastEvaluatedKey = results.length > limit ? createMinimalKey(results[limit]) : null;
-
-      const appUrl = this.configService.get<string>('APP_URL');
-      const createUrlWithKey = (key: Record<string, any> | null, prevKey: string | null = null) => {
-        if (!key || !appUrl) return null;
-        const baseUrl = new URL(`/api/products/category`, appUrl);
-        baseUrl.searchParams.append('category', category);
-        baseUrl.searchParams.append('sortBy', sortBy);
-        baseUrl.searchParams.append('order', order);
-        baseUrl.searchParams.append('limit', limit.toString());
-        baseUrl.searchParams.append('exclusiveStartKey', encodeURIComponent(JSON.stringify(key)));
-        if (prevKey) {
-          baseUrl.searchParams.append('previousPageKey', encodeURIComponent(prevKey));
-        }
-        return baseUrl.toString();
-      };
-
-      const firstEvaluatedUrl = createUrlWithKey(firstEvaluatedKey, previousPageKey);
-      const lastEvaluatedUrl = lastEvaluatedKey ? createUrlWithKey(lastEvaluatedKey, JSON.stringify(firstEvaluatedKey)) : null;
-
-      let prevPageUrl: string | null = null;
-      if (previousPageKey) {
-        const prevKey = JSON.parse(decodeURIComponent(previousPageKey));
-        prevPageUrl = createUrlWithKey(prevKey, null);
-      }
-
-      return {
-        items,
-        lastEvaluatedUrl,
-        firstEvaluatedUrl,
-        prevPageUrl,
-        count: items.length
-      };
-
-    } catch (error) {
-      console.error(`Query failed: ${error.message}`, error.stack);
-      console.error(`Query parameters:`, param);
-      throw new InternalServerErrorException('Failed to execute query');
+    if (exclusiveStartKey) {
+      startKey = JSON.parse(decodeURIComponent(exclusiveStartKey));
     }
+
+    const queryLimit = Number(limit) + 1;
+
+    let query = this.productViewModel.query('category').eq(category);
+
+    switch (sortBy) {
+      case 'discountRate':
+        query = query.using('CategoryDiscountRateIndex');
+        break;
+      case 'distance':
+        if (latitude !== undefined && longitude !== undefined) {
+          const userLocation = this.createPolygonFromCoordinates(Number(latitude), Number(longitude));
+          
+          const items = await query.exec();
+          items.forEach(item => {
+            if (item.locationX !== undefined && item.locationY !== undefined) {
+              const itemLocation = this.createPolygonFromCoordinates(Number(item.locationX), Number(item.locationY));
+              item.distance = DistanceCalculator.vincentyDistance(userLocation, itemLocation);
+            } else {
+              item.distance = Infinity; // 위치 정보가 없는 경우 가장 멀리 정렬
+            }
+          });
+          items.sort((a, b) => (a.distance || 0) - (b.distance || 0));
+          if (order === 'desc') {
+            items.reverse();
+          }
+          return this.formatResult(items.slice(0, limit), queryLimit, sortBy, previousPageKey);
+        }
+        query = query.using('CategoryDistanceIndex');
+        break;
+      case 'distanceDiscountScore':
+        query = query.using('CategoryDistanceDiscountIndex');
+        break;
+    }
+
+    query = query.sort(sortOrder).limit(queryLimit);
+
+    if (startKey && startKey[sortBy] !== undefined && startKey.category === category) {
+      query = query.startAt(startKey);
+    }
+
+    const result = await query.exec();
+
+    return this.formatResult(result, queryLimit, sortBy, previousPageKey);
   }
 
+  private formatResult(result: ProductView[], queryLimit: number, sortBy: string, previousPageKey?: string) {
+    const items = result.slice(0, queryLimit - 1);
+    const lastEvaluatedUrl = result.length === queryLimit ? this.createPageUrl(result[queryLimit - 1], sortBy) : null;
+    const firstEvaluatedUrl = items.length > 0 ? this.createPageUrl(items[0], sortBy) : null;
+    
+    let prevPageUrl = null;
+    if (previousPageKey) {
+      const previousItem = JSON.parse(decodeURIComponent(previousPageKey));
+      prevPageUrl = this.createPageUrl(previousItem, sortBy);
+    }
+
+    return {
+      items,
+      lastEvaluatedUrl,
+      firstEvaluatedUrl,
+      prevPageUrl,
+      count: items.length
+    };
+  }
+
+  private createPageUrl(item: ProductView, sortBy: string): string {
+    const urlParams: Record<string, any> = {
+      category: item.category
+    };
+
+    switch (sortBy) {
+      case 'distance':
+        urlParams[sortBy] = item.distance;
+        break;
+      case 'discountRate':
+        urlParams[sortBy] = (item as any).discountRate;
+        break;
+      case 'distanceDiscountScore':
+        urlParams[sortBy] = (item as any).distanceDiscountScore;
+        break;
+      // 필요한 경우 다른 정렬 기준에 대한 case를 추가하세요
+    }
+
+    return encodeURIComponent(JSON.stringify(urlParams));
+  }
+ 
 
   async searchProducts(param: {
     searchTerm: string;
@@ -465,6 +473,13 @@ export class ProductViewRepository {
       console.error(`Search query failed: ${error.message}`, error.stack);
       throw new InternalServerErrorException('Failed to execute search query');
     }
+  }
+
+  private createPolygonFromCoordinates(latitude: number, longitude: number): Polygon {
+    return {
+      type: 'Polygon',
+      coordinates: [[[longitude, latitude]]]
+    };
   }
 }
 
