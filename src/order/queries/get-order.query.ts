@@ -1,5 +1,5 @@
 export class GetOrderQuery {
     constructor(
-        public readonly userId: number
+        public readonly userId: string
     ) {}
 }

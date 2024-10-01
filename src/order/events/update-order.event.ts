@@ -8,7 +8,7 @@ export class UpdateOrderEvent implements BaseEvent {
         public readonly aggregateId: string,
         public readonly data: {
             id: string,
-            userId: number,
+            userId: string,
             totalAmount: number,
             totalPrice: number,
             paymentMethod: string,

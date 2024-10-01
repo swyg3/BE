@@ -9,7 +9,7 @@ export const OrderViewSchema = new Schema(
             required: true,
         },
         userId: {
-            type: Number,
+            type: String,
             required: true,
             index: { // 글로벌 보조 인덱스 설정
                 name: "UserIdIndex",

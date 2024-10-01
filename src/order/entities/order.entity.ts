@@ -1,12 +1,12 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity } from "typeorm";
 
 @Entity('orders')
 export class Order {
-    @PrimaryGeneratedColumn('uuid')
+    @Column({ type: 'varchar', name: 'id', nullable: false })
     id: string;
     
-    @Column({ type: 'bigint', name: 'user_id', nullable: false })
-    userId: number;
+    @Column({ type: 'varchar', name: 'user_id', nullable: false })
+    userId: string;
 
     @Column({ type: 'bigint', name: 'total_amount', nullable: false })
     totalAmount: number;

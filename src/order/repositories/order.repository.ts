@@ -6,7 +6,7 @@ import { CreateOrderDto } from "../dtos/create-order.dto";
 // OrderView 인터페이스 정의
 export interface OrderView {
     id: string;
-    userId: number;
+    userId: string;
     status: string;
     totalAmount: number;
     pickupTime: Date;

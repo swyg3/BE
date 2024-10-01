@@ -8,8 +8,8 @@ export class CreateOrderDto {
     id: string;
 
     @IsNotEmpty()
-    @IsNumber()
-    userId: number;
+    @IsString()
+    userId: string;
 
     @IsNotEmpty()
     @IsNumber()

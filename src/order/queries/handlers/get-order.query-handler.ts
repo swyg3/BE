@@ -15,7 +15,7 @@ export class GetOrderQueryHandler implements IQueryHandler<GetOrderQuery> {
 
     async execute(query: GetOrderQuery): Promise<OrderView[]> {
         const result = await this.orderViewModel.query("userId")
-            .eq(Number(query.userId))
+            .eq(query.userId)
             .exec();
 
         this.logger.log(`Fetched orders for userId ${query.userId}: ${JSON.stringify(result)}`);

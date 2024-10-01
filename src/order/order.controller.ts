@@ -1,5 +1,8 @@
-import { Body, Controller, Delete, Get, HttpException, HttpStatus, Logger, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpException, HttpStatus, Logger, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { GetUser } from 'src/shared/decorators/get-user.decorator';
+import { JwtPayload } from 'src/shared/interfaces/jwt-payload.interface';
 import { CreateOrderCommand } from './commands/create-order.command';
 import { DeleteOrderCommand } from './commands/delete-order.command';
 import { UpdateOrderCommand } from './commands/update-order.command';
@@ -18,8 +21,10 @@ export class OrderController {
 
     // 주문 생성
     @Post()
-    async createOrder(@Body() createOrderDto: CreateOrderDto) {
-        const { id, userId, totalAmount, totalPrice, pickupTime, paymentMethod, status, items } = createOrderDto;
+    @UseGuards(JwtAuthGuard)
+    async createOrder(@Body() createOrderDto: CreateOrderDto, @GetUser() user: JwtPayload) {
+        const { id, totalAmount, totalPrice, pickupTime, paymentMethod, status, items } = createOrderDto;
+        const userId = user.userId;
     
         try {
             const result = await this.commandBus.execute(
@@ -34,7 +39,7 @@ export class OrderController {
 
     // 사용자별 전체 주문 목록
     @Get(':userId')
-    async getOrders(@Param('userId') userId: number) {
+    async getOrders(@Param('userId') userId: string) {
         try {
             const result = await this.queryBus.execute(new GetOrderQuery(userId));
             return result;

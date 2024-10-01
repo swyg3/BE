@@ -11,7 +11,7 @@ export class CreateOrderAggregate extends AggregateRoot {
     // event3. 이벤트 형식 맞추기
     register(
         id: string,
-        userId: number,
+        userId: string,
         totalAmount: number,
         totalPrice: number,
         paymentMethod: string,
