@@ -26,57 +26,63 @@ export class CreateOrderCommandHandler implements ICommandHandler<CreateOrderCom
         const { userId, totalAmount, totalPrice, pickupTime, items, paymentMethod, status } = command;
         const id = uuidv4();
 
-        // 1. 주문 생성
-        const newOrder = this.orderRepository.create({
-            id,
-            userId,
-            totalAmount,
-            totalPrice,
-            pickupTime,
-            paymentMethod: 'CASH',
-            status: 'PENDING', // 초기값 진행중 pending
-            createdAt: new Date(), // 현재 시간으로 설정
-        });
-        const savedOrder = await this.orderRepository.save(newOrder);
-
-        // 2. 주문 내역 생성
-        const orderItems = items.map(item => {
-            return this.orderItemsRepository.create({
-                orderId: id,
-                productId: item.productId,
-                quantity: item.quantity,
-                price: item.price,
-            });
-        });
-        await this.orderItemsRepository.save(orderItems);
-        this.logger.log(`주문 내역 및 주문 상세 내역 생성 완료: ${savedOrder.id}`);
-
-        // 3. 주문 수량 만큼 재고 삭제 - 이벤트도 따로 발생
-
-        // 4. aggregate에서 주문 등록 이벤트 생성
-        const event = new CreateOrderEvent(
-            savedOrder.id,
-            {
-                id: savedOrder.id,
+        try {
+            // 1. 주문 생성
+            const newOrder = this.orderRepository.create({
+                id,
                 userId,
                 totalAmount,
                 totalPrice,
-                paymentMethod,
-                status,
-                items: items.map(item => ({
-                    orderId: savedOrder.id,
+                pickupTime,
+                paymentMethod: 'CASH',
+                status: 'PENDING', // 초기값 진행중 pending
+                createdAt: new Date(),
+            });
+            const savedOrder = await this.orderRepository.save(newOrder);
+            this.logger.log(`Saved Order: ${JSON.stringify(savedOrder)}`);
+
+            // 2. 주문 내역 생성
+            const orderItems = items.map(item => {
+                return this.orderItemsRepository.create({
+                    orderId: id,
                     productId: item.productId,
                     quantity: item.quantity,
                     price: item.price,
-                })),
-                pickupTime,
-                createdAt: newOrder.createdAt,
-                updatedAt: new Date(),
-            },
-            1
-        );
+                });
+            });
 
-        // 5. 이벤트 발행
-        this.eventBusService.publishAndSave(event);
+            const savedItems = await this.orderItemsRepository.save(orderItems);
+            this.logger.log(`Saved Order Items: ${JSON.stringify(savedItems)}`);
+
+            // 3. aggregate에서 주문 등록 이벤트 생성
+            const event = new CreateOrderEvent(
+                savedOrder.id,
+                {
+                    id: savedOrder.id,
+                    userId,
+                    totalAmount,
+                    totalPrice,
+                    paymentMethod,
+                    status,
+                    items: items.map(item => ({
+                        orderId: savedOrder.id,
+                        productId: item.productId,
+                        quantity: item.quantity,
+                        price: item.price,
+                    })),
+                    pickupTime,
+                    createdAt: newOrder.createdAt,
+                    updatedAt: new Date(),
+                },
+                1
+            );
+
+            // 4. 이벤트 발행
+            this.eventBusService.publishAndSave(event);
+            this.logger.log(`Order event published: ${JSON.stringify(event)}`);
+        } catch (error) {
+            this.logger.error(`Failed to create order: ${error.message}`);
+            throw error;
+        }
     }
 }
