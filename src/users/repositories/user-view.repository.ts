@@ -67,6 +67,18 @@ export class UserViewRepository {
     }
   }
 
+  async delete(userId: string): Promise<void> {
+    this.logger.log(`UserView 삭제 시도: userId=${userId}`);
+
+    try {
+      await this.userViewModel.delete({ userId });
+      this.logger.log(`UserView 삭제 성공: userId=${userId}`);
+    } catch (error) {
+      this.logger.error(`UserView 삭제 실패: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+  
   async findOneAndUpdate(
     userId: string,
     userView: Partial<UserView>
