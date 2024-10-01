@@ -1,19 +1,17 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { CqrsModule, EventBus } from '@nestjs/cqrs';
+import { CqrsModule } from '@nestjs/cqrs';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DynamooseModule } from 'nestjs-dynamoose';
 import { OrderItems } from 'src/order-items/entities/order-items.entity';
 import { OrderItemsViewSchema } from 'src/order-items/schemas/order-items-view.schema';
-import { Event, EventBusService, EventSourcingModule } from 'src/shared/infrastructure/event-sourcing';
-import { Repository } from 'typeorm';
+import { Event, EventSourcingModule } from 'src/shared/infrastructure/event-sourcing';
 import { CreateOrderCommandHandler } from './commands/handlers/create-order.command-handler';
 import { DeleteOrderCommandHandler } from './commands/handlers/delete-order.command-handler';
 import { Order } from './entities/order.entity';
 import { CreateOrderEventHandler } from './events/handlers/create-order.event-handler';
 import { OrderController } from './order.controller';
 import { GetOrderQueryHandler } from './queries/handlers/get-order.query-handler';
-import { CreateOrderRepository } from './repositories/order.repository';
 import { OrderViewSchema } from './schemas/order-view.schema';
 
 @Module({
@@ -26,6 +24,6 @@ import { OrderViewSchema } from './schemas/order-view.schema';
     EventSourcingModule,
   ],
   controllers: [OrderController],
-  providers: [CreateOrderCommandHandler, GetOrderQueryHandler, DeleteOrderCommandHandler, CreateOrderEventHandler, CreateOrderRepository, Repository, EventBusService, EventBus]
+  providers: [CreateOrderCommandHandler, GetOrderQueryHandler, DeleteOrderCommandHandler, CreateOrderEventHandler]
 })
 export class OrderModule {}

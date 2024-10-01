@@ -37,6 +37,8 @@ export class CreateOrderEventHandler implements IEventHandler<CreateOrderEvent> 
     ) {}
 
     async handle(event: CreateOrderEvent) {
+        const {} = event;
+
         this.logger.log(`주문 생성중!!`);
         // 새로운 주문 생성
         const newOrder: OrderView = {

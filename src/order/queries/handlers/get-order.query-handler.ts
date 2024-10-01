@@ -1,7 +1,7 @@
 import { Logger } from "@nestjs/common";
 import { IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 import { InjectModel, Model } from "nestjs-dynamoose";
-import { OrderView } from "src/order/repositories/order.repository";
+import { OrderView } from "src/order/events/handlers/create-order.event-handler";
 import { GetOrderQuery } from "../get-order.query";
 
 @QueryHandler(GetOrderQuery)
