@@ -115,4 +115,17 @@ export class SellerViewRepository {
       throw error;
     }
   }
+
+  async delete(sellerId: string): Promise<void> {
+    this.logger.log(`SellerView 삭제 시도: userId=${sellerId}`);
+
+    try {
+      await this.sellerViewModel.delete({ sellerId });
+      this.logger.log(`SellerView 삭제 성공: userId=${sellerId}`);
+    } catch (error) {
+      this.logger.error(`SellerView 삭제 실패: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+  
 }

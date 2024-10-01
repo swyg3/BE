@@ -7,6 +7,7 @@ import {
   UseGuards,
   Patch,
   ForbiddenException,
+  Delete,
 } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { RegisterUserDto } from "./dtos/register-user.dto";
@@ -27,6 +28,7 @@ import {
   ApiResponse,
   ApiTags,
 } from "@nestjs/swagger";
+import { DeleteUserCommand } from "./commands/commands/delete-user.command";
 
 @ApiTags("Users")
 @Controller("users")
@@ -175,6 +177,36 @@ export class UsersController {
     return {
       success: true,
       message: "성공적으로 프로필 정보를 수정하였습니다.",
+    };
+  }
+
+  @ApiOperation({ summary: "회원 탈퇴" })
+  @ApiResponse({
+    status: 200,
+    description: "회원 탈퇴 성공",
+    schema: {
+      type: "object",
+      properties: {
+        success: { type: "boolean", example: true },
+        message: { type: "string", example: "성공적으로 회원 탈퇴 처리되었습니다." },
+      },
+    },
+  })
+  @ApiParam({ name: "id", type: "string", description: "사용자 ID" })
+  @ApiBearerAuth()
+  @Delete("deactivate/:id")
+  @UseGuards(JwtAuthGuard)
+  async deactivateUser(
+    @ValidateUUID("id") id: string,
+    @GetUser() user: JwtPayload,
+  ): Promise<CustomResponse> {
+    if (user.userId !== id) {
+      throw new ForbiddenException("자신의 계정만 탈퇴할 수 있습니다.");
+    }
+    await this.commandBus.execute(new DeleteUserCommand(id));
+    return {
+      success: true,
+      message: "성공적으로 회원 탈퇴 처리되었습니다.",
     };
   }
 }

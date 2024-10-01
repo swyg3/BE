@@ -45,6 +45,15 @@ export class RefreshTokenCommandHandler
     );
     await this.refreshTokenService.deleteRefreshToken(payload.sub);
 
-    return newTokens;
+    return {
+      access: {
+        token: newTokens.accessToken,
+        expiresIn: newTokens.accessTokenExpiresIn,            
+      },
+      refresh: {
+        token: newTokens.refreshToken, 
+        expiresIn: newTokens.refreshTokenExpiresIn,       
+      },
+    };
   }
 }
