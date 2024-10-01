@@ -184,7 +184,7 @@ export class AuthController {
       return {
         success: false,
         message: "로그인 처리 중 오류가 발생했습니다.",
-        data: error.message || "알 수 없는 오류입니다.", // 오류 메시지 추가
+        data: error.message || "알 수 없는 오류입니다.",
       };
     }
   }

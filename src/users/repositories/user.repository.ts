@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { User } from "../entities/user.entity";
@@ -10,12 +10,22 @@ export class UserRepository {
     private readonly userRepository: Repository<User>,
   ) {}
 
-  async findByUserId(userId: string): Promise<User | undefined> {
-    return this.userRepository.findOne({ where: { id: userId } });
+  async findByUserId(userId: string): Promise<User | null> {
+    return this.userRepository.findOne({
+      where: { id: userId, isDeleted: false },
+    });
   }
 
-  async findByEmail(email: string): Promise<User | undefined> {
-    return this.userRepository.findOne({ where: { email } });
+  async findByEmail(email: string): Promise<User | null> {
+    return this.userRepository.findOne({
+      where: { email, isDeleted: false },
+    });
+  }
+
+  async findByEmailIncludingDeleted(email: string): Promise<User | null> {
+    return this.userRepository.findOne({
+      where: { email },
+    });
   }
 
   create(userData: Partial<User>): User {
@@ -30,18 +40,35 @@ export class UserRepository {
     email: string,
     userData: Partial<User>,
   ): Promise<{ user: User; isNewUser: boolean }> {
-    const existingUser = await this.userRepository.findOne({
-      where: { email },
-    });
+    const existingUser = await this.userRepository.findOne({ where: { email } });
 
     if (existingUser) {
-      await this.userRepository.update({ email }, userData);
-      const updatedUser = await this.findByEmail(email);
+      // 사용자가 존재하면 (삭제된 사용자 포함) 정보를 업데이트합니다.
+      await this.userRepository.update(
+        { email },
+        {
+          ...userData,
+          isDeleted: false, // 삭제 상태를 해제합니다.
+          deletedAt: null,  // 삭제 날짜를 초기화합니다.
+        }
+      );
+      const updatedUser = await this.userRepository.findOne({ where: { email } });
       return { user: updatedUser, isNewUser: false };
     } else {
+      // 새 사용자 생성
       const newUser = this.userRepository.create({ email, ...userData });
       const savedUser = await this.userRepository.save(newUser);
       return { user: savedUser, isNewUser: true };
+    }
+  }
+
+  async softDelete(userId: string): Promise<void> {
+    const result = await this.userRepository.update(
+      { id: userId, isDeleted: false },
+      { isDeleted: true, deletedAt: new Date() }
+    );
+    if (result.affected === 0) {
+      throw new NotFoundException('유저를 찾을 수 없거나 이미 탈퇴한 회원입니다.');
     }
   }
 }
