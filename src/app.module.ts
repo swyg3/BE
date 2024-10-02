@@ -11,7 +11,6 @@ import { AuthModule } from "./auth/auth.module";
 import { SellersModule } from "./sellers/sellers.module";
 import { configValidationSchema } from "./shared/infrastructure/config/config.validation";
 import { getTypeOrmConfig } from "./shared/infrastructure/database/typeorm.config";
-import { getMongoConfig } from "./shared/infrastructure/database/mongodb.config";
 import { ProductModule } from "./product/product.module";
 import { InventoryModule } from "./inventory/inventory.module";
 import { ServeStaticModule } from "@nestjs/serve-static";
@@ -45,12 +44,6 @@ import { LocationModule } from './location/location.module';
     }),
     TypeOrmModule.forRootAsync({
       useFactory: getTypeOrmConfig,
-      inject: [ConfigService],
-    }),
-    MongooseModule.forRootAsync({
-      imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) =>
-        await getMongoConfig(configService),
       inject: [ConfigService],
     }),
     DynamooseModule.forRootAsync({
