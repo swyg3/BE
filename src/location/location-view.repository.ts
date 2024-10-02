@@ -27,12 +27,23 @@ export class LocationViewRepository {
     private readonly configService: ConfigService
   ) { }
 
- 
+
   async create(locationView: LocationView): Promise<LocationView> {
     try {
       this.logger.log(`LocationView 생성 시도: ${locationView.locationId}`);
+      // 기존 위치 정보 조회
+      const existingLocations = await this.findAlllocationbyuserId(locationView.userId);
 
-      await this.setAllLocationsToFalse(locationView.userId);
+      if (existingLocations.length > 0) {
+        await this.setAllLocationsToFalse(locationView.userId);
+      }
+
+      // 이미 존재하는지 확인
+      const existingItem = await this.locationViewModel.get({ locationId: locationView.locationId });
+      if (existingItem) {
+        this.logger.warn(`LocationView already exists: ${locationView.locationId}`);
+        return existingItem;
+      }
       const item = await this.locationViewModel.create({
         ...locationView,
         latitude: locationView.latitude.toString(),
@@ -41,8 +52,13 @@ export class LocationViewRepository {
       this.logger.log(`LocationView 생성 성공: ${item.locationId}`);
       return item;
     } catch (error) {
-      this.logger.error(`LocationView 생성 실패: ${error.message}`, error.stack);
-      throw error;
+      if (error.name === 'ConditionalCheckFailedException') {
+        this.logger.warn(`LocationView 생성 조건 실패: ${locationView.locationId}`);
+        // 여기서 적절한 처리를 수행 (예: 기존 항목 반환 또는 업데이트)
+      } else {
+        this.logger.error(`LocationView 생성 실패: ${error.message}`, error.stack);
+        throw error;
+      }
     }
   }
 
@@ -52,19 +68,19 @@ export class LocationViewRepository {
       this.logger.warn('유효하지 않은 userId로 setAllLocationsToFalse 호출됨');
       return;
     }
-  
+
     try {
       const locations = await UserLocation.query("userId").eq(userId).exec();
-      
+
       if (locations.length === 0) {
         this.logger.log(`${userId}에 대한 위치 정보가 없음`);
         return;
       }
-  
+
       for (const location of locations) {
-        await UserLocation.update({ id: location.id }, { isCurrent: false });
+        await UserLocation.update({ locationId: location.locationId }, { isCurrent: false });
       }
-      
+
       this.logger.log(`모든 위치를 false로 설정: ${userId}`);
     } catch (error) {
       this.logger.error(`위치 상태 업데이트 실패: ${error.message}`, error.stack);
@@ -99,16 +115,16 @@ export class LocationViewRepository {
     }
   }
 
- 
+
   // 현재 위치 조회
   async findCurrentLocation(userId: string): Promise<{ latitude: string; longitude: string } | null> {
     try {
       this.logger.log(`현재 위치 조회: ${userId}`);
       const result = await this.locationViewModel
-      .query("userId").eq(userId)
-      .using("UserIdIndex")
-      .filter("isCurrent").eq(true)
-      .exec();
+        .query("userId").eq(userId)
+        .using("UserIdIndex")
+        .filter("isCurrent").eq(true)
+        .exec();
 
       if (result.length === 0) {
         this.logger.warn(`사용자 ${userId}의 현재 위치 정보가 없습니다.`);
@@ -126,6 +142,6 @@ export class LocationViewRepository {
     }
   }
 
- 
- 
+
+
 }
