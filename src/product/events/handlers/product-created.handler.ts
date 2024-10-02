@@ -10,7 +10,7 @@ export class ProductCreatedHandler
 
   constructor(
     private readonly productViewRepository: ProductViewRepository,
-  ) {}
+  ) { }
 
   async handle(event: ProductCreatedEvent) {
     this.logger.log(`ProductCreatedEvent 처리중: ${event.aggregateId}`);
@@ -19,6 +19,7 @@ export class ProductCreatedHandler
     try {
       const productView: ProductView = {
         productId: event.aggregateId,
+        GSI_KEY: "PRODUCT",
         sellerId: event.data.sellerId,
         category: event.data.category,
         name: event.data.name,
@@ -31,9 +32,10 @@ export class ProductCreatedHandler
         expirationDate: new Date(event.data.expirationDate),
         createdAt: new Date(event.data.createdAt || Date.now()),
         updatedAt: new Date(event.data.updatedAt || Date.now()),
-        locationX: event.data.locationX,
-        locationY: event.data.locationY,
+        locationX: event.data.locationX.toString(),
+        locationY: event.data.locationY.toString(),
         distance: 0, // 초기 거리값은 0으로 설정
+        distanceDiscountScore: 0
       };
 
       await this.productViewRepository.create(productView);

@@ -1,6 +1,6 @@
 import { IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 import { SearchProductsQuery } from "../impl/get-search-products";
-import { ProductViewRepository } from "src/product/repositories/product-view.repository";
+import { ProductViewRepository, SortByOption } from "src/product/repositories/product-view.repository";
 import { SearchProductsOutputDto } from "src/product/dtos/get-search-out.dto";
 import { Logger } from "@nestjs/common";
 
@@ -17,7 +17,7 @@ export class SearchProductsHandler implements IQueryHandler<SearchProductsQuery>
 
     const param = {
       searchTerm,
-      sortBy:sortBy as "discountRate" | "distance" | "distanceDiscountScore",
+      sortBy: sortBy as SortByOption,
       order,
       limit: Number(limit),
       latitude,

@@ -20,6 +20,16 @@ export const ProductSchema = new Schema(
           rangeKey: "discountRate"
         },
         {
+          name: "DistanceIndex",
+          type: "global",
+          rangeKey: "distance"
+        },
+        {
+          name: "DistanceDiscountIndex",
+          type: "global",
+          rangeKey: "distanceDiscountScore"
+        },
+        {
           name: "ProductNameIndex",
           type: "global",
           rangeKey: "name"

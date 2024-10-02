@@ -249,7 +249,6 @@ export class ProductViewRepository {
   }
 
   
-
   async findProductsByCategoryAndSort(param: {
     category: string;
     sortBy: SortByOption;
@@ -284,10 +283,10 @@ export class ProductViewRepository {
     // 페이지네이션 적용
     const { paginatedItems, lastEvaluatedKey } = this.applyPagination(items, limit, exclusiveStartKey);
 
-    return this.formatResult(paginatedItems, lastEvaluatedKey, sortBy, previousPageKey);
+    return this.formatResult(paginatedItems, lastEvaluatedKey, category, sortBy, order, limit, latitude, longitude, previousPageKey);
   }
 
-  private async calculateDistances(items: ProductView[], userLocation: any): Promise<ProductView[]> {
+  private async calculateDistances(items: ProductView[], userLocation: Polygon): Promise<ProductView[]> {
     return Promise.all(items.map(async (item) => {
       if (item.locationX && item.locationY) {
         const itemLocation = this.createPolygonFromCoordinates(Number(item.locationX), Number(item.locationY));
@@ -333,16 +332,44 @@ export class ProductViewRepository {
     return { paginatedItems, lastEvaluatedKey };
   }
 
-  private formatResult(items: ProductView[], lastEvaluatedKey: any, sortBy: SortByOption, previousPageKey?: string) {
-    const lastEvaluatedUrl = lastEvaluatedKey ? this.createPageUrl(lastEvaluatedKey, sortBy) : null;
-    const firstEvaluatedUrl = items.length > 0 ? this.createPageUrl({ productId: items[0].productId }, sortBy) : null;
-    let prevPageUrl = null;
-
+  private formatResult(
+    items: ProductView[],
+    lastEvaluatedKey: any,
+    category: string,
+    sortBy: SortByOption,
+    order: 'asc' | 'desc',
+    limit: number,
+    latitude?: string,
+    longitude?: string,
+    previousPageKey?: string
+  ) {
+    const appUrl = this.configService.get<string>('APP_URL');
+    const createUrlWithKey = (key: Record<string, any> | null, prevKey: string | null = null) => {
+      if (!key || !appUrl) return null;
+      const baseUrl = new URL("/api/products/category", appUrl);
+      baseUrl.searchParams.append('category', category);
+      baseUrl.searchParams.append('sortBy', sortBy);
+      baseUrl.searchParams.append('order', order);
+      baseUrl.searchParams.append('limit', limit.toString());
+      if (latitude) baseUrl.searchParams.append('latitude', latitude);
+      if (longitude) baseUrl.searchParams.append('longitude', longitude);
+      baseUrl.searchParams.append('exclusiveStartKey', encodeURIComponent(JSON.stringify(key)));
+      if (prevKey) {
+        baseUrl.searchParams.append('previousPageKey', encodeURIComponent(prevKey));
+      }
+      return baseUrl.toString();
+    };
+  
+    const firstEvaluatedKey = items.length > 0 ? { productId: items[0].productId } : null;
+    const firstEvaluatedUrl = createUrlWithKey(firstEvaluatedKey, previousPageKey);
+    const lastEvaluatedUrl = lastEvaluatedKey ? createUrlWithKey(lastEvaluatedKey, JSON.stringify(firstEvaluatedKey)) : null;
+  
+    let prevPageUrl: string | null = null;
     if (previousPageKey) {
-      const previousItem = JSON.parse(decodeURIComponent(previousPageKey));
-      prevPageUrl = this.createPageUrl(previousItem, sortBy);
+      const prevKey = JSON.parse(decodeURIComponent(previousPageKey));
+      prevPageUrl = createUrlWithKey(prevKey, null);
     }
-
+  
     return {
       items,
       lastEvaluatedUrl,
@@ -352,12 +379,7 @@ export class ProductViewRepository {
     };
   }
 
-  private createPageUrl(key: { productId: string }, sortBy: SortByOption): string {
-    return encodeURIComponent(JSON.stringify({ ...key, sortBy }));
-  }
-
-
-
+ 
   async searchProducts(param: {
     searchTerm: string;
     sortBy: SortByOption;
@@ -376,51 +398,105 @@ export class ProductViewRepository {
   }> {
     try {
       const { searchTerm, sortBy, order, limit, exclusiveStartKey, previousPageKey, latitude, longitude } = param;
-
+  
       if (!searchTerm) {
         throw new Error("searchTerm is required.");
       }
-
+  
       const lowercaseSearchTerm = searchTerm.toLowerCase().trim();
-
+  
       // Scan operation
       let scan = this.productViewModel.scan().where('GSI_KEY').eq('PRODUCT');
-      scan = scan.limit(1000);  // Adjust this value as needed
-
+      
+      // 적절한 인덱스 선택
+      let sortKey: string;
+  
+      switch (sortBy) {
+        case SortByOption.DiscountRate:
+          scan = scan.using('DiscountRateIndex');
+          sortKey = 'discountRate';
+          break;
+        case SortByOption.Distance:
+          scan = scan.using('DistanceIndex');
+          sortKey = 'distance';
+          break;
+        case SortByOption.DistanceDiscountScore:
+          scan = scan.using('DistanceDiscountIndex');
+          sortKey = 'distanceDiscountScore';
+          break;
+      }
+  
       if (exclusiveStartKey) {
         const startKey = JSON.parse(decodeURIComponent(exclusiveStartKey));
         scan = scan.startAt(startKey);
       }
-
+  
+      scan = scan.limit(1000);
       const results: ProductView[] = await scan.exec();
-
-      // Filter by search term
-      let filteredItems = results.filter(item =>
-        item.name.toLowerCase().includes(lowercaseSearchTerm)
-      );
-
-      // Calculate distances if necessary
+  
+      // 검색어로 필터링
+      let filteredItems = results.filter(item => item.name.toLowerCase().includes(lowercaseSearchTerm));
+  
+      // 거리 기반 정렬일 경우 거리 계산
       if ((sortBy === SortByOption.Distance || sortBy === SortByOption.DistanceDiscountScore) && latitude && longitude) {
         const userLocation = this.createPolygonFromCoordinates(Number(latitude), Number(longitude));
         filteredItems = await this.calculateDistances(filteredItems, userLocation);
       }
-
-      // Sort items
+  
+      // 정렬 적용
       filteredItems = this.sortItems(filteredItems, sortBy, order);
-
-      // Apply pagination
-      const { paginatedItems, lastEvaluatedKey } = this.applyPagination(filteredItems, limit, exclusiveStartKey);
-
-      // Format result
-      return this.formatResult2(paginatedItems, lastEvaluatedKey, searchTerm, sortBy, order, limit, latitude, longitude, previousPageKey);
-
+  
+      // 페이지네이션 적용
+      const { paginatedItems, lastEvaluatedKey } = this.applyPagination2(filteredItems, limit, sortBy, exclusiveStartKey);
+  
+      // 결과 포맷팅
+      return this.formatResult2(paginatedItems, lastEvaluatedKey, searchTerm, sortBy, order, limit, latitude, longitude, previousPageKey, sortKey);
+      
     } catch (error) {
       console.error(`Search query failed: ${error.message}`, error.stack);
       throw new InternalServerErrorException('Failed to execute search query');
     }
   }
-
-
+  
+  private applyPagination2(
+    items: ProductView[], 
+    limit: number, 
+    sortBy: SortByOption, 
+    exclusiveStartKey?: string
+  ): { paginatedItems: ProductView[], lastEvaluatedKey: any } {
+    let startIndex = 0;
+    if (exclusiveStartKey) {
+      const parsedKey = JSON.parse(decodeURIComponent(exclusiveStartKey));
+      startIndex = items.findIndex(item => item[sortBy] === parsedKey[sortBy]);
+      if (startIndex === -1) {
+        startIndex = 0;
+      } else {
+        startIndex += 1;
+      }
+    }
+  
+    const paginatedItems = items.slice(startIndex, startIndex + limit);
+    const lastItem = paginatedItems[paginatedItems.length - 1];
+  
+    let lastEvaluatedKey: Record<string, any> | null = null;
+  
+    if (lastItem) {
+      switch (sortBy) {
+        case SortByOption.DiscountRate:
+          lastEvaluatedKey = { discountRate: lastItem.discountRate, productId: lastItem.productId };
+          break;
+        case SortByOption.Distance:
+          lastEvaluatedKey = { distance: lastItem.distance, productId: lastItem.productId };
+          break;
+        case SortByOption.DistanceDiscountScore:
+          lastEvaluatedKey = { distanceDiscountScore: lastItem.distanceDiscountScore, productId: lastItem.productId };
+          break;
+      }
+    }
+  
+    return { paginatedItems, lastEvaluatedKey };
+  }
+  
   private formatResult2(
     items: ProductView[], 
     lastEvaluatedKey: any, 
@@ -430,9 +506,11 @@ export class ProductViewRepository {
     limit: number, 
     latitude?: string, 
     longitude?: string, 
-    previousPageKey?: string
+    previousPageKey?: string,
+    sortKey?: string
   ) {
     const appUrl = this.configService.get<string>('APP_URL');
+  
     const createUrlWithKey = (key: Record<string, any> | null, prevKey: string | null = null) => {
       if (!key || !appUrl) return null;
       const baseUrl = new URL("/api/products/search", appUrl);
@@ -448,17 +526,27 @@ export class ProductViewRepository {
       }
       return baseUrl.toString();
     };
-
-    const firstEvaluatedKey = items.length > 0 ? { productId: items[0].productId } : null;
-    const firstEvaluatedUrl = createUrlWithKey(firstEvaluatedKey, previousPageKey);
+  
+    const firstEvaluatedKey = items.length > 0 ? {
+      GSI_KEY: 'PRODUCT',
+      [sortKey!]: items[0][sortKey!],
+    } : null;
+  
     const lastEvaluatedUrl = lastEvaluatedKey ? createUrlWithKey(lastEvaluatedKey, JSON.stringify(firstEvaluatedKey)) : null;
-
+    const firstEvaluatedUrl = createUrlWithKey(firstEvaluatedKey, previousPageKey);
+  
     let prevPageUrl: string | null = null;
     if (previousPageKey) {
       const prevKey = JSON.parse(decodeURIComponent(previousPageKey));
-      prevPageUrl = createUrlWithKey(prevKey, null);
+      const prevKeyObj = {
+        GSI_KEY: 'PRODUCT',
+        [sortKey!]: prevKey[sortKey!],
+        productId: prevKey.productId,
+      };
+      prevPageUrl = createUrlWithKey(prevKeyObj, null);
+    
     }
-
+  
     return {
       items,
       lastEvaluatedUrl,
@@ -467,21 +555,22 @@ export class ProductViewRepository {
       count: items.length
     };
   }
-
-  private calculateRecommendationScore(product: ProductView): number {
+  
+  
+  private  calculateRecommendationScore(product: ProductView): number {
     const distanceScore = 1 / (1 + (product.distance || Infinity));
     const discountScore = (product.discountRate || 0) / 100;
     return (distanceScore + discountScore) / 2;
   }
 
-  private createPolygonFromCoordinates(latitude: number, longitude: number): Polygon {
+  private  createPolygonFromCoordinates(latitude: number, longitude: number): Polygon {
     return {
       type: 'Polygon',
       coordinates: [[[longitude, latitude], [longitude, latitude], [longitude, latitude], [longitude, latitude]]]
     };
   }
   
-  private async updateItemWithDistanceAndScore(productId: string, distance: number, score: number) {
+  private  async updateItemWithDistanceAndScore(productId: string, distance: number, score: number) {
     await this.productViewModel.update({ productId }, { distance, distanceDiscountScore: score });
   }
 

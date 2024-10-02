@@ -6,6 +6,7 @@ interface Polygon {
 }
 
 export class DistanceCalculator {
+  
   private static readonly EARTH_RADIUS = 6371; // km
   private static readonly a = 6378137; // 지구의 장반경 (미터)
   private static readonly b = 6356752.3142; // 지구의 단반경 (미터)
@@ -87,5 +88,11 @@ export class DistanceCalculator {
 
   private static toDegrees(radians: number): number {
     return radians * 180 / Math.PI;
+  }
+  public static createPolygonFromCoordinates(lat: number, lon: number): Polygon {
+    return {
+      type: 'Polygon',
+      coordinates: [[[lon, lat], [lon, lat], [lon, lat], [lon, lat]]]
+    };
   }
 }

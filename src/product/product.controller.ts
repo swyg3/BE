@@ -11,8 +11,8 @@ import {
   Query,
   UseInterceptors,
   UploadedFile,
-  BadRequestException,
   NotFoundException,
+  BadRequestException,
 } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { CreateProductCommand } from "./commands/impl/create-product.command";
@@ -33,7 +33,6 @@ import { FindProductsByCategoryDto } from "./dtos/get-category.dto";
 import { SearchProductsDto } from "./dtos/get-search.dto";
 import { FindProductsByCategoryQuery } from "./queries/impl/get-product-by-category.query";
 import { SearchProductsQuery } from "./queries/impl/get-search-products";
-import { Category } from "./product.category";
 import { JwtPayload } from "src/shared/interfaces/jwt-payload.interface";
 import { GetUser } from "src/shared/decorators/get-user.decorator";
 import { LocationViewRepository } from "src/location/location-view.repository";
@@ -44,11 +43,11 @@ import { LocationViewRepository } from "src/location/location-view.repository";
 @UseGuards(ThrottlerGuard)
 export class ProductController {
   private readonly logger = new Logger(ProductController.name);
-  private readonly locationViewRepository: LocationViewRepository;
 
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
+    private readonly locationViewRepository: LocationViewRepository
   ) { }
 
 
@@ -56,47 +55,35 @@ export class ProductController {
   @ApiOperation({ summary: "상품 등록" })
   @ApiResponse({ status: 201, description: "상품 생성 성공" })
   @ApiResponse({ status: 400, description: "상품 생성 실패" })
+  @ApiBearerAuth()
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
       type: 'object',
       properties: {
-        sellerId: { type: 'string' },
-        category: {
-          type: 'string',
-          enum: Object.values(Category),
-        },
-        name: { type: 'string' },
-        productImageUrl: {
+        sellerId: { type: 'string', example: 'uuid로 발행된 sellerID' },
+        category: { type: 'string', example: 'KOREAN' },
+        name: { type: 'string', example: '딸기 타르트' },
+        description: { type: 'string', example: '맛있어요' },
+        originalPrice: { type: 'number', example: 1000000 },
+        discountedPrice: { type: 'number', example: 900000 },
+        quantity: { type: 'number', example: 50 },
+        expirationDate: { type: 'string', format: 'date-time', example: '2024-12-31T23:59:59Z' },
+        image: {
           type: 'string',
           format: 'binary',
-          description: '상품 이미지 파일',
-        },
-        description: { type: 'string' },
-        originalPrice: { type: 'number', minimum: 0 },
-        discountedPrice: { type: 'number', minimum: 0 },
-        quantity: { type: 'number', minimum: 0 },
-        expirationDate: { type: 'string', format: 'date-time' },
+          description: '상품 이미지 파일 (JPG, PNG 형식 지원)'
+        }
       },
-      required: ['sellerId', 'category', 'name', 'originalPrice']
-    },
+      required: ['sellerId', 'category', 'name', 'description', 'originalPrice', 'discountedPrice', 'quantity', 'expirationDate', 'image']
+    }
   })
   @Post("create")
-  @UseInterceptors(FileInterceptor('productImageUrl'))
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('image'))
   async createProduct(
     @Body() createProductDto: CreateProductDto,
     @UploadedFile() file: Express.Multer.File,
   ): Promise<CustomResponse> {
-    let productImageUrl = createProductDto.productImageUrl;
-
-    if (file) {
-      // 파일이 업로드된 경우, 파일 이름을 URL로 사용
-      productImageUrl = file.filename;
-      this.logger.log(`Uploaded image: ${productImageUrl}`);
-    }
-
     const {
       sellerId,
       category,
@@ -109,12 +96,15 @@ export class ProductController {
     } = createProductDto;
 
     // 필요 시 문자열을 Date 객체로 변환
-    const expirationDateObj = expirationDate ? new Date(expirationDate) : undefined;
-
+    const expirationDateObj = new Date(expirationDate);
     this.logger.log(
       `Creating product with expiration date: ${expirationDateObj}`,
     );
-
+    if (!file) {
+      throw new BadRequestException('File is required');
+    }
+    const productImageUrl = file.filename;
+    this.logger.log(`controller${productImageUrl}`);
     const result = await this.commandBus.execute(
       new CreateProductCommand(
         sellerId,
@@ -130,12 +120,17 @@ export class ProductController {
     );
 
     return {
-      success: !!result,
-      message: result
-        ? "상품 등록에 성공했습니다."
-        : "상품 등록에 실패했습니다.",
-      data: result,
+      success: true,
+      message: "상품 등록에 성공했습니다.",
     };
+  } catch (error) {
+    this.logger.error(`Failed to create product: ${error.message}`);
+    return {
+      success: false,
+      message: "상품 등록에 실패했습니다.",
+      id: null,
+    };
+  
   }
 
   @ApiOperation({ summary: "상품 삭제" })
@@ -247,7 +242,7 @@ export class ProductController {
     @Query() findProductsByCategoryDto: FindProductsByCategoryDto,
   ) {
     const { category, sortBy, order, limit, exclusiveStartKey, previousPageKey } = findProductsByCategoryDto;
-
+    
     // isCurrent를 true로 설정하여 현재 위치 정보를 가져옵니다.
     const currentLocation = await this.locationViewRepository.findCurrentLocation(user.userId);
     if (!currentLocation) {
@@ -255,10 +250,10 @@ export class ProductController {
     }
     // 비구조화 할당을 통해 latitude와 longitude를 추출
     const { latitude, longitude } = currentLocation;
-  
-    const query = new FindProductsByCategoryQuery(category, sortBy, order, limit, exclusiveStartKey, previousPageKey, latitude, longitude);
 
-    // 비동기 처리를 위해 await 사용
+    const query = new FindProductsByCategoryQuery(category, sortBy, order, limit, 
+      latitude, longitude, exclusiveStartKey, previousPageKey);
+
     const result = await this.queryBus.execute(query);
 
     return {
@@ -273,72 +268,70 @@ export class ProductController {
   }
 
 
-  // @Get('search')
-  // @ApiBearerAuth()
-  // @UseGuards(JwtAuthGuard)
-  // @ApiOperation({ summary: '제품 검색', description: '검색어를 기반으로 제품을 검색하고 정렬합니다.' })
-  // @ApiResponse({ status: 200, description: '성공적으로 검색 결과를 반환함', type: [Object] })
-  // async searchProducts(
-  //   @GetUser() user: JwtPayload,
-  //   @Query() searchProductsDto: SearchProductsDto,
-  // ) {
-  //   const { searchTerm, sortBy, order, limit, exclusiveStartKey, previousPageKey } = searchProductsDto;
+  @Get('search')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: '제품 검색', description: '검색어를 기반으로 제품을 검색하고 정렬합니다.' })
+  @ApiResponse({ status: 200, description: '성공적으로 검색 결과를 반환함', type: [Object] })
+  async searchProducts(
+    @GetUser() user: JwtPayload,
+    @Query() searchProductsDto: SearchProductsDto,
+  ) {
+    const { searchTerm, sortBy, order, limit, exclusiveStartKey, previousPageKey } = searchProductsDto;
 
-  //   // 현재 위치 정보를 가져옵니다.
-  //   const currentLocation = await this.locationViewRepository.findCurrentLocation(user.userId);
-  //   if (!currentLocation) {
-  //     throw new NotFoundException('현재 위치 정보가 설정되어 있지 않습니다.');
-  //   }
-  //   const { latitude, longitude } = currentLocation;
+    // 현재 위치 정보를 가져옵니다.
+    const currentLocation = await this.locationViewRepository.findCurrentLocation(user.userId);
+    if (!currentLocation) {
+      throw new NotFoundException('현재 위치 정보가 설정되어 있지 않습니다.');
+    }
+    const { latitude, longitude } = currentLocation;
 
 
-  //   const query = new SearchProductsQuery(
-  //     searchTerm,
-  //     sortBy,
-  //     order,
-  //     limit,
-  //     exclusiveStartKey,
-  //     previousPageKey,
-  //     latitude,
-  //     longitude,
-  //   );
+    const query = new SearchProductsQuery(
+      searchTerm,
+      sortBy,
+      order,
+      limit,
+      latitude,
+      longitude,
+      exclusiveStartKey,
+      previousPageKey,
+    );
 
-  //   const result = this.queryBus.execute(query);
+    const result = await this.queryBus.execute(query);
 
-  //   return {
-  //     success: true,
-  //     message: '해당 상품 리스트 조회를 성공했습니다.',
-  //     data: result.items,
-  //     lastEvaluatedUrl: result.lastEvaluatedUrl,
-  //     firstEvaluatedUrl: result.firstEvaluatedUrl,
-  //     prevPageUrl: result.prevPageUrl,
-  //     count: result.count,
-  //   };
-  // }
+    return {
+      success: true,
+      message: '해당 상품 리스트 조회를 성공했습니다.',
+      data: result.items,
+      lastEvaluatedUrl: result.lastEvaluatedUrl,
+      firstEvaluatedUrl: result.firstEvaluatedUrl,
+      prevPageUrl: result.prevPageUrl,
+      count: result.count,
+    };
+  }
 
-  // // 위치허용 API
-  // @Get('nearest')
-  // @ApiBearerAuth()
-  // @UseGuards(JwtAuthGuard)
-  // @ApiOperation({ summary: '가까운 상품 조회', description: '메인화면에서 사용자 위치 기반으로 가까운 상품을 조회합니다.' })
-  // @ApiResponse({ status: 200, description: '가까운 상품 조회 성공' })
-  // @ApiQuery({ name: 'lat', type: Number, description: '위도' })
-  // @ApiQuery({ name: 'lon', type: Number, description: '경도' })
-  // async getNearestProducts(
-  //   @GetUser() user: JwtPayload,
-  //   @Query('lat') lat: number,
-  //   @Query('lon') lon: number,
-  // ): Promise<any[]> {
-  //   // 현재 위치 정보를 가져옵니다.
-  //   const currentLocation = await this.locationViewRepository.findCurrentLocation(user.userId);
-  //   if (!currentLocation) {
-  //     throw new NotFoundException('현재 위치 정보가 설정되어 있지 않습니다.');
-  //   }
+  // 위치허용 API
+  @Get('nearest')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: '가까운 상품 조회', description: '메인화면에서 사용자 위치 기반으로 가까운 상품을 조회합니다.' })
+  @ApiResponse({ status: 200, description: '가까운 상품 조회 성공' })
+  @ApiQuery({ name: 'lat', type: Number, description: '위도' })
+  @ApiQuery({ name: 'lon', type: Number, description: '경도' })
+  async getNearestProducts(
+    @GetUser() user: JwtPayload,  
+  ): Promise<any[]> {
+    // 현재 위치 정보를 가져옵니다.
+    const currentLocation = await this.locationViewRepository.findCurrentLocation(user.userId);
+    if (!currentLocation) {
+      throw new NotFoundException('현재 위치 정보가 설정되어 있지 않습니다.');
+    }
 
-  //   // 현재 위치를 사용하여 가까운 상품을 조회하는 쿼리를 생성합니다.
-  //   const query = new GetNearestProductsQuery(currentLocation.latitude, currentLocation.longitude);
-  //   return this.queryBus.execute(query);
-  // }
+    // 현재 위치를 사용하여 가까운 상품을 조회하는 쿼리를 생성합니다.
+    const query = new GetNearestProductsQuery(currentLocation.latitude, currentLocation.longitude);
+    return this.queryBus.execute(query);
+  }
 
 
 }

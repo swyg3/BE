@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserLocationRepository } from './location.repository';
@@ -8,9 +8,10 @@ import { DynamooseModule } from 'nestjs-dynamoose';
 import { UserLocationSchema } from './location-view.schema';
 import { UserLocationSavedHandler } from './events/handlers/location-save-event.handler';
 import { GetUserLocationsHandler } from './queries/query/get-userlocation-all.handler';
-import { LocationViewRepository } from './location-view.repository';
 import { LocationController } from './location.controller';
 import { LocationHandler } from './commands/handlers/add-location.handler';
+import { LocationViewRepository } from './location-view.repository';
+import { ProductModule } from 'src/product/product.module';
 
 const CommandHandlers = [
   SaveUserLocationHandler,
@@ -25,13 +26,15 @@ const QuerysHandlers = [
 
 @Module({
   imports: [
-  CqrsModule,
+    forwardRef(() => ProductModule),
+    CqrsModule,
     TypeOrmModule.forFeature([UserLocation]),
     DynamooseModule.forFeature([
       { name: "LocationView", schema: UserLocationSchema },
     ]),
+
   ],
-  controllers: [LocationController], 
+  controllers: [LocationController],
   providers: [
     UserLocationRepository,
     LocationViewRepository,
@@ -39,6 +42,8 @@ const QuerysHandlers = [
     ...EventsHandlers,
     ...QuerysHandlers,
   ],
-  exports: [UserLocationRepository,LocationViewRepository],
+  exports: [
+    UserLocationRepository,
+    LocationViewRepository],
 })
-export class LocationModule {}
+export class LocationModule { }
