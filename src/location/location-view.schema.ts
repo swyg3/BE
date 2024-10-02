@@ -2,7 +2,7 @@ import { model, Schema } from "dynamoose";
 
 export const UserLocationSchema = new Schema(
   {
-    id: {
+    locationId: {
       type: String,
       hashKey: true,
       required: true,
@@ -46,7 +46,7 @@ export const UserLocationSchema = new Schema(
 );
 
 export const UserLocation = model("UserLocation", UserLocationSchema, {
-  create: false,
+  create: true,
   update: true,
   waitForActive: true,
 });

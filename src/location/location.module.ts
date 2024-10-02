@@ -9,9 +9,12 @@ import { UserLocationSchema } from './location-view.schema';
 import { UserLocationSavedHandler } from './events/handlers/location-save-event.handler';
 import { GetUserLocationsHandler } from './queries/query/get-userlocation-all.handler';
 import { LocationViewRepository } from './location-view.repository';
+import { LocationController } from './location.controller';
+import { LocationHandler } from './commands/handlers/add-location.handler';
 
 const CommandHandlers = [
-  SaveUserLocationHandler
+  SaveUserLocationHandler,
+  LocationHandler
 ];
 const EventsHandlers = [
   UserLocationSavedHandler
@@ -28,6 +31,7 @@ const QuerysHandlers = [
       { name: "LocationView", schema: UserLocationSchema },
     ]),
   ],
+  controllers: [LocationController], 
   providers: [
     UserLocationRepository,
     LocationViewRepository,

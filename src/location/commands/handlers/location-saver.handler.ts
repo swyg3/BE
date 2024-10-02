@@ -17,6 +17,7 @@ export class SaveUserLocationHandler implements ICommandHandler<SaveUserLocation
 
   async execute(command: SaveUserLocationCommand): Promise<UserLocation> {
     const { userId, latitude, longitude, isCurrent } = command;
+    console.log('Received command:', command);
 
     try {
       // 만약 현재 위치로 설정하려면, 기존의 현재 위치를 해제

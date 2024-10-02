@@ -1,152 +1,131 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { UserLocation } from "./location-view.schema";
 import { InjectModel } from "@nestjs/mongoose";
-import { Model } from "mongoose";
+import { Model } from "nestjs-dynamoose";
 
 export interface LocationView {
+  locationId: string;
   userId: string;
   latitude: string;
   longitude: string;
-  isCurrent?: boolean; 
+  isCurrent: boolean;
   updatedAt: Date;
 }
 
 @Injectable()
 export class LocationViewRepository {
+
   private readonly logger = new Logger(LocationViewRepository.name);
 
   constructor(
     @InjectModel("LocationView")
     private readonly locationViewModel: Model<
       LocationView,
-      { userId: string }
+      { locationId: string }
     >,
     private readonly configService: ConfigService
   ) { }
 
-  // 위치 정보 생성
-  async createUserLocationView(locationView: LocationView): Promise<LocationView> {
+ 
+  async create(locationView: LocationView): Promise<LocationView> {
     try {
-      this.logger.log(`LocationView 생성: ${locationView.userId}`);
-      this.logger.log(`Attempting to create LocationView: ${JSON.stringify(locationView)}`);
-      return await this.locationViewModel.create(locationView);
+      this.logger.log(`LocationView 생성 시도: ${locationView.locationId}`);
+
+      await this.setAllLocationsToFalse(locationView.userId);
+      const item = await this.locationViewModel.create({
+        ...locationView,
+        latitude: locationView.latitude.toString(),
+        longitude: locationView.longitude.toString()
+      });
+      this.logger.log(`LocationView 생성 성공: ${item.locationId}`);
+      return item;
     } catch (error) {
       this.logger.error(`LocationView 생성 실패: ${error.message}`, error.stack);
-      this.logger.error(`Failed to create LocationView: ${JSON.stringify(locationView)}`, error.stack);
       throw error;
     }
   }
 
-  // 위치 정보 수정
-  async update(userId: string, updates: Partial<LocationView>): Promise<LocationView> {
+  //모두 X로 만드는 함수
+  private async setAllLocationsToFalse(userId: string): Promise<void> {
+    if (!userId) {
+      this.logger.warn('유효하지 않은 userId로 setAllLocationsToFalse 호출됨');
+      return;
+    }
+  
     try {
-      this.logger.log(`LocationView 수정: ${userId}`);
-      this.logger.log(`Attempting to update LocationView: ${JSON.stringify(updates)}`);
-
-      const updatedLocation = await this.locationViewModel.findOneAndUpdate(
-        { userId },
-        { $set: updates },
-        { new: true, runValidators: true }
-      );
-
-      if (!updatedLocation) {
-        throw new Error(`LocationView not found for userId: ${userId}`);
+      const locations = await UserLocation.query("userId").eq(userId).exec();
+      
+      if (locations.length === 0) {
+        this.logger.log(`${userId}에 대한 위치 정보가 없음`);
+        return;
       }
-
-      return updatedLocation;
-    } catch (error) {
-      this.logger.error(`LocationView 수정 실패: ${error.message}`, error.stack);
-      this.logger.error(`Failed to update LocationView: ${userId}`, error.stack);
-      throw error;
-    }
-  }
-
-  // 위치 정보 추가
-  async addLocation(userId: string, location: { latitude: number; longitude: number }): Promise<LocationView> {
-    try {
-      this.logger.log(`LocationView에 위치 추가: ${userId}`);
-      this.logger.log(`Attempting to add location to LocationView: ${JSON.stringify(location)}`);
-
-      const updatedLocationView = await this.locationViewModel.findOneAndUpdate(
-        { userId },
-        {
-          $push: { locations: location },
-          $set: { updatedAt: new Date() }
-        },
-        { new: true, runValidators: true }
-      );
-
-      if (!updatedLocationView) {
-        throw new Error(`LocationView not found for userId: ${userId}`);
+  
+      for (const location of locations) {
+        await UserLocation.update({ id: location.id }, { isCurrent: false });
       }
-
-      this.logger.log(`Location 추가 성공: ${userId}`);
-      return updatedLocationView;
+      
+      this.logger.log(`모든 위치를 false로 설정: ${userId}`);
     } catch (error) {
-      this.logger.error(`Location 추가 실패: ${error.message}`, error.stack);
-      this.logger.error(`Failed to add location to LocationView: ${userId}`, error.stack);
+      this.logger.error(`위치 상태 업데이트 실패: ${error.message}`, error.stack);
       throw error;
     }
   }
 
-  // 위치 정보 조회
-  async findById(userId: string): Promise<LocationView | null> {
+
+
+  // 판매자ID로 상품 목록 조회
+  async findAlllocationbyuserId(userId: string): Promise<LocationView[]> {
     try {
-      this.logger.log(`LocationView 조회: ${userId}`);
-      return await this.locationViewModel.findOne({ userId });
+      this.logger.log(`LocationView 조회: userId=${userId}`);
+      const results = await this.locationViewModel
+        .query("userId")
+        .eq(userId)
+        .exec();
+      return results;
     } catch (error) {
       this.logger.error(`LocationView 조회 실패: ${error.message}`, error.stack);
-      throw error;
+      return [];
     }
   }
-
   // 위치 정보 삭제
   async delete(userId: string): Promise<void> {
     try {
       this.logger.log(`LocationView 삭제: ${userId}`);
-      await this.locationViewModel.deleteOne({ userId });
+      await UserLocation.delete({ userId });
     } catch (error) {
       this.logger.error(`LocationView 삭제 실패: ${error.message}`, error.stack);
       throw error;
     }
   }
 
-  async getAllUserLocations(userId: string): Promise<LocationView[]> {
+ 
+  // 현재 위치 조회
+  async findCurrentLocation(userId: string): Promise<{ latitude: string; longitude: string } | null> {
     try {
-      this.logger.log(`모든 LocationView 조회: ${userId}`);
-      const locations = await this.locationViewModel.find({ userId }).exec();
-      
-      if (locations.length === 0) {
-        this.logger.log(`사용자 ${userId}의 위치 정보가 없습니다.`);
-      } else {
-        this.logger.log(`사용자 ${userId}의 ${locations.length}개 위치 정보를 조회했습니다.`);
+      this.logger.log(`현재 위치 조회: ${userId}`);
+      const result = await this.locationViewModel
+      .query("userId").eq(userId)
+      .using("UserIdIndex")
+      .filter("isCurrent").eq(true)
+      .exec();
+
+      if (result.length === 0) {
+        this.logger.warn(`사용자 ${userId}의 현재 위치 정보가 없습니다.`);
+        return null;
       }
-      
-      return locations;
+
+      const currentLocation = result[0];
+      return {
+        latitude: currentLocation.latitude,
+        longitude: currentLocation.longitude,
+      };
     } catch (error) {
-      this.logger.error(`사용자의 모든 LocationView 조회 실패: ${error.message}`, error.stack);
+      this.logger.error(`현재 위치 조회 실패: ${error.message}`, error.stack);
       throw error;
     }
   }
 
-  // 현재 위치 조회
-async findCurrentLocation(userId: string): Promise<{ latitude: string; longitude: string } | null> {
-  try {
-    this.logger.log(`현재 위치 조회: ${userId}`);
-    const currentLocation = await this.locationViewModel.findOne({ userId, isCurrent: true });
-
-    if (!currentLocation) {
-      this.logger.warn(`사용자 ${userId}의 현재 위치 정보가 없습니다.`);
-      return null;
-    }
-
-    return {
-      latitude: currentLocation.latitude,
-      longitude: currentLocation.longitude,
-    };
-  } catch (error) {
-    this.logger.error(`현재 위치 조회 실패: ${error.message}`, error.stack);
-    throw error;
-  }
-}
+ 
+ 
 }
