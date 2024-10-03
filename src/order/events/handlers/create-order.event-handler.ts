@@ -37,16 +37,18 @@ export class CreateOrderEventHandler implements IEventHandler<CreateOrderEvent> 
     ) {}
 
     async handle(event: CreateOrderEvent) {
-        const {} = event;
-
         this.logger.log(`주문 생성중!!`);
+
+        // pickupTime을 문자열에서 Date 객체로 변환
+        const pickupTime = new Date(event.data.pickupTime);
+
         // 새로운 주문 생성
         const newOrder: OrderView = {
             id: event.data.id,
             userId: event.data.userId,
             status: event.data.status,
             totalAmount: event.data.totalAmount,
-            pickupTime: event.data.pickupTime,
+            pickupTime: pickupTime,  // 변환된 Date 객체 할당
             paymentMethod: event.data.paymentMethod,
             createdAt: new Date(),
             updatedAt: new Date(),

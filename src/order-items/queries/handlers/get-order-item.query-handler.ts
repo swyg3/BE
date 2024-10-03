@@ -1,21 +1,21 @@
 import { IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 import { InjectModel, Model } from "nestjs-dynamoose";
-import { OrderItemsView } from "src/order/repositories/order.repository";
+import { OrderItemsView } from "src/order/events/handlers/create-order.event-handler";
 import { GetOrderItemQuery } from "../get-order-item.query";
 
 @QueryHandler(GetOrderItemQuery)
 export class GetOrderItemQueryHandler implements IQueryHandler<GetOrderItemQuery> {
     constructor(
         @InjectModel("OrderItemsView")
-        private readonly orderItemsViewModel: Model<OrderItemsView, {}> // Dynamoose 모델 주입
+        private readonly orderItemsViewModel: Model<OrderItemsView, { id: string }> // Model 정의 수정
     ) {}
 
     async execute(query: GetOrderItemQuery): Promise<OrderItemsView[]> {
         const result = await this.orderItemsViewModel.query("orderId")
-        .using("OrderIdIndex")
-        .eq(query.orderId) // orderId에 해당하는 항목을 쿼리
-        .exec(); // Dynamoose 쿼리 실행
+            .using("OrderIdIndex")
+            .eq(query.orderId)
+            .exec();
 
-        return result; // 결과 반환
+        return result;
     }
 }
