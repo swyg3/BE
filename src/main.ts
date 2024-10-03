@@ -5,14 +5,23 @@ import { CustomMetricsService } from "./metrics/custom-metrics.service";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { ValidationPipe, VersioningType } from "@nestjs/common";
 import { HttpExceptionFilter } from "./shared/filters/http-exception.filter";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+import { DateTransformInterceptor } from "./shared/interceptors/dayjs.interceptor";
 
 async function bootstrap() {
+  dayjs.extend(utc);
+  dayjs.extend(timezone);
+  dayjs.tz.setDefault("Asia/Seoul");
+
   const app = await NestFactory.create(AppModule);
 
-  // 메트릭스 인터셉터 설정
+  // 인터셉터 설정
   app.useGlobalInterceptors(
     new MetricsInterceptor(app.get(CustomMetricsService)),
   );
+  app.useGlobalInterceptors(new DateTransformInterceptor());
 
   // API 버전 관리 활성화
   app.enableVersioning({
