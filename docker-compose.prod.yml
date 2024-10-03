@@ -8,6 +8,7 @@ services:
       - .env.prod
     volumes:
       - /home/ubuntu/app/global-bundle.pem:/app/global-bundle.pem:ro
+      - /home/ubuntu/app/public/products:/app/public/products 
     environment:
       - NODE_ENV=production
     healthcheck:

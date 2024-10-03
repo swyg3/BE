@@ -1,5 +1,4 @@
 import { Category } from "src/product/product.category";
-import { Seller } from "src/sellers/entities/seller.entity";
 
 export class CreateProductCommand {
   constructor(
@@ -13,4 +12,7 @@ export class CreateProductCommand {
     public readonly quantity: number,
     public readonly expirationDate: Date,
   ) {}
+}
+export interface CreateProductResult {
+  id: string;
 }

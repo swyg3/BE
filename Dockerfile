@@ -8,6 +8,9 @@ FROM base AS development
 RUN npm install
 COPY . .
 
+# 폴더 생성
+RUN mkdir -p public/products
+
 # 빌드 단계
 FROM base AS builder
 RUN npm ci

@@ -1,4 +1,4 @@
-import { CreateProductCommand } from "../impl/create-product.command";
+import { CreateProductCommand, CreateProductResult } from "../impl/create-product.command";
 import { ProductRepository } from "../../repositories/product.repository";
 import { Product } from "src/product/entities/product.entity";
 import { CreateInventoryCommand } from "src/inventory/commands/impl/create-inventory.command";
@@ -16,7 +16,7 @@ interface GeocodingResult {
 
 @CommandHandler(CreateProductCommand)
 export class CreateProductHandler
-  implements ICommandHandler<CreateProductCommand> {
+  implements ICommandHandler<CreateProductCommand, CreateProductResult> {
   private readonly logger = new Logger(CreateProductHandler.name);
 
   constructor(
@@ -28,7 +28,7 @@ export class CreateProductHandler
     @Inject(CommandBus) private readonly commandBus: CommandBus,
   ) { }
 
-  async execute(command: CreateProductCommand) {
+  async execute(command: CreateProductCommand): Promise<CreateProductResult> {
     const {
       sellerId,
       category,
@@ -73,8 +73,8 @@ export class CreateProductHandler
         description,
         originalPrice,
         discountedPrice,
-        locationX: geocodingResult.x,  
-        locationY: geocodingResult.y   
+        locationX: geocodingResult.x,
+        locationY: geocodingResult.y
       });
       this.logger.log(`command handler${productImageUrl}`);
 
@@ -157,6 +157,6 @@ export class CreateProductHandler
     }
 
     // 컨트롤러에 응답 반환
-    return name;
+    return { id: savedProduct.id };
   }
 }
