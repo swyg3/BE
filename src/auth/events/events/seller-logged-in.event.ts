@@ -17,6 +17,7 @@ export class SellerLoggedInEvent implements BaseEvent {
       storeAddress: string;
       storePhoneNumber: string;
       isBusinessNumberVerified: boolean;
+      agreeReceiveLocation: boolean;
       timestamp: Date;
     },
     public readonly version: number,

@@ -20,6 +20,7 @@ type LoginResult = {
   isNew: boolean;
   version?: number;
   isEmailVerified: boolean;
+  agreeReceiveLocation?: boolean;
   isBusinessNumberVerified?: boolean;
   storeName?: string;
   storeAddress?: string;
@@ -109,6 +110,7 @@ export class LoginOAuthCallbackCommandHandler
         email: result.email,
         name: result.name,
         userType: userType,
+        agreeReceiveLocation: result.agreeReceiveLocation,
         tokens: {
           access: {
             token: accessToken,
@@ -252,6 +254,7 @@ export class LoginOAuthCallbackCommandHandler
           phoneNumber: "휴대폰 번호를 입력해주세요",
           password: "",
           isEmailVerified: true,
+          agreeReceiveLocation: userInfo.agreeReceiveLocation,
         },
       );
       return {
@@ -259,6 +262,7 @@ export class LoginOAuthCallbackCommandHandler
         email: user.email,
         name: user.name,
         phoneNumber: user.phoneNumber,
+        agreeReceiveLocation: user.agreeReceiveLocation,
         isNew: isNewUser,
         isEmailVerified: user.isEmailVerified,
       };
@@ -274,6 +278,7 @@ export class LoginOAuthCallbackCommandHandler
           storeAddress: "매장 주소를 입력해주세요.",
           storePhoneNumber: "매장 전화번호를 입력해주세요.",
           isBusinessNumberVerified: false,
+          agreeReceiveLocation: userInfo.agreeReceiveLocation,
         },
       );
       return {
@@ -281,6 +286,7 @@ export class LoginOAuthCallbackCommandHandler
         email: seller.email,
         name: seller.name,
         phoneNumber: seller.phoneNumber,
+        agreeReceiveLocation: seller.agreeReceiveLocation,
         isNew: isNewSeller,
         isEmailVerified: seller.isEmailVerified,
         storeName: seller.storeName,
@@ -302,6 +308,7 @@ export class LoginOAuthCallbackCommandHandler
           phoneNumber: result.phoneNumber,
           isNewUser: result.isNew,
           isEmailVerified: true,
+          agreeReceiveLocation: result.agreeReceiveLocation,
           timestamp: new Date(),
         },
         result.version || 1,
@@ -314,6 +321,7 @@ export class LoginOAuthCallbackCommandHandler
           email: result.email,
           name: result.name,
           phoneNumber: result.phoneNumber,
+          agreeReceiveLocation: result.agreeReceiveLocation,
           isNewSeller: result.isNew,
           isEmailVerified: true,
           storeName: result.storeName,

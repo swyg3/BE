@@ -53,17 +53,12 @@ export class LoginEmailCommandHandler
         accessToken,
         refreshToken,
         accessTokenExpiresIn,
-        refreshTokenExpiresIn
-      } = await this.tokenService.generateTokens(
-        user.id,
-        user.email,
-        userType,
+        refreshTokenExpiresIn,
+      } = await this.tokenService.generateTokens(user.id, user.email, userType);
+      this.logger.log(
+        `JWT 생성: ${accessToken}, ${accessTokenExpiresIn}, ${refreshToken}, ${refreshTokenExpiresIn}`,
       );
-      this.logger.log(`JWT 생성: ${accessToken}, ${accessTokenExpiresIn}, ${refreshToken}, ${refreshTokenExpiresIn}`);
-      await this.refreshTokenService.storeRefreshToken(
-        user.id,
-        refreshToken,
-      );
+      await this.refreshTokenService.storeRefreshToken(user.id, refreshToken);
 
       // 3. 로그인 이벤트 생성 및 발행
       this.logger.log(
@@ -74,20 +69,21 @@ export class LoginEmailCommandHandler
 
       // 4. 결과 반환
       return {
-          [userType === "user" ? "userId" : "sellerId"]: user.id,
-          email: user.email,
-          name: user.name,
-          userType: userType,
-          tokens: {
-            access: {
-              token: accessToken,
-              expiresIn: accessTokenExpiresIn
-            },
-            refresh: {
-              token: refreshToken,
-              expiresIn: refreshTokenExpiresIn
-            }
+        [userType === "user" ? "userId" : "sellerId"]: user.id,
+        email: user.email,
+        name: user.name,
+        userType: userType,
+        agreeReceiveLocation: user.agreeReceiveLocation,
+        tokens: {
+          access: {
+            token: accessToken,
+            expiresIn: accessTokenExpiresIn,
           },
+          refresh: {
+            token: refreshToken,
+            expiresIn: refreshTokenExpiresIn,
+          },
+        },
       };
     } catch (error) {
       this.logger.error("로그인 실패", error.stack);
@@ -140,6 +136,7 @@ export class LoginEmailCommandHandler
       phoneNumber: user.phoneNumber,
       isNewUser: false,
       isEmailVerified: user.isEmailVerified,
+      agreeReceiveLocation: user.agreeReceiveLocation,
       timestamp,
     };
 
@@ -155,6 +152,7 @@ export class LoginEmailCommandHandler
           storeAddress: user.storeAddress,
           storePhoneNumber: user.storePhoneNumber,
           isBusinessNumberVerified: user.isBusinessNumberVerified,
+          agreeReceiveLocation: user.agreeReceiveLocation,
         },
         user.version || 1,
       );
