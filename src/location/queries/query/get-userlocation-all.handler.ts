@@ -7,6 +7,6 @@ export class GetUserLocationsHandler implements IQueryHandler<GetUserLocationsQu
   constructor(private readonly locationViewRepository: LocationViewRepository) {}
 
   async execute(query: GetUserLocationsQuery) {
-    return this.locationViewRepository.findAlllocationbyuserId(query.userId);
+    return this.locationViewRepository.findAllLocations(query.userId);
   }
 }

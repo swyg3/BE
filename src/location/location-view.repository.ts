@@ -3,6 +3,7 @@ import { ConfigService } from "@nestjs/config";
 import { UserLocation } from "./location-view.schema";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "nestjs-dynamoose";
+import { NaverMapsClient } from "src/shared/infrastructure/database/navermap.config";
 
 export interface LocationView {
   locationId: string;
@@ -24,7 +25,8 @@ export class LocationViewRepository {
       LocationView,
       { locationId: string }
     >,
-    private readonly configService: ConfigService
+    private readonly configService: ConfigService,
+    private readonly naverMapsClient: NaverMapsClient
   ) { }
 
 
@@ -115,7 +117,6 @@ export class LocationViewRepository {
     }
   }
 
-
   // 현재 위치 조회
   async findCurrentLocation(userId: string): Promise<{ latitude: string; longitude: string } | null> {
     try {
@@ -141,7 +142,41 @@ export class LocationViewRepository {
       throw error;
     }
   }
+  async findAllLocations(userId: string): Promise<Array<{ locationId: string; address: string; latitude: string; longitude: string }>> {
+    try {
+      this.logger.log(`Fetching all locations and reverse geocoding for user: ${userId}`);
+      const result = await this.locationViewModel
+        .query("userId").eq(userId)
+        .using("UserIdIndex")
+        .exec();
 
+      this.logger.debug(`Found ${result.length} locations for user ${userId}`);
 
+      const locations = await Promise.all(result.map(async (location: LocationView) => {
+        try {
+          this.logger.debug(`Reverse geocoding for location: ${location.locationId}, coords: ${location.latitude},${location.longitude}`);
+          const address = await this.naverMapsClient.getReverseGeocode(location.latitude, location.longitude);
+          return {
+            locationId: location.locationId,
+            address,
+            latitude: location.latitude,
+            longitude: location.longitude,
+          };
+        } catch (reverseGeocodingError) {
+          this.logger.error(`Reverse geocoding failed for location ${location.locationId}: ${reverseGeocodingError.message}`);
+          return {
+            locationId: location.locationId,
+            address: 'Address not found',
+            latitude: location.latitude,
+            longitude: location.longitude,
+          };
+        }
+      }));
 
+      return locations;
+    } catch (error) {
+      this.logger.error(`Failed to fetch all locations: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
 }
