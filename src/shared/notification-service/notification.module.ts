@@ -1,18 +1,20 @@
-import { Module } from '@nestjs/common';
-import { CqrsModule } from '@nestjs/cqrs';
-import { DynamooseModule } from 'nestjs-dynamoose';
-import * as CommandHandlers from './commands';
-import * as EventHandlers from './events';
-import { NotificationSchema } from './schema/notification.schema';
-import { NotificationController } from './notification.controller';
-import { NotificationViewRepository } from './notification.repository';
+import { Module } from "@nestjs/common";
+import { CqrsModule } from "@nestjs/cqrs";
+import { DynamooseModule } from "nestjs-dynamoose";
+import * as CommandHandlers from "./commands";
+import * as QueryHandlers from "./queries";
+import { NotificationSchema } from "./schema/notification.schema";
+import { NotificationController } from "./notification.controller";
+import { NotificationViewRepository } from "./notification.repository";
+import { EventSourcingModule } from "../infrastructure/event-sourcing";
 
 @Module({
   imports: [
     CqrsModule,
+    EventSourcingModule,
     DynamooseModule.forFeature([
       {
-        name: 'Notification',
+        name: "NotificationView",
         schema: NotificationSchema,
       },
     ]),
@@ -21,7 +23,7 @@ import { NotificationViewRepository } from './notification.repository';
   providers: [
     NotificationViewRepository,
     ...Object.values(CommandHandlers),
-    ...Object.values(EventHandlers),
+    ...Object.values(QueryHandlers),
   ],
   exports: [NotificationViewRepository],
 })
