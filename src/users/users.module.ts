@@ -13,14 +13,16 @@ import { PasswordService } from "src/shared/services/password.service";
 import { DynamooseModule } from "nestjs-dynamoose";
 import { UserSchema } from "./schemas/user-view.schema";
 import { UserViewRepository } from "./repositories/user-view.repository";
+import { NotificationModule } from "src/shared/notification-service/notification.module";
 
 @Module({
   imports: [
     CqrsModule,
     RedisModule,
     EventSourcingModule,
+    NotificationModule,
     TypeOrmModule.forFeature([User]),
-    DynamooseModule.forFeature([{ name: 'UserView', schema: UserSchema }]),
+    DynamooseModule.forFeature([{ name: "UserView", schema: UserSchema }]),
   ],
   controllers: [UsersController],
   providers: [

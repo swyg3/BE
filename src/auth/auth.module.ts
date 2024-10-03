@@ -22,6 +22,7 @@ import { EventSourcingModule } from "src/shared/infrastructure/event-sourcing";
 import { PasswordService } from "src/shared/services/password.service";
 import { HmacUtil } from "src/shared/utils/hmac.util";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
+import { NotificationModule } from "src/shared/notification-service/notification.module";
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { JwtAuthGuard } from "./guards/jwt-auth.guard";
     EventSourcingModule,
     UsersModule,
     SellersModule,
+    NotificationModule,
   ],
   controllers: [AuthController],
   providers: [
