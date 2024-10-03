@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, InternalServerErrorException, Logger } from "@nestjs/common";
-import { InjectModel, Model, QueryResponse, ScanResponse } from "nestjs-dynamoose";
+import { InjectModel, Item, Model, QueryResponse, ScanResponse } from "nestjs-dynamoose";
 import { SortOrder } from "dynamoose/dist/General";
 import { ConfigService } from "@nestjs/config/dist/config.service";
 import { DistanceCalculator } from "../util/distance-calculator";
@@ -31,6 +31,8 @@ export interface ProductView {
   distance: number;
   distanceDiscountScore: number;
 }
+type ProductViewItem = Item<ProductView> & ProductView;
+
 
 @Injectable()
 export class ProductViewRepository {
@@ -379,7 +381,7 @@ export class ProductViewRepository {
     };
   }
 
- 
+  
   async searchProducts(param: {
     searchTerm: string;
     sortBy: SortByOption;
@@ -394,123 +396,72 @@ export class ProductViewRepository {
     lastEvaluatedUrl: string | null;
     firstEvaluatedUrl: string | null;
     prevPageUrl: string | null;
-    count: number;
+    count: number
   }> {
-    try {
-      const { searchTerm, sortBy, order, limit, exclusiveStartKey, previousPageKey, latitude, longitude } = param;
-  
-      if (!searchTerm) {
-        throw new Error("searchTerm is required.");
-      }
-  
-      const lowercaseSearchTerm = searchTerm.toLowerCase().trim();
-  
-      // Scan operation
-      let scan = this.productViewModel.scan().where('GSI_KEY').eq('PRODUCT');
-      
-      // 적절한 인덱스 선택
-      let sortKey: string;
-  
-      switch (sortBy) {
-        case SortByOption.DiscountRate:
-          scan = scan.using('DiscountRateIndex');
-          sortKey = 'discountRate';
-          break;
-        case SortByOption.Distance:
-          scan = scan.using('DistanceIndex');
-          sortKey = 'distance';
-          break;
-        case SortByOption.DistanceDiscountScore:
-          scan = scan.using('DistanceDiscountIndex');
-          sortKey = 'distanceDiscountScore';
-          break;
-      }
-  
-      if (exclusiveStartKey) {
-        const startKey = JSON.parse(decodeURIComponent(exclusiveStartKey));
-        scan = scan.startAt(startKey);
-      }
-  
-      scan = scan.limit(1000);
-      const results: ProductView[] = await scan.exec();
-  
-      // 검색어로 필터링
-      let filteredItems = results.filter(item => item.name.toLowerCase().includes(lowercaseSearchTerm));
-  
-      // 거리 기반 정렬일 경우 거리 계산
-      if ((sortBy === SortByOption.Distance || sortBy === SortByOption.DistanceDiscountScore) && latitude && longitude) {
-        const userLocation = this.createPolygonFromCoordinates(Number(latitude), Number(longitude));
-        filteredItems = await this.calculateDistances(filteredItems, userLocation);
-      }
-  
-      // 정렬 적용
-      filteredItems = this.sortItems(filteredItems, sortBy, order);
-  
-      // 페이지네이션 적용
-      const { paginatedItems, lastEvaluatedKey } = this.applyPagination2(filteredItems, limit, sortBy, exclusiveStartKey);
-  
-      // 결과 포맷팅
-      return this.formatResult2(paginatedItems, lastEvaluatedKey, searchTerm, sortBy, order, limit, latitude, longitude, previousPageKey, sortKey);
-      
-    } catch (error) {
-      console.error(`Search query failed: ${error.message}`, error.stack);
-      throw new InternalServerErrorException('Failed to execute search query');
+    const { searchTerm, sortBy, order, limit, exclusiveStartKey, previousPageKey, latitude, longitude } = param;
+    
+    if (!searchTerm) {
+      throw new Error("searchTerm is required.");
     }
+
+    const lowercaseSearchTerm = searchTerm.toLowerCase().trim();
+
+    // Scan operation
+    const scan = this.productViewModel.scan('GSI_KEY').eq('PRODUCT');
+    
+    // Apply name filter
+    scan.and().where('name').contains(lowercaseSearchTerm);
+
+    if (exclusiveStartKey) {
+      const startKey = JSON.parse(decodeURIComponent(exclusiveStartKey));
+      scan.startAt(startKey);
+    }
+
+    scan.limit(1000); // Set a higher limit for initial scan
+    let items: ProductView[] = await scan.exec();
+
+    // 거리 관련 정렬일 경우 거리 계산
+    if ((sortBy === SortByOption.Distance || sortBy === SortByOption.DistanceDiscountScore) && latitude && longitude) {
+      const userLocation = this.createPolygonFromCoordinates(Number(latitude), Number(longitude));
+      items = await this.calculateDistances(items, userLocation);
+    }
+
+    // 정렬 적용
+    items = this.sortItems(items, sortBy, order);
+
+    // 페이지네이션 적용
+    const { paginatedItems, lastEvaluatedKey } = this.applyPagination2(items, limit, exclusiveStartKey);
+
+    return this.formatResult2(paginatedItems, lastEvaluatedKey, searchTerm, sortBy, order, limit, latitude, longitude, previousPageKey);
   }
-  
-  private applyPagination2(
-    items: ProductView[], 
-    limit: number, 
-    sortBy: SortByOption, 
-    exclusiveStartKey?: string
-  ): { paginatedItems: ProductView[], lastEvaluatedKey: any } {
+
+
+  private applyPagination2(items: ProductView[], limit: number, exclusiveStartKey?: string): { paginatedItems: ProductView[], lastEvaluatedKey: any } {
     let startIndex = 0;
     if (exclusiveStartKey) {
-      const parsedKey = JSON.parse(decodeURIComponent(exclusiveStartKey));
-      startIndex = items.findIndex(item => item[sortBy] === parsedKey[sortBy]);
-      if (startIndex === -1) {
-        startIndex = 0;
-      } else {
-        startIndex += 1;
-      }
+      const startKey = JSON.parse(decodeURIComponent(exclusiveStartKey));
+      startIndex = items.findIndex(item => item.productId === startKey.productId);
+      startIndex = startIndex === -1 ? 0 : startIndex + 1;
     }
-  
+
     const paginatedItems = items.slice(startIndex, startIndex + limit);
-    const lastItem = paginatedItems[paginatedItems.length - 1];
-  
-    let lastEvaluatedKey: Record<string, any> | null = null;
-  
-    if (lastItem) {
-      switch (sortBy) {
-        case SortByOption.DiscountRate:
-          lastEvaluatedKey = { discountRate: lastItem.discountRate, productId: lastItem.productId };
-          break;
-        case SortByOption.Distance:
-          lastEvaluatedKey = { distance: lastItem.distance, productId: lastItem.productId };
-          break;
-        case SortByOption.DistanceDiscountScore:
-          lastEvaluatedKey = { distanceDiscountScore: lastItem.distanceDiscountScore, productId: lastItem.productId };
-          break;
-      }
-    }
-  
+    const lastEvaluatedKey = paginatedItems.length === limit ? { productId: paginatedItems[paginatedItems.length - 1].productId } : null;
+
     return { paginatedItems, lastEvaluatedKey };
   }
-  
+
   private formatResult2(
-    items: ProductView[], 
-    lastEvaluatedKey: any, 
-    searchTerm: string, 
-    sortBy: SortByOption, 
-    order: 'asc' | 'desc', 
-    limit: number, 
-    latitude?: string, 
-    longitude?: string, 
-    previousPageKey?: string,
-    sortKey?: string
+    items: ProductView[],
+    lastEvaluatedKey: any,
+    searchTerm: string,
+    sortBy: SortByOption,
+    order: 'asc' | 'desc',
+    limit: number,
+    latitude?: string,
+    longitude?: string,
+    previousPageKey?: string
   ) {
     const appUrl = this.configService.get<string>('APP_URL');
-  
     const createUrlWithKey = (key: Record<string, any> | null, prevKey: string | null = null) => {
       if (!key || !appUrl) return null;
       const baseUrl = new URL("/api/products/search", appUrl);
@@ -527,24 +478,14 @@ export class ProductViewRepository {
       return baseUrl.toString();
     };
   
-    const firstEvaluatedKey = items.length > 0 ? {
-      GSI_KEY: 'PRODUCT',
-      [sortKey!]: items[0][sortKey!],
-    } : null;
-  
-    const lastEvaluatedUrl = lastEvaluatedKey ? createUrlWithKey(lastEvaluatedKey, JSON.stringify(firstEvaluatedKey)) : null;
+    const firstEvaluatedKey = items.length > 0 ? { productId: items[0].productId } : null;
     const firstEvaluatedUrl = createUrlWithKey(firstEvaluatedKey, previousPageKey);
+    const lastEvaluatedUrl = lastEvaluatedKey ? createUrlWithKey(lastEvaluatedKey, JSON.stringify(firstEvaluatedKey)) : null;
   
     let prevPageUrl: string | null = null;
     if (previousPageKey) {
       const prevKey = JSON.parse(decodeURIComponent(previousPageKey));
-      const prevKeyObj = {
-        GSI_KEY: 'PRODUCT',
-        [sortKey!]: prevKey[sortKey!],
-        productId: prevKey.productId,
-      };
-      prevPageUrl = createUrlWithKey(prevKeyObj, null);
-    
+      prevPageUrl = createUrlWithKey(prevKey, null);
     }
   
     return {
@@ -555,8 +496,7 @@ export class ProductViewRepository {
       count: items.length
     };
   }
-  
-  
+
   private  calculateRecommendationScore(product: ProductView): number {
     const distanceScore = 1 / (1 + (product.distance || Infinity));
     const discountScore = (product.discountRate || 0) / 100;
