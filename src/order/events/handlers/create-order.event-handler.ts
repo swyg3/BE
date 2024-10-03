@@ -1,9 +1,9 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { EventsHandler, IEventHandler } from "@nestjs/cqrs";
 import { InjectModel, Model } from "nestjs-dynamoose";
+import { v4 as uuidv4 } from 'uuid';
 import { CreateOrderEvent } from "../create-order.event";
 
-// OrderView 인터페이스 정의
 export interface OrderView {
     id: string;
     userId: string;
@@ -15,13 +15,12 @@ export interface OrderView {
     updatedAt: Date;
 }
 
-// OrderItemsView 인터페이스 정의
 export interface OrderItemsView {
     id: string;
-    orderId: string; // 주문 ID
-    productId: number; // 제품 ID
-    quantity: number; // 수량
-    price: number; // 가격
+    orderId: string;
+    productId: number;
+    quantity: number;
+    price: number;
 }
 
 @Injectable()
@@ -31,24 +30,22 @@ export class CreateOrderEventHandler implements IEventHandler<CreateOrderEvent> 
 
     constructor(
         @InjectModel("OrderView")
-        private readonly orderViewModel: Model<OrderView, { id: string }>, // OrderView 모델 주입
+        private readonly orderViewModel: Model<OrderView, { id: string }>,
         @InjectModel("OrderItemsView")
-        private readonly orderItemsViewModel: Model<OrderItemsView, { id: string }>, // OrderItemsView 모델 주입
+        private readonly orderItemsViewModel: Model<OrderItemsView, { id: string }>,
     ) {}
 
     async handle(event: CreateOrderEvent) {
         this.logger.log(`주문 생성중!!`);
 
-        // pickupTime을 문자열에서 Date 객체로 변환
         const pickupTime = new Date(event.data.pickupTime);
 
-        // 새로운 주문 생성
         const newOrder: OrderView = {
             id: event.data.id,
             userId: event.data.userId,
             status: event.data.status,
             totalAmount: event.data.totalAmount,
-            pickupTime: pickupTime,  // 변환된 Date 객체 할당
+            pickupTime: pickupTime,
             paymentMethod: event.data.paymentMethod,
             createdAt: new Date(),
             updatedAt: new Date(),
@@ -58,16 +55,17 @@ export class CreateOrderEventHandler implements IEventHandler<CreateOrderEvent> 
         await this.orderViewModel.create(newOrder);
         this.logger.log(`DynamoDB에 주문 저장 완료: ${JSON.stringify(newOrder)}`);
 
-        // 주문 항목 저장
-        const orderItemsPromises = event.data.items.map(item => {
+        const orderItemsPromises = event.data.items.map(async (item) => {
+            const uuId = uuidv4();
             const newOrderItem: OrderItemsView = {
-                id: event.data.id,
+                id: uuId,
                 orderId: newOrder.id,
                 productId: item.productId,
                 quantity: item.quantity,
                 price: item.price,
             };
-            return this.orderItemsViewModel.create(newOrderItem); // DynamoDB에 주문 항목 저장
+            this.logger.log(`DynamoDB에 주문 아이템 저장 완료: ${JSON.stringify(newOrderItem)}`);
+            return this.orderItemsViewModel.create(newOrderItem);
         });
 
         await Promise.all(orderItemsPromises);
