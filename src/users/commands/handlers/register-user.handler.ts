@@ -75,9 +75,15 @@ export class RegisterUserHandler
   }
 
   private async checkExistingUser(email: string): Promise<void> {
-    const existingUser = await this.userRepository.findByEmail(email);
+    const existingUser = await this.userRepository.findByEmailIncludingDeleted(email);
     if (existingUser) {
-      throw new BadRequestException("이미 가입한 이메일입니다.");
+      if (existingUser.isDeleted) {
+        throw new BadRequestException(
+          "이전에 탈퇴한 계정입니다. [마이 페이지]에서 가입한 계정을 재활성화해주세요."
+        );
+      } else {
+        throw new BadRequestException("이미 가입한 이메일입니다.");
+      }
     }
   }
 

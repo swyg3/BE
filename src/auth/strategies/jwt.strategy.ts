@@ -39,14 +39,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     if (isBlacklisted) {
       this.logger.warn(`Blacklisted token used: ${token}`);
-      throw new UnauthorizedException("토큰이 취소되었습니다.");
+      throw new UnauthorizedException("BLACKLISTED_TOKEN");
     }
 
     if (!payload.sub || !payload.email || !payload.userType) {
       this.logger.warn(
         `유효하지 않은 토큰 페이로드: ${JSON.stringify(payload)}`,
       );
-      throw new UnauthorizedException("유효하지 않은 토큰 페이로드입니다.");
+      throw new UnauthorizedException("INVALID_PAYLOAD");
     }
 
     this.logger.log(`User authenticated: ${payload.email}`);

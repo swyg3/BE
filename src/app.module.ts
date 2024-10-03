@@ -48,7 +48,8 @@ import { LocationModule } from './location/location.module';
     }),
     DynamooseModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => getDynamoConfig(configService),
+      useFactory: (configService: ConfigService) =>
+        getDynamoConfig(configService),
       inject: [ConfigService],
     }),
     ServeStaticModule.forRoot({

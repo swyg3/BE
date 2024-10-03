@@ -83,7 +83,7 @@ export class ProductController {
   async createProduct(
     @Body() createProductDto: CreateProductDto,
     @UploadedFile() file: Express.Multer.File,
-  ): Promise<CustomResponse> {
+  ): Promise<CreateProductResponse> {
     const {
       sellerId,
       category,
@@ -122,6 +122,7 @@ export class ProductController {
     return {
       success: true,
       message: "상품 등록에 성공했습니다.",
+      id: result.id,
     };
   } catch (error) {
     this.logger.error(`Failed to create product: ${error.message}`);
@@ -156,6 +157,7 @@ export class ProductController {
   @Get("get/:id")
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   async getProductById(@Param("id") id: string): Promise<CustomResponse> {
     const product = await this.queryBus.execute(new GetProductByIdQuery(id));
 
@@ -214,6 +216,7 @@ export class ProductController {
   @Get("discountrate")
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   async getProductsByDiscountRate(
     @Query() queryDto: GetProductByDiscountRateInputDto,
   ) {

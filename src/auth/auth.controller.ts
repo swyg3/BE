@@ -27,6 +27,7 @@ import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { JwtPayload } from "src/shared/interfaces/jwt-payload.interface";
 import { GetUser } from "src/shared/decorators/get-user.decorator";
 import {
+  ApiBearerAuth,
   ApiBody,
   ApiOperation,
   ApiParam,
@@ -184,7 +185,7 @@ export class AuthController {
       return {
         success: false,
         message: "로그인 처리 중 오류가 발생했습니다.",
-        data: error.message || "알 수 없는 오류입니다.", // 오류 메시지 추가
+        data: error.message || "알 수 없는 오류입니다.",
       };
     }
   }
@@ -192,6 +193,7 @@ export class AuthController {
   @ApiOperation({ summary: "로그아웃" })
   @ApiResponse({ status: 200, description: "로그아웃 성공" })
   @Post("logout")
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   async logout(@GetUser() user: JwtPayload): Promise<CustomResponse> {
     const { userId, accessToken, userType } = user;
