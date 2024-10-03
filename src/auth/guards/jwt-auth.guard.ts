@@ -47,7 +47,6 @@ export class JwtAuthGuard extends AuthGuard("jwt") {
     }
 
     if (!user) {
-      this.logger.warn("사용자 정보 없이 인증 시도");
       throw new UnauthorizedException("인증에 실패했습니다.");
     }
 
