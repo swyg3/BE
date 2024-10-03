@@ -54,7 +54,8 @@ import { CqrsModule } from "@nestjs/cqrs";
     }),
     DynamooseModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => getDynamoConfig(configService),
+      useFactory: (configService: ConfigService) =>
+        getDynamoConfig(configService),
       inject: [ConfigService],
     }),
     ServeStaticModule.forRoot({
