@@ -15,8 +15,8 @@ export interface OrderView {
 }
 
 export interface OrderItemsView {
-    id: string;
-    orderId: string;
+    id: string; // 기본키
+    orderId: string; // 삭제 기준
     productId: number;
     quantity: number;
     price: number;
@@ -31,7 +31,7 @@ export class DeleteOrderEventHandler implements IEventHandler<DeleteOrderEvent> 
         @InjectModel("OrderView")
         private readonly orderViewModel: Model<OrderView, { id: string }>,
         @InjectModel("OrderItemsView")
-        private readonly orderItemsViewModel: Model<OrderItemsView, { orderId: string }>,
+        private readonly orderItemsViewModel: Model<OrderItemsView, { id: string }>,
     ) {}
 
     async handle(event: DeleteOrderEvent) {
@@ -47,8 +47,9 @@ export class DeleteOrderEventHandler implements IEventHandler<DeleteOrderEvent> 
         // 주문 아이템 조회 후 삭제
         const deleteItemsPromises = event.data.items.map(async (item) => {
             if (item.orderId === orderId) {
-                await this.orderItemsViewModel.delete({ orderId: item.orderId });
-                this.logger.log(`DynamoDB에서 주문 아이템 삭제 완료: ${item.orderId}`);
+                // orderId에 해당하는 아이템을 id로 찾아서 삭제
+                await this.orderItemsViewModel.delete({ id: item.id });
+                this.logger.log(`DynamoDB에서 주문 아이템 삭제 완료: ${item.id}`);
             }
         });
 

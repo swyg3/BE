@@ -48,6 +48,7 @@ export class DeleteOrderCommandHandler implements ICommandHandler<DeleteOrderCom
                 paymentMethod: order.paymentMethod,
                 status: 'CANCELLED',
                 items: orderItems.map(item => ({
+                    id: item.id,
                     orderId: item.orderId,
                     productId: item.productId,
                     quantity: item.quantity,

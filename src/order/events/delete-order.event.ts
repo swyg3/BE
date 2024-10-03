@@ -14,6 +14,7 @@ export class DeleteOrderEvent implements BaseEvent {
             paymentMethod: string,
             status: string,
             items: {
+                id: string;
                 orderId: string;
                 productId: number;
                 quantity: number;
