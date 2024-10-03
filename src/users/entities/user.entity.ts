@@ -23,6 +23,9 @@ export class User {
   @Column({ type: "boolean", default: false })
   isDeleted: boolean;
 
+  @Column({ type: "boolean", default: false })
+  agreeReceiveLocation: boolean;
+
   @Column({ type: "timestamp", default: () => "CURRENT_TIMESTAMP" })
   createdAt: Date;
 

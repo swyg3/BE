@@ -32,6 +32,7 @@ export class SellerLoggedInEventHandler
       storeAddress: event.data.storeAddress,
       storePhoneNumber: event.data.storePhoneNumber,
       isBusinessVerified: event.data.isBusinessNumberVerified,
+      agreeReceiveLocation: event.data.agreeReceiveLocation,
     };
     this.logger.log(`updateData: ${updateData}`);
 

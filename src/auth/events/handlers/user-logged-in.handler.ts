@@ -24,10 +24,11 @@ export class UserLoggedInEventHandler
 
     const updateData = {
       lastLoginAt: new Date(),
-      email: event.data.email, // 추가
-      name: event.data.name, // 추가
-      phoneNumber: event.data.phoneNumber, // 추가
-      isEmailVerified: event.data.isEmailVerified, // 추가
+      email: event.data.email,
+      name: event.data.name,
+      phoneNumber: event.data.phoneNumber,
+      isEmailVerified: event.data.isEmailVerified,
+      agreeReceiveLocation: event.data.agreeReceiveLocation,
     };
     this.logger.log(`updateData: ${updateData}`);
     // DynamoDB에서 로그인 시간 업데이트
