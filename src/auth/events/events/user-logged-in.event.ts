@@ -13,6 +13,7 @@ export class UserLoggedInEvent implements BaseEvent {
       phoneNumber: string;
       isNewUser: boolean;
       isEmailVerified: boolean;
+      agreeReceiveLocation: boolean;
       timestamp: Date;
     },
     public readonly version: number,
