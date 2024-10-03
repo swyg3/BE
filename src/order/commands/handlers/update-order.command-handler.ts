@@ -42,19 +42,7 @@ export class UpdateOrderCommandHandler implements ICommandHandler<UpdateOrderCom
             const updatedOrder = await this.orderRepository.save(order);
             this.logger.log(`Updated Order: ${JSON.stringify(updatedOrder)}`);
 
-            // 4. 주문 아이템 수정
-            if (items && items.length > 0) {
-                const updatedItems = items.map(item => {
-                    return this.orderItemsRepository.update(
-                        { orderId: id, productId: item.productId },
-                        { quantity: item.quantity, price: item.price }
-                    );
-                });
-                await Promise.all(updatedItems);
-                this.logger.log(`Updated Order Items for Order ID: ${id}`);
-            }
-
-            // 5. aggregate에서 주문 수정 이벤트 생성
+            // 4. aggregate에서 주문 수정 이벤트 생성
             const event = new UpdateOrderEvent(
                 updatedOrder.id,
                 {
@@ -77,7 +65,7 @@ export class UpdateOrderCommandHandler implements ICommandHandler<UpdateOrderCom
                 1
             );
 
-            // 6. 이벤트 발행
+            // 5. 이벤트 발행
             await this.eventBusService.publishAndSave(event);
             this.logger.log(`Order Update Event Published: ${JSON.stringify(event)}`);
         } catch (error) {
