@@ -7,29 +7,34 @@ export const NotificationSchema = new Schema(
       hashKey: true,
     },
     userId: {
-        type: String,
-        required: true,
-        index: {
-            name: 'userIndex', 
-            type: 'global',
-            rangeKey: 'createdAt',
-            project: true, 
-        },
+      type: String,
+      required: true,
+      index: {
+        name: "userIndex",
+        type: "global",
+        rangeKey: "createdAt",
+        project: true,
+      },
     },
     message: {
-        type: String,
-        required: true,
+      type: String,
+      required: true,
+    },
+    type: {
+      type: String,
+      required: true,
+      enum: ["WELCOME", "PICK_UP", "ORDER"],
     },
     isRead: {
-        type: Boolean,
-        default: false,
+      type: Boolean,
+      default: false,
     },
   },
   {
     timestamps: {
-      createdAt: 'createdAt',
-      updatedAt: 'updatedAt',
+      createdAt: "createdAt",
+      updatedAt: "updatedAt",
     },
     saveUnknown: false,
-  }
+  },
 );

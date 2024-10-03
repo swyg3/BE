@@ -1,1 +1,2 @@
-export * from "./get-list-by-userId.query";
+export * from "./get-latest-by-userId.query";
+export * from "./get-latest-by-userId.handler";

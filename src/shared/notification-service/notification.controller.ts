@@ -3,10 +3,9 @@ import {
   Get,
   Param,
   UseGuards,
-  Put,
   Delete,
-  Query,
   ForbiddenException,
+  Patch,
 } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { UpdateNotificationCommand } from "./commands/update-notification.command";
@@ -15,7 +14,6 @@ import {
   ApiBearerAuth,
   ApiOperation,
   ApiParam,
-  ApiQuery,
   ApiResponse,
   ApiTags,
 } from "@nestjs/swagger";
@@ -23,8 +21,9 @@ import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
 import { GetUser } from "../decorators/get-user.decorator";
 import { JwtPayload } from "../interfaces/jwt-payload.interface";
 import { CustomResponse } from "../interfaces/api-response.interface";
-import { GetNotificationsQuery } from "./queries/get-list-by-userId.query";
 import { ValidateUUID } from "../decorators/validate-uuid.decorator";
+import { GetLatestNotificationsQuery } from "./queries/get-latest-by-userId.query";
+import { NotificationView } from "./notification.repository";
 
 @ApiTags("Notifications")
 @Controller("notifications")
@@ -36,10 +35,10 @@ export class NotificationController {
     private readonly queryBus: QueryBus,
   ) {}
 
-  @ApiOperation({ summary: "사용자 알림 목록 조회" })
+  @ApiOperation({ summary: "최신 알림 10개 조회" })
   @ApiResponse({
     status: 200,
-    description: "알림 목록 조회 성공",
+    description: "최신 알림 조회 성공",
     schema: {
       type: "object",
       properties: {
@@ -62,16 +61,17 @@ export class NotificationController {
       },
     },
   })
-  @ApiQuery({ name: "page", required: false, type: Number })
-  @ApiQuery({ name: "limit", required: false, type: Number })
-  @Get()
-  async getNotifications(
+  @ApiParam({ name: "id", type: "string", description: "사용자 ID" })
+  @Get(":id")
+  async getLatestNotifications(
+    @ValidateUUID("id") id: string,
     @GetUser() user: JwtPayload,
-    @Query("page") page: number = 1,
-    @Query("limit") limit: number = 10,
-  ): Promise<CustomResponse<any[]>> {
+  ): Promise<CustomResponse<NotificationView[]>> {
+    if (user.userId !== id) {
+      throw new ForbiddenException("자신의 알림만 조회할 수 있습니다.");
+    }
     const notifications = await this.queryBus.execute(
-      new GetNotificationsQuery(user.userId, page, limit),
+      new GetLatestNotificationsQuery(id),
     );
     return {
       success: true,
@@ -79,7 +79,7 @@ export class NotificationController {
     };
   }
 
-  @ApiOperation({ summary: "알림 읽음 상태 변경" })
+  @ApiOperation({ summary: "단일 알림 읽음 상태 변경" })
   @ApiResponse({
     status: 200,
     description: "알림 상태 변경 성공",
@@ -94,76 +94,52 @@ export class NotificationController {
       },
     },
   })
-  @ApiParam({ name: "id", type: "string", description: "알림 ID" })
-  @Put(":id/read")
+  @ApiParam({ name: "id", type: "string", description: "사용자 ID" })
+  @ApiParam({ name: "messageId", type: "string", description: "알림 ID" })
+  @Patch(":id/read/:messageId")
   async markNotificationAsRead(
-    @ValidateUUID("id") id: string,
+    @Param("id") id: string,
+    @Param("messageId") messageId: string,
     @GetUser() user: JwtPayload,
   ): Promise<CustomResponse> {
-    await this.commandBus.execute(
-      new UpdateNotificationCommand(id, user.userId, true),
-    );
+    if (user.userId !== id) {
+      throw new ForbiddenException("자신의 알림만 변경할 수 있습니다.");
+    }
+    await this.commandBus.execute(new UpdateNotificationCommand(id, messageId));
     return {
       success: true,
       message: "알림 상태가 성공적으로 변경되었습니다.",
     };
   }
 
-  @ApiOperation({ summary: "알림 삭제" })
+  @ApiOperation({ summary: "모든 알림 삭제" })
   @ApiResponse({
     status: 200,
-    description: "알림 삭제 성공",
+    description: "모든 알림 삭제 성공",
     schema: {
       type: "object",
       properties: {
         success: { type: "boolean", example: true },
         message: {
           type: "string",
-          example: "알림이 성공적으로 삭제되었습니다.",
+          example: "모든 알림이 성공적으로 삭제되었습니다.",
         },
       },
     },
   })
-  @ApiParam({ name: "id", type: "string", description: "알림 ID" })
+  @ApiParam({ name: "id", type: "string", description: "사용자 ID" })
   @Delete(":id")
-  async deleteNotification(
+  async deleteAllNotifications(
     @ValidateUUID("id") id: string,
     @GetUser() user: JwtPayload,
   ): Promise<CustomResponse> {
-    await this.commandBus.execute(
-      new DeleteNotificationCommand(id, user.userId),
-    );
+    if (user.userId !== id) {
+      throw new ForbiddenException("자신의 알림만 삭제할 수 있습니다.");
+    }
+    await this.commandBus.execute(new DeleteNotificationCommand(id));
     return {
       success: true,
-      message: "알림이 성공적으로 삭제되었습니다.",
-    };
-  }
-
-  @ApiOperation({ summary: "모든 알림 읽음 상태로 변경" })
-  @ApiResponse({
-    status: 200,
-    description: "모든 알림 읽음 처리 성공",
-    schema: {
-      type: "object",
-      properties: {
-        success: { type: "boolean", example: true },
-        message: {
-          type: "string",
-          example: "모든 알림이 읽음 상태로 변경되었습니다.",
-        },
-      },
-    },
-  })
-  @Put("read-all")
-  async markAllNotificationsAsRead(
-    @GetUser() user: JwtPayload,
-  ): Promise<CustomResponse> {
-    await this.commandBus.execute(
-      new UpdateNotificationCommand(null, user.userId, true, true),
-    );
-    return {
-      success: true,
-      message: "모든 알림이 읽음 상태로 변경되었습니다.",
+      message: "모든 알림이 성공적으로 삭제되었습니다.",
     };
   }
 }
