@@ -222,8 +222,6 @@ export class AuthController {
       },
     },
   })
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
   @Post("refresh-token")
   async refreshToken(
     @Body("refreshToken") refreshToken: string,
