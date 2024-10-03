@@ -1,9 +1,9 @@
 import { IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 import { GetNearestProductsQuery } from "../impl/get-nearest-products";
+import { InternalServerErrorException, Logger } from "@nestjs/common";
 import { ProductView, ProductViewRepository } from "src/product/repositories/product-view.repository";
-import { Logger, InternalServerErrorException } from '@nestjs/common';
 import { DistanceCalculator } from "src/product/util/distance-calculator";
-
+import { Polygon } from "typeorm";
 interface ProductWithDistance extends ProductView {
   distance: number;
 }
@@ -25,7 +25,8 @@ export class GetNearestProductsHandler implements IQueryHandler<GetNearestProduc
 
     try {
       const allProducts = await this.productViewRepository.findAll();
-      const productsWithDistance = this.calculateDistances(allProducts, lat, lon);
+      const userLocation = DistanceCalculator.createPolygonFromCoordinates(Number(lat), Number(lon));
+      const productsWithDistance = this.calculateDistancesAndScores(allProducts, userLocation);
 
       return {
         byDistance: this.getUniqueSellerProducts(
@@ -37,7 +38,7 @@ export class GetNearestProductsHandler implements IQueryHandler<GetNearestProduc
           7
         ),
         recommended: this.getUniqueSellerProducts(
-          [...productsWithDistance].sort((a, b) => this.calculateRecommendationScore(b) - this.calculateRecommendationScore(a)),
+          [...productsWithDistance].sort((a, b) => b.recommendationScore - a.recommendationScore),
           7
         )
       };
@@ -47,20 +48,28 @@ export class GetNearestProductsHandler implements IQueryHandler<GetNearestProduc
     }
   }
 
-  private calculateDistances(products: ProductView[], lat: number, lon: number): ProductWithDistance[] {
-    return products.map(product => ({
-      ...product,
-      distance: DistanceCalculator.vincentyDistance(
-        lat,
-        lon,
-        Number(product.locationY),
-        Number(product.locationX)
-      )
-    }));
+  private calculateDistancesAndScores(products: ProductView[], userLocation: Polygon): ProductWithDistanceAndScore[] {
+    return products.map(product => {
+      const productLocation = DistanceCalculator.createPolygonFromCoordinates(Number(product.locationX),Number(product.locationY));
+      const distance = DistanceCalculator.vincentyDistance(userLocation, productLocation);
+      const recommendationScore = this.calculateRecommendationScore(distance, product.discountRate);
+      
+      return {
+        ...product,
+        distance,
+        recommendationScore
+      };
+    });
   }
 
-  private getUniqueSellerProducts(products: ProductWithDistance[], limit: number): ProductWithDistance[] {
-    const uniqueSellerProducts: ProductWithDistance[] = [];
+  private calculateRecommendationScore(distance: number, discountRate: number): number {
+    const distanceScore = 1 / (1 + distance);
+    const discountScore = discountRate / 100;
+    return (distanceScore + discountScore) / 2;
+  }
+
+  private getUniqueSellerProducts(products: ProductWithDistanceAndScore[], limit: number): ProductWithDistanceAndScore[] {
+    const uniqueSellerProducts: ProductWithDistanceAndScore[] = [];
     const seenSellerIds = new Set<string>();
 
     for (const product of products) {
@@ -76,11 +85,10 @@ export class GetNearestProductsHandler implements IQueryHandler<GetNearestProduc
 
     return uniqueSellerProducts;
   }
+}
 
-  private calculateRecommendationScore(product: ProductWithDistance): number {
-    // 거리와 할인율을 고려한 추천 점수 계산
-    const distanceScore = 1 / (1 + product.distance); // 거리가 가까울수록 높은 점수
-    const discountScore = product.discountRate / 100;
-    return (distanceScore + discountScore) / 2; // 단순 평균, 필요에 따라 가중치 조정 가능
-  }
+// 새로운 인터페이스 정의
+interface ProductWithDistanceAndScore extends ProductView {
+  distance: number;
+  recommendationScore: number;
 }

@@ -1,26 +1,25 @@
 import { EventsHandler, IEventHandler } from "@nestjs/cqrs";
 import { Logger } from "@nestjs/common";
-import { ProductViewRepository } from "../../repositories/product-view.repository";
+import { ProductView, ProductViewRepository } from "../../repositories/product-view.repository";
 import { ProductCreatedEvent } from "../impl/product-created.event";
-
 
 @EventsHandler(ProductCreatedEvent)
 export class ProductCreatedHandler
-  implements IEventHandler<ProductCreatedEvent>
-{
+  implements IEventHandler<ProductCreatedEvent> {
   private readonly logger = new Logger(ProductCreatedHandler.name);
 
   constructor(
     private readonly productViewRepository: ProductViewRepository,
-  ) {}
+  ) { }
 
   async handle(event: ProductCreatedEvent) {
     this.logger.log(`ProductCreatedEvent 처리중: ${event.aggregateId}`);
-    this.logger.log(`evebt handler${event.data.productImageUrl}`);
+    this.logger.log(`event handler ${event.data.productImageUrl}`);
 
     try {
-      await this.productViewRepository.create({
+      const productView: ProductView = {
         productId: event.aggregateId,
+        GSI_KEY: "PRODUCT",
         sellerId: event.data.sellerId,
         category: event.data.category,
         name: event.data.name,
@@ -30,12 +29,16 @@ export class ProductCreatedHandler
         discountedPrice: Number(event.data.discountedPrice),
         discountRate: Number(event.data.discountRate),
         availableStock: Number(event.data.availableStock),
-        expirationDate: event.data.expirationDate,
-        createdAt: event.data.createdAt || new Date(), 
-        updatedAt: event.data.updatedAt || new Date(), 
-        locationX: event.data.locationX,
-        locationY: event.data.locationY
-      });
+        expirationDate: new Date(event.data.expirationDate),
+        createdAt: new Date(event.data.createdAt || Date.now()),
+        updatedAt: new Date(event.data.updatedAt || Date.now()),
+        locationX: event.data.locationX.toString(),
+        locationY: event.data.locationY.toString(),
+        distance: 0, // 초기 거리값은 0으로 설정
+        distanceDiscountScore: 0
+      };
+
+      await this.productViewRepository.create(productView);
 
       this.logger.log(`ProductView 등록 성공: ${event.aggregateId}`);
     } catch (error) {

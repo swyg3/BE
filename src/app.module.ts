@@ -11,7 +11,6 @@ import { AuthModule } from "./auth/auth.module";
 import { SellersModule } from "./sellers/sellers.module";
 import { configValidationSchema } from "./shared/infrastructure/config/config.validation";
 import { getTypeOrmConfig } from "./shared/infrastructure/database/typeorm.config";
-import { getMongoConfig } from "./shared/infrastructure/database/mongodb.config";
 import { ProductModule } from "./product/product.module";
 import { InventoryModule } from "./inventory/inventory.module";
 import { ServeStaticModule } from "@nestjs/serve-static";
@@ -20,6 +19,7 @@ import { DynamooseModule } from "nestjs-dynamoose";
 import { getDynamoConfig } from "./shared/infrastructure/database/dynamodb.config";
 import { HttpModule } from "@nestjs/axios";
 import { CqrsModule } from "@nestjs/cqrs";
+import { LocationModule } from './location/location.module';
 
 @Module({
   imports: [
@@ -46,12 +46,6 @@ import { CqrsModule } from "@nestjs/cqrs";
       useFactory: getTypeOrmConfig,
       inject: [ConfigService],
     }),
-    MongooseModule.forRootAsync({
-      imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) =>
-        await getMongoConfig(configService),
-      inject: [ConfigService],
-    }),
     DynamooseModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) =>
@@ -70,6 +64,7 @@ import { CqrsModule } from "@nestjs/cqrs";
     InventoryModule,
     HttpModule,
     CqrsModule,
+    LocationModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -1,6 +1,6 @@
 import { IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 import { FindProductsByCategoryDto } from "src/product/dtos/get-category.dto";
-import { ProductViewRepository } from "src/product/repositories/product-view.repository";
+import { ProductViewRepository, SortByOption } from "src/product/repositories/product-view.repository";
 import { Logger } from "@nestjs/common";
 import { FindProductsByCategoryQuery } from "../impl/get-product-by-category.query";
 import { GetProductByDiscountRateOutputDto } from "src/product/dtos/get-dicounstRate-out.dto";
@@ -15,13 +15,15 @@ export class FindProductsByCategoryHandler implements IQueryHandler<FindProducts
   ) {}
 
   async execute(query: FindProductsByCategoryQuery): Promise<GetProductByDiscountRateOutputDto>{
-    const { category, sortBy, order, limit, exclusiveStartKey, previousPageKey } = query;
+    const { category, sortBy, order, limit, latitude, longitude,exclusiveStartKey, previousPageKey } = query;
 
     const param = {
       category:category as Category,
-      sortBy:sortBy as "discountRate" | "distance" | "distanceDiscountScore",
+      sortBy: sortBy as SortByOption,
       order,
       limit: Number(limit),
+      latitude,
+      longitude,
       ...(exclusiveStartKey && { exclusiveStartKey }),
       ...(previousPageKey && { previousPageKey })
     };

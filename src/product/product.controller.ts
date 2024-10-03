@@ -11,6 +11,7 @@ import {
   Query,
   UseInterceptors,
   UploadedFile,
+  NotFoundException,
   BadRequestException,
 } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
@@ -32,6 +33,9 @@ import { FindProductsByCategoryDto } from "./dtos/get-category.dto";
 import { SearchProductsDto } from "./dtos/get-search.dto";
 import { FindProductsByCategoryQuery } from "./queries/impl/get-product-by-category.query";
 import { SearchProductsQuery } from "./queries/impl/get-search-products";
+import { JwtPayload } from "src/shared/interfaces/jwt-payload.interface";
+import { GetUser } from "src/shared/decorators/get-user.decorator";
+import { LocationViewRepository } from "src/location/location-view.repository";
 
 
 @ApiTags("Products")
@@ -43,7 +47,10 @@ export class ProductController {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
+    private readonly locationViewRepository: LocationViewRepository
   ) { }
+
+
 
   @ApiOperation({ summary: "상품 등록" })
   @ApiResponse({ status: 201, description: "상품 생성 성공" })
@@ -143,10 +150,12 @@ export class ProductController {
     };
   }
 
+
   @ApiOperation({ summary: "상품 상세 조회" })
   @ApiResponse({ status: 200, description: "상품 상세 조회 성공" })
   @ApiParam({ name: "id", description: "조회할 상품의 ID" })
   @Get("get/:id")
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   async getProductById(@Param("id") id: string): Promise<CustomResponse> {
@@ -205,6 +214,7 @@ export class ProductController {
   @ApiOperation({ summary: "상품 할인률 순 조회" })
   @ApiResponse({ status: 200, description: "상품 할인률 순 조회 성공" })
   @Get("discountrate")
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   async getProductsByDiscountRate(
@@ -226,42 +236,105 @@ export class ProductController {
   }
 
   @Get('category')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: '카테고리별 제품 조회', description: '지정된 카테고리의 제품을 조회하고 정렬합니다.' })
   @ApiResponse({ status: 200, description: '성공적으로 제품 목록을 반환함', type: [Object] })
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  async findProductsByCategoryAndSort(@Query() findProductsByCategoryDto: FindProductsByCategoryDto) {
-    const {category, sortBy, order, limit, exclusiveStartKey, previousPageKey } = findProductsByCategoryDto;
-    const query = new FindProductsByCategoryQuery(category, sortBy, order, limit, exclusiveStartKey, previousPageKey);
-    return this.queryBus.execute(query);
+  async findProductsByCategoryAndSort(
+    @GetUser() user: JwtPayload,
+    @Query() findProductsByCategoryDto: FindProductsByCategoryDto,
+  ) {
+    const { category, sortBy, order, limit, exclusiveStartKey, previousPageKey } = findProductsByCategoryDto;
+    
+    // isCurrent를 true로 설정하여 현재 위치 정보를 가져옵니다.
+    const currentLocation = await this.locationViewRepository.findCurrentLocation(user.userId);
+    if (!currentLocation) {
+      throw new NotFoundException('현재 위치 정보가 설정되어 있지 않습니다.');
+    }
+    // 비구조화 할당을 통해 latitude와 longitude를 추출
+    const { latitude, longitude } = currentLocation;
+
+    const query = new FindProductsByCategoryQuery(category, sortBy, order, limit, 
+      latitude, longitude, exclusiveStartKey, previousPageKey);
+
+    const result = await this.queryBus.execute(query);
+
+    return {
+      success: true,
+      message: '해당 상품 리스트 조회를 성공했습니다.',
+      data: result.items,
+      lastEvaluatedUrl: result.lastEvaluatedUrl,
+      firstEvaluatedUrl: result.firstEvaluatedUrl,
+      prevPageUrl: result.prevPageUrl,
+      count: result.count,
+    };
   }
- 
+
 
   @Get('search')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: '제품 검색', description: '검색어를 기반으로 제품을 검색하고 정렬합니다.' })
   @ApiResponse({ status: 200, description: '성공적으로 검색 결과를 반환함', type: [Object] })
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  async searchProducts(@Query() searchProductsDto: SearchProductsDto) {
-    const {searchTerm, sortBy, order, limit, exclusiveStartKey, previousPageKey } = searchProductsDto;
-    const query = new SearchProductsQuery(searchTerm, sortBy, order, limit, exclusiveStartKey, previousPageKey);
-    return this.queryBus.execute(query);
+  async searchProducts(
+    @GetUser() user: JwtPayload,
+    @Query() searchProductsDto: SearchProductsDto,
+  ) {
+    const { searchTerm, sortBy, order, limit, exclusiveStartKey, previousPageKey } = searchProductsDto;
+
+    // 현재 위치 정보를 가져옵니다.
+    const currentLocation = await this.locationViewRepository.findCurrentLocation(user.userId);
+    if (!currentLocation) {
+      throw new NotFoundException('현재 위치 정보가 설정되어 있지 않습니다.');
+    }
+    const { latitude, longitude } = currentLocation;
+
+
+    const query = new SearchProductsQuery(
+      searchTerm,
+      sortBy,
+      order,
+      limit,
+      latitude,
+      longitude,
+      exclusiveStartKey,
+      previousPageKey,
+    );
+
+    const result = await this.queryBus.execute(query);
+
+    return {
+      success: true,
+      message: '해당 상품 리스트 조회를 성공했습니다.',
+      data: result.items,
+      lastEvaluatedUrl: result.lastEvaluatedUrl,
+      firstEvaluatedUrl: result.firstEvaluatedUrl,
+      prevPageUrl: result.prevPageUrl,
+      count: result.count,
+    };
   }
 
-
-  //위치허용 api
+  // 위치허용 API
   @Get('nearest')
-  @ApiOperation({ summary: '가까운 상품 조회', description: '사용자 위치 기반으로 가까운 상품을 조회합니다.' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: '가까운 상품 조회', description: '메인화면에서 사용자 위치 기반으로 가까운 상품을 조회합니다.' })
   @ApiResponse({ status: 200, description: '가까운 상품 조회 성공' })
   @ApiQuery({ name: 'lat', type: Number, description: '위도' })
   @ApiQuery({ name: 'lon', type: Number, description: '경도' })
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  async getNearestProducts(@Query('lat') lat: number, @Query('lon') lon: number): Promise<any[]> {
-    const query = new GetNearestProductsQuery(lat, lon);
+  async getNearestProducts(
+    @GetUser() user: JwtPayload,  
+  ): Promise<any[]> {
+    // 현재 위치 정보를 가져옵니다.
+    const currentLocation = await this.locationViewRepository.findCurrentLocation(user.userId);
+    if (!currentLocation) {
+      throw new NotFoundException('현재 위치 정보가 설정되어 있지 않습니다.');
+    }
+
+    // 현재 위치를 사용하여 가까운 상품을 조회하는 쿼리를 생성합니다.
+    const query = new GetNearestProductsQuery(currentLocation.latitude, currentLocation.longitude);
     return this.queryBus.execute(query);
   }
-
 
 
 }

@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsEnum, IsInt, IsOptional, IsString, Min } from "class-validator";
+import { IsEnum, IsInt, IsOptional, IsString, Matches, Min } from "class-validator";
 import { Category } from "../product.category";
 import { Type } from "class-transformer";
 
@@ -34,4 +34,5 @@ export class FindProductsByCategoryDto {
   @IsOptional()
   @IsString()
   previousPageKey?: string;
+
 }

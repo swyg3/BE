@@ -20,8 +20,9 @@ export class ProductCreatedEvent implements BaseEvent {
       expirationDate: Date;
       createdAt: Date;
       updatedAt: Date;
-      locationX: string,
-      locationY: string,
+      locationX: string;
+      locationY: string;
+      distance: number;
     },
     public readonly version: number,
   ) {}
