@@ -22,60 +22,67 @@ export class UpdateOrderCommandHandler implements ICommandHandler<UpdateOrderCom
     ) {}
 
     async execute(command: UpdateOrderCommand): Promise<any> {
-        const { orderId, totalAmount, totalPrice, pickupTime, paymentMethod, status, items } = command;
+        const { id, userId, totalAmount, totalPrice, pickupTime, items, paymentMethod, status } = command;
 
-        // 1. 주문 내역 찾기
-        const order = await this.orderRepository.findOne({ where: { id: orderId } });
-        if (!order) {
-            throw new Error(`Order with ID ${orderId} not found.`);
-        }
-
-        // 2. 주문 수정
-        if (totalAmount !== undefined) order.totalAmount = totalAmount;
-        if (totalPrice !== undefined) order.totalPrice = totalPrice;
-        if (pickupTime) order.pickupTime = pickupTime;
-        if (paymentMethod) order.paymentMethod = paymentMethod;
-        if (status) order.status = status;
-
-        // 3. 수정된 주문 저장
-        const updatedOrder = await this.orderRepository.save(order);
-        this.logger.log(`주문 업데이트 완료: ${updatedOrder.id}`);
-
-        // 4. 주문 아이템 수정 (선택 사항)
-        if (items && items.length > 0) {
-            for (const item of items) {
-                await this.orderItemsRepository.update({ orderId, productId: item.productId }, {
-                    quantity: item.quantity,
-                    price: item.price
-                });
+        try {
+            // 1. 주문 찾기
+            const order = await this.orderRepository.findOne({ where: { id } });
+            if (!order) {
+                throw new Error(`Order with ID ${id} not found.`);
             }
-            this.logger.log(`주문 아이템 업데이트 완료: ${orderId}`);
+
+            // 2. 주문 수정
+            if (totalAmount !== undefined) order.totalAmount = totalAmount;
+            if (totalPrice !== undefined) order.totalPrice = totalPrice;
+            if (pickupTime) order.pickupTime = pickupTime;
+            if (paymentMethod) order.paymentMethod = paymentMethod;
+            if (status) order.status = status;
+
+            // 3. 수정된 주문 저장
+            const updatedOrder = await this.orderRepository.save(order);
+            this.logger.log(`Updated Order: ${JSON.stringify(updatedOrder)}`);
+
+            // 4. 주문 아이템 수정
+            if (items && items.length > 0) {
+                const updatedItems = items.map(item => {
+                    return this.orderItemsRepository.update(
+                        { orderId: id, productId: item.productId },
+                        { quantity: item.quantity, price: item.price }
+                    );
+                });
+                await Promise.all(updatedItems);
+                this.logger.log(`Updated Order Items for Order ID: ${id}`);
+            }
+
+            // 5. aggregate에서 주문 수정 이벤트 생성
+            const event = new UpdateOrderEvent(
+                updatedOrder.id,
+                {
+                    id: updatedOrder.id,
+                    userId: updatedOrder.userId,
+                    totalAmount: updatedOrder.totalAmount,
+                    totalPrice: updatedOrder.totalPrice,
+                    paymentMethod: updatedOrder.paymentMethod,
+                    status: updatedOrder.status,
+                    items: items.map(item => ({
+                        orderId: updatedOrder.id,
+                        productId: item.productId,
+                        quantity: item.quantity,
+                        price: item.price,
+                    })),
+                    pickupTime: updatedOrder.pickupTime,
+                    createdAt: updatedOrder.createdAt,
+                    updatedAt: new Date(),
+                },
+                1
+            );
+
+            // 6. 이벤트 발행
+            await this.eventBusService.publishAndSave(event);
+            this.logger.log(`Order Update Event Published: ${JSON.stringify(event)}`);
+        } catch (error) {
+            this.logger.error(`Failed to update order: ${error.message}`);
+            throw error;
         }
-
-        // 5. 주문 수정 이벤트 생성
-        const event = new UpdateOrderEvent(
-            updatedOrder.id,
-            {
-                id: updatedOrder.id,
-                userId: updatedOrder.userId,
-                totalAmount: updatedOrder.totalAmount,
-                totalPrice: updatedOrder.totalPrice,
-                paymentMethod: updatedOrder.paymentMethod,
-                status: updatedOrder.status,
-                items: items ? items.map(item => ({
-                    orderId: updatedOrder.id,
-                    productId: item.productId,
-                    quantity: item.quantity,
-                    price: item.price,
-                })) : [],
-                pickupTime: updatedOrder.pickupTime,
-                createdAt: order.createdAt,
-                updatedAt: new Date(),
-            },
-            1
-        );
-
-        // 6. 이벤트 발행
-        this.eventBusService.publishAndSave(event);
     }
 }
