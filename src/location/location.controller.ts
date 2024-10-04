@@ -12,6 +12,7 @@ import { UserLocationDto } from './dto/userlocation.dto';
 import { AddressDto } from './dto/address.dto';
 import { SaveAddressCommand } from './commands/impl/save-address.command';
 import { GetAllAddressesQuery } from './queries/impl/get-all-addresses.query';
+import { SetCurrentLocationCommand } from './commands/impl/set-current-location.command';
 
 @ApiTags('locations')
 @Controller('locations')
@@ -36,7 +37,7 @@ export class LocationController {
   })
   @ApiResponse({ status: 200, description: '현재 위치 설정 성공' })
   @ApiResponse({ status: 400, description: '잘못된 요청' })
-  async setCurrentLocation(
+  async createCurrentLocation(
     @GetUser() user: JwtPayload,
     @Body() locationDataDto: LocationDataDto,
   ) {
@@ -83,5 +84,11 @@ export class LocationController {
   @ApiResponse({ status: 200, description: '주소 목록 조회 성공', type: [AddressDto] })
   async getAllAddresses(@GetUser() user: JwtPayload) {
     return this.queryBus.execute(new GetAllAddressesQuery(user.userId));
+  }
+
+  @Post('setcurrent')
+  async setCurrentLocation(@GetUser() user: JwtPayload, @Body('id') id: string) {
+    await this.commandBus.execute(new SetCurrentLocationCommand(user.userId, id));
+    return { message: 'Current location updated successfully' };
   }
 }

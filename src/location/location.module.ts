@@ -12,12 +12,16 @@ import { LocationViewRepository } from './location-view.repository';
 import { ProductModule } from 'src/product/product.module';
 import { GetCurrentLocationHandler } from './queries/query/get-userlocation-iscurrent.handler';
 import { SaveAddressHandler } from './commands/handlers/save-address.handler';
+import { CurrentLocationSetHandler } from './events/handlers/current-location-set.handler';
+import { UpdateCurrentLocationHandler } from './commands/handlers/set-current-location.handler';
 
 const CommandHandlers = [
-  SaveAddressHandler
+  SaveAddressHandler,
+  UpdateCurrentLocationHandler
 ];
 const EventsHandlers = [
-  UserLocationSavedHandler
+  UserLocationSavedHandler,
+  CurrentLocationSetHandler
 ];
 const QuerysHandlers = [
   GetUserLocationsHandler,

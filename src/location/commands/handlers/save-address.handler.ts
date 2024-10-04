@@ -28,7 +28,7 @@ export class SaveAddressHandler implements ICommandHandler<SaveAddressCommand> {
         newLocation.roadAddress = roadAddress;
         newLocation.latitude = geocodeResult.y;
         newLocation.longitude = geocodeResult.x;
-        newLocation.isCurrent = true; 
+        newLocation.isCurrent = false; 
         newLocation.locationType = LocationType.SEARCH;
         newLocation.isAgreed = true; 
         newLocation.updatedAt = new Date();

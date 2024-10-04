@@ -175,5 +175,38 @@ export class LocationViewRepository {
       throw error;
     }
   }
+
+  async updateCurrentLocation(userId: string, newCurrentLocationId: string): Promise<void> {
+    this.logger.log(`Updating current location for user: ${userId}`);
+
+    try {
+      // 사용자의 모든 위치 조회
+      const userLocations = await this.locationViewModel.query('userId').eq(userId).exec();
+
+      // 모든 위치의 isCurrent를 false로 설정
+      const updatePromises = userLocations.map(location => 
+        this.locationViewModel.update(
+          { locationId: location.locationId },
+          { $SET: { isCurrent: false } }
+        )
+      );
+
+      // 선택된 위치의 isCurrent를 true로 설정
+      updatePromises.push(
+        this.locationViewModel.update(
+          { locationId: newCurrentLocationId },
+          { $SET: { isCurrent: true } }
+        )
+      );
+
+      // 모든 업데이트 작업을 병렬로 실행
+      await Promise.all(updatePromises);
+
+      this.logger.log(`Successfully updated current location for user: ${userId}`);
+    } catch (error) {
+      this.logger.error(`Failed to update current location for user: ${userId}`, error.stack);
+      throw error;
+    }
+  }
   
 }

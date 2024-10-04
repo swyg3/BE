@@ -6,13 +6,27 @@ import { LocationType } from "./location.type";
 
 @Injectable()
 export class UserLocationRepository {
-  
+
   private readonly logger = new Logger(UserLocationRepository.name);
 
   constructor(
     @InjectRepository(UserLocation)
     private readonly repository: Repository<UserLocation>,
-  ) {}
+  ) { }
+  async updateCurrentLocation(userId: string, locationId: string): Promise<UserLocation | null> {
+    // PostgreSQL의 트랜잭션을 사용하여 원자적 업데이트 수행
+    return this.repository.manager.transaction(async transactionalEntityManager => {
+      // 모든 위치의 isCurrent를 false로 설정
+      await transactionalEntityManager.update(UserLocation, { userId }, { isCurrent: false });
+
+      // 선택된 위치의 isCurrent를 true로 설정
+      await transactionalEntityManager.update(UserLocation, { id: locationId, userId }, { isCurrent: true });
+
+      // 업데이트된 위치 반환
+      return transactionalEntityManager.findOne(UserLocation, { where: { id: locationId, userId } });
+    });
+  }
+
   async save(location: UserLocation): Promise<UserLocation> {
     return this.repository.save(location);
   }
@@ -49,7 +63,7 @@ export class UserLocationRepository {
     await this.unsetCurrentLocation(userId);
 
     const userLocation = await this.repository.findOne({ where: { userId, latitude, longitude } });
-    
+
     if (userLocation) {
       userLocation.isCurrent = true;
       return await this.repository.save(userLocation);
@@ -94,7 +108,7 @@ export class UserLocationRepository {
   ): Promise<UserLocation> {
     // 기존 위치 정보를 조회
     const existingLocation = await this.repository.findOne({ where: { userId, latitude, longitude } });
-  
+
     if (existingLocation) {
       // 기존 위치 정보가 있으면 필드 업데이트
       existingLocation.isCurrent = isCurrent;
@@ -111,8 +125,8 @@ export class UserLocationRepository {
         isAgreed: isAgreed, // 기본값 설정
         updatedAt: new Date() // 현재 날짜로 설정
       });
-  
+
       return await this.repository.save(newLocation);
     }
-}
+  }
 }
