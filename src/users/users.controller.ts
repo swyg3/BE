@@ -30,6 +30,7 @@ import {
 } from "@nestjs/swagger";
 import { DeleteUserCommand } from "./commands/commands/delete-user.command";
 import {UpdateUserLocationCommand} from "./commands/commands/update-user-location-agree.command";
+import {UpdateUserLocationDto} from "./dtos/update-user-location.dto";
 
 @ApiTags("Users")
 @Controller("users")
@@ -214,16 +215,10 @@ export class UsersController {
 
   @ApiOperation({ summary: '사용자 GPS 동의 업데이트', description: '사용자의 GPS 위치 추적 동의 상태를 업데이트합니다.' })
   @ApiParam({ name: 'id', type: 'string', description: '사용자 ID (UUID)' })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        agree: { type: 'boolean', description: 'GPS 추적 동의 상태' }
-      },
-      required: ['agree']
-    }
-  })
-  @ApiResponse({ status: 200, description: 'GPS 동의 상태가 성공적으로 업데이트됨',
+  @ApiBody({ type: UpdateUserLocationDto })
+  @ApiResponse({
+    status: 200,
+    description: 'GPS 동의 상태가 성공적으로 업데이트됨',
     schema: {
       type: 'object',
       properties: {
@@ -232,7 +227,7 @@ export class UsersController {
       }
     }
   })
-  @ApiResponse({ status: 403, description: '금지됨 - 사용자 ID 불일치', type: ForbiddenException })
+  @ApiResponse({ status: 403, description: '금지됨 - 사용자 ID 불일치' })
   @ApiResponse({ status: 401, description: '인증되지 않음 - 유효하지 않거나 누락된 토큰' })
   @ApiBearerAuth()
   @Patch("settings/gps/:id")
@@ -240,12 +235,12 @@ export class UsersController {
   async updateUserLocation(
       @ValidateUUID("id") id: string,
       @GetUser() user: JwtPayload,
-      @Body() body: { agree: boolean },
+      @Body() updateData: UpdateUserLocationDto,
   ): Promise<CustomResponse> {
     if (user.userId !== id) {
       throw new ForbiddenException("본인 확인이 필요합니다.");
     }
-    await this.commandBus.execute(new UpdateUserLocationCommand(id, body.agree));
+    await this.commandBus.execute(new UpdateUserLocationCommand(id, updateData.agree));
     return {
       success: true,
       message: "성공적으로 GPS 동의여부를 수정하였습니다.",
