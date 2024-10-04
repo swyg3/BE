@@ -160,15 +160,20 @@ export class LoginOAuthCallbackCommandHandler
     this.logger.log(`리다이렉트 URI: ${redirectUri}`);
 
     try {
-      const response = await axios.post(tokenUrl, null, {
-        params: {
-          code,
-          client_id: clientId,
-          client_secret: clientSecret,
-          redirect_uri: redirectUri,
-          grant_type: "authorization_code",
-        },
-      });
+      const params = {
+        grant_type: "authorization_code",
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: redirectUri,
+        code,
+      };
+
+      if (provider === "kakao") {
+        params["scope"] = "profile_nickname account_email";
+      }
+
+      const response = await axios.post(tokenUrl, null, { params });
+
       this.logger.log(`액세스 토큰 요청 성공 (상태 코드: ${response.status})`);
       this.logger.log(`응답 데이터: ${JSON.stringify(response.data)}`);
 
@@ -205,6 +210,7 @@ export class LoginOAuthCallbackCommandHandler
       });
 
       this.logger.log(`사용자 정보 요청 성공 (상태 코드: ${response.status})`);
+      this.logger.log(`원본 사용자 정보: ${JSON.stringify(response.data)}`);
 
       const normalizedInfo = this.normalizeUserInfo(provider, response.data);
       this.logger.log(
@@ -233,7 +239,10 @@ export class LoginOAuthCallbackCommandHandler
       case "kakao":
         return {
           email: rawUserInfo.kakao_account.email,
-          name: rawUserInfo.profile?.nickname || "",
+          name:
+            rawUserInfo.properties?.nickname ||
+            rawUserInfo.kakao_account?.profile?.nickname ||
+            null,
         };
       default:
         throw new Error(`Unsupported provider: ${provider}`);
