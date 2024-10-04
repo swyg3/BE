@@ -1,4 +1,5 @@
 import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { LocationType } from "./location.type";
 
 @Entity()
 export class UserLocation {
@@ -15,7 +16,17 @@ export class UserLocation {
   longitude: string;
 
   @Column({ default: false })
-  isCurrent: boolean;
+  isCurrent: boolean;// 현재 선택한 위치이며 계산에 쓰일 위치인지
+
+  @Column({
+    type: 'enum',
+    enum: LocationType,
+    default: LocationType.SEARCH
+  })
+  locationType: LocationType;// 실시간 위치인지 검색 위치 인지 
+
+  @Column({ default: false })
+  isAgreed: boolean;// GPS 동의시 TRUE
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   updatedAt: Date;

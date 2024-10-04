@@ -2,6 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { DeepPartial, Repository } from "typeorm";
 import { InjectRepository } from "@nestjs/typeorm";
 import { UserLocation } from "./location.entity";
+import { LocationType } from "./location.type";
 
 @Injectable()
 export class UserLocationRepository {
@@ -80,14 +81,35 @@ export class UserLocationRepository {
       .execute();
   }
 
-  async addLocation(userId: string, latitude: string, longitude: string, isCurrent: boolean): Promise<UserLocation> {
+  async addLocation(
+    userId: string,
+    latitude: string,
+    longitude: string,
+    isCurrent: boolean,
+    locationType: LocationType, // 기본값 설정
+    isAgreed: boolean,
+  ): Promise<UserLocation> {
+    // 기존 위치 정보를 조회
     const existingLocation = await this.repository.findOne({ where: { userId, latitude, longitude } });
-
+  
     if (existingLocation) {
+      // 기존 위치 정보가 있으면 필드 업데이트
       existingLocation.isCurrent = isCurrent;
+      existingLocation.updatedAt = new Date(); // updatedAt 필드도 업데이트
       return await this.repository.save(existingLocation);
     } else {
-      return await this.saveUserLocation({ userId, latitude, longitude, isCurrent });
+      // 새로운 위치 정보 저장
+      const newLocation = this.repository.create({
+        userId,
+        latitude,
+        longitude,
+        isCurrent,
+        locationType: locationType, // 기본값 설정
+        isAgreed: isAgreed, // 기본값 설정
+        updatedAt: new Date() // 현재 날짜로 설정
+      });
+  
+      return await this.repository.save(newLocation);
     }
-  }
+}
 }

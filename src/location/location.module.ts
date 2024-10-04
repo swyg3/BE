@@ -2,7 +2,6 @@ import { forwardRef, Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserLocationRepository } from './location.repository';
-import { SaveUserLocationHandler } from './commands/handlers/location-saver.handler';
 import { UserLocation } from './location.entity';
 import { DynamooseModule } from 'nestjs-dynamoose';
 import { UserLocationSchema } from './location-view.schema';
@@ -12,16 +11,17 @@ import { LocationController } from './location.controller';
 import { LocationHandler } from './commands/handlers/add-location.handler';
 import { LocationViewRepository } from './location-view.repository';
 import { ProductModule } from 'src/product/product.module';
+import { GetCurrentLocationHandler } from './queries/query/get-userlocation-iscurrent.handler';
 
 const CommandHandlers = [
-  SaveUserLocationHandler,
   LocationHandler
 ];
 const EventsHandlers = [
   UserLocationSavedHandler
 ];
 const QuerysHandlers = [
-  GetUserLocationsHandler
+  GetUserLocationsHandler,
+  GetCurrentLocationHandler
 ];
 
 @Module({

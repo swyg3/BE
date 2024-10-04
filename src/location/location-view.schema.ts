@@ -1,4 +1,5 @@
 import { model, Schema } from "dynamoose";
+import { LocationType } from "./location.type";
 
 export const UserLocationSchema = new Schema(
   {
@@ -13,8 +14,8 @@ export const UserLocationSchema = new Schema(
       index: {
         name: "GSI_KEY_Index",
         type: "global",
-        rangeKey: "updatedAt"
-      }
+        rangeKey: "updatedAt",
+      },
     },
     userId: {
       type: String,
@@ -33,6 +34,15 @@ export const UserLocationSchema = new Schema(
       required: true,
     },
     isCurrent: {
+      type: Boolean,
+      default: false,
+    },
+    locationType: {
+      type: String,
+      enum: Object.values(LocationType),
+      default: LocationType.SEARCH,
+    },
+    isAgreed: {
       type: Boolean,
       default: false,
     },

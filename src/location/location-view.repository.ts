@@ -1,9 +1,9 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
 import { UserLocation } from "./location-view.schema";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "nestjs-dynamoose";
 import { NaverMapsClient } from "src/shared/infrastructure/database/navermap.config";
+import { LocationType } from "./location.type";
 
 export interface LocationView {
   locationId: string;
@@ -11,6 +11,8 @@ export interface LocationView {
   latitude: string;
   longitude: string;
   isCurrent: boolean;
+  locationType: LocationType;
+  isAgreed: boolean;
   updatedAt: Date;
 }
 
@@ -25,7 +27,6 @@ export class LocationViewRepository {
       LocationView,
       { locationId: string }
     >,
-    private readonly configService: ConfigService,
     private readonly naverMapsClient: NaverMapsClient
   ) { }
 
@@ -33,12 +34,12 @@ export class LocationViewRepository {
   async create(locationView: LocationView): Promise<LocationView> {
     try {
       this.logger.log(`LocationView 생성 시도: ${locationView.locationId}`);
-      // 기존 위치 정보 조회
-      const existingLocations = await this.findAlllocationbyuserId(locationView.userId);
 
-      if (existingLocations.length > 0) {
-        await this.setAllLocationsToFalse(locationView.userId);
-      }
+      // 기존 위치 정보를 비동기로 동시에 처리
+      await Promise.all([
+        this.findAlllocationbyuserId(locationView.userId),
+        this.setAllLocationsToFalse(locationView.userId)
+      ]);
 
       // 이미 존재하는지 확인
       const existingItem = await this.locationViewModel.get({ locationId: locationView.locationId });
@@ -46,23 +47,25 @@ export class LocationViewRepository {
         this.logger.warn(`LocationView already exists: ${locationView.locationId}`);
         return existingItem;
       }
+
       const item = await this.locationViewModel.create({
         ...locationView,
         latitude: locationView.latitude.toString(),
-        longitude: locationView.longitude.toString()
+        longitude: locationView.longitude.toString(),
       });
+
       this.logger.log(`LocationView 생성 성공: ${item.locationId}`);
       return item;
     } catch (error) {
       if (error.name === 'ConditionalCheckFailedException') {
         this.logger.warn(`LocationView 생성 조건 실패: ${locationView.locationId}`);
-        // 여기서 적절한 처리를 수행 (예: 기존 항목 반환 또는 업데이트)
       } else {
         this.logger.error(`LocationView 생성 실패: ${error.message}`, error.stack);
         throw error;
       }
     }
   }
+
 
   //모두 X로 만드는 함수
   private async setAllLocationsToFalse(userId: string): Promise<void> {
@@ -117,14 +120,16 @@ export class LocationViewRepository {
     }
   }
 
-  // 현재 위치 조회
-  async findCurrentLocation(userId: string): Promise<{ latitude: string; longitude: string } | null> {
+  async findCurrentLocation(userId: string): Promise<LocationView | null> {
     try {
       this.logger.log(`현재 위치 조회: ${userId}`);
+
+      // 사용자 ID로 현재 위치 조회 (GSI 사용)
       const result = await this.locationViewModel
         .query("userId").eq(userId)
         .using("UserIdIndex")
         .filter("isCurrent").eq(true)
+        .filter("isAgreed").eq(true)
         .exec();
 
       if (result.length === 0) {
@@ -134,14 +139,21 @@ export class LocationViewRepository {
 
       const currentLocation = result[0];
       return {
+        locationId: currentLocation.locationId,
+        userId: currentLocation.userId,
         latitude: currentLocation.latitude,
         longitude: currentLocation.longitude,
+        isCurrent: currentLocation.isCurrent,
+        locationType: currentLocation.locationType,
+        isAgreed: currentLocation.isAgreed,
+        updatedAt: currentLocation.updatedAt,
       };
     } catch (error) {
       this.logger.error(`현재 위치 조회 실패: ${error.message}`, error.stack);
       throw error;
     }
   }
+
   async findAllLocations(userId: string): Promise<Array<{ locationId: string; address: string; latitude: string; longitude: string }>> {
     try {
       this.logger.log(`Fetching all locations and reverse geocoding for user: ${userId}`);
@@ -161,6 +173,9 @@ export class LocationViewRepository {
             address,
             latitude: location.latitude,
             longitude: location.longitude,
+            isCurrent: location.isCurrent,
+            locationType: location.locationType,
+            isAgreed: location.isAgreed,
           };
         } catch (reverseGeocodingError) {
           this.logger.error(`Reverse geocoding failed for location ${location.locationId}: ${reverseGeocodingError.message}`);
@@ -169,6 +184,9 @@ export class LocationViewRepository {
             address: 'Address not found',
             latitude: location.latitude,
             longitude: location.longitude,
+            isCurrent: location.isCurrent,
+            locationType: location.locationType,
+            isAgreed: location.isAgreed,
           };
         }
       }));

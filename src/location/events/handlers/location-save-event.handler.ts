@@ -10,20 +10,23 @@ export class UserLocationSavedHandler
 
   constructor(
     private readonly locationViewRepository: LocationViewRepository,
-  ) {}
+  ) { }
 
   async handle(event: UserLocationSavedEvent) {
     this.logger.log(`UserLocationSavedEvent 처리중: ${event.aggregateId}`);
 
     try {
-      const locationView: LocationView={
+      const locationView: LocationView = {
         locationId: event.aggregateId,
         userId: event.data.userId,
         latitude: event.data.latitude,
         longitude: event.data.longitude,
         isCurrent: true,
-        updatedAt: event.data.updatedAt || new Date()};
-        
+        locationType: event.data.locationType,
+        isAgreed: event.data.isAgreed,
+        updatedAt: event.data.updatedAt || new Date()
+      };
+
       await this.locationViewRepository.create(locationView);
 
 
