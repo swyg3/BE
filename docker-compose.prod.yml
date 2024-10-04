@@ -52,7 +52,7 @@ services:
     environment:
       - PROMETHEUS_PORT=${PROMETHEUS_PORT}
     ports:
-      - "${PROMETHEUS_PORT}:${PROMETHEUS_PORT}"
+      - "${PROMETHEUS_PORT}:3000"
     volumes:
       - ./prometheus:/etc/prometheus
       - prometheus_data:/prometheus
@@ -77,7 +77,7 @@ services:
     environment:
       - NODE_EXPORTER_PORT=${NODE_EXPORTER_PORT}
     ports:
-      - "${NODE_EXPORTER_PORT}:${NODE_EXPORTER_PORT}"
+      - "${NODE_EXPORTER_PORT}:3000"
     command:
       - "--path.procfs=/host/proc"
       - "--path.rootfs=/rootfs"

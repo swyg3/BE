@@ -18,7 +18,7 @@ export class UserRepository {
 
   async findByEmail(email: string): Promise<User | null> {
     return this.userRepository.findOne({
-      where: { email, isDeleted: false },
+      where: { email, isDeleted: false }
     });
   }
 
@@ -44,22 +44,31 @@ export class UserRepository {
 
     if (existingUser) {
       // 사용자가 존재하면 (삭제된 사용자 포함) 정보를 업데이트합니다.
+      const { agreeReceiveLocation, ...updateData } = userData;
       await this.userRepository.update(
         { email },
         {
-          ...userData,
-          isDeleted: false, // 삭제 상태를 해제합니다.
-          deletedAt: null,  // 삭제 날짜를 초기화합니다.
+          ...updateData,
+          isDeleted: false,
+          deletedAt: null,
         }
       );
       const updatedUser = await this.userRepository.findOne({ where: { email } });
       return { user: updatedUser, isNewUser: false };
     } else {
       // 새 사용자 생성
-      const newUser = this.userRepository.create({ email, ...userData });
+      const newUser = this.userRepository.create({
+        email,
+        ...userData,
+        agreeReceiveLocation: false
+      });
       const savedUser = await this.userRepository.save(newUser);
       return { user: savedUser, isNewUser: true };
     }
+  }
+
+  async updateUserLocation(userId: string, agree: boolean): Promise<void> {
+    await this.userRepository.update(userId, { agreeReceiveLocation: agree });
   }
 
   async softDelete(userId: string): Promise<void> {

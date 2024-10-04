@@ -128,6 +128,7 @@ export class RegisterSellerHandler
       ...additionalInfo,
       isEmailVerified: true,
       isBusinessNumberVerified: true,
+      agreeReceiveLocation: false,
     });
     return this.sellerRepository.save(newSeller);
   }
@@ -144,6 +145,7 @@ export class RegisterSellerHandler
         storePhoneNumber: seller.storePhoneNumber,
         isEmailVerified: true,
         isBusinessNumberVerified: true,
+        agreeReceiveLocation: seller.agreeReceiveLocation,
       },
       1,
     );

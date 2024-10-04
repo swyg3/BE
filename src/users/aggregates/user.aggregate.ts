@@ -13,6 +13,7 @@ export class UserAggregate extends AggregateRoot {
     name: string,
     phoneNumber: string,
     isEmailVerified: boolean = false,
+    agreeReceiveLocation: boolean = false,
   ) {
     this.version++;
     const event = new UserRegisteredEvent(
@@ -22,6 +23,7 @@ export class UserAggregate extends AggregateRoot {
         name,
         phoneNumber,
         isEmailVerified,
+        agreeReceiveLocation,
       },
       this.version,
     );
