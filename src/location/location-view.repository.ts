@@ -1,9 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { UserLocation } from "./location-view.schema";
-import { InjectModel } from "@nestjs/mongoose";
-import { Model } from "nestjs-dynamoose";
+import { InjectModel, Model } from "nestjs-dynamoose";
 import { NaverMapsClient } from "src/shared/infrastructure/database/navermap.config";
-import { LocationType } from "./location.type";
 
 export interface LocationView {
   locationId: string;
@@ -13,7 +11,6 @@ export interface LocationView {
   latitude: string;
   longitude: string;
   isCurrent: boolean;
-  locationType: LocationType;
   isAgreed: boolean;
   updatedAt: Date;
 }
@@ -148,7 +145,6 @@ export class LocationViewRepository {
         latitude: currentLocation.latitude,
         longitude: currentLocation.longitude,
         isCurrent: currentLocation.isCurrent,
-        locationType: currentLocation.locationType,
         isAgreed: currentLocation.isAgreed,
         updatedAt: currentLocation.updatedAt,
       };
@@ -178,35 +174,29 @@ export class LocationViewRepository {
 
   async updateCurrentLocation(userId: string, newCurrentLocationId: string): Promise<void> {
     this.logger.log(`Updating current location for user: ${userId}`);
-
+  
     try {
-      // 사용자의 모든 위치 조회
+      // 1. 사용자의 모든 위치를 조회
       const userLocations = await this.locationViewModel.query('userId').eq(userId).exec();
-
-      // 모든 위치의 isCurrent를 false로 설정
-      const updatePromises = userLocations.map(location => 
-        this.locationViewModel.update(
-          { locationId: location.locationId },
-          { $SET: { isCurrent: false } }
-        )
-      );
-
-      // 선택된 위치의 isCurrent를 true로 설정
-      updatePromises.push(
-        this.locationViewModel.update(
-          { locationId: newCurrentLocationId },
-          { $SET: { isCurrent: true } }
-        )
-      );
-
-      // 모든 업데이트 작업을 병렬로 실행
-      await Promise.all(updatePromises);
-
+      this.logger.debug(`Found ${userLocations.length} locations for user ${userId}`);
+  
+      // 2. 배치 업데이트 항목 준비
+      const batchUpdates = userLocations.map(location => ({
+        ...location,  // 기존의 모든 필드를 포함
+        isCurrent: location.locationId === newCurrentLocationId
+      }));
+  
+      // 3. 배치 작업 실행
+      const BATCH_SIZE = 25; // DynamoDB의 배치 작업 제한
+      for (let i = 0; i < batchUpdates.length; i += BATCH_SIZE) {
+        const batch = batchUpdates.slice(i, i + BATCH_SIZE);
+        await this.locationViewModel.batchPut(batch);
+      }
+  
       this.logger.log(`Successfully updated current location for user: ${userId}`);
     } catch (error) {
       this.logger.error(`Failed to update current location for user: ${userId}`, error.stack);
       throw error;
     }
   }
-  
 }

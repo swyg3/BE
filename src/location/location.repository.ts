@@ -1,8 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { DeepPartial, Repository } from "typeorm";
+import { DeepPartial, EntityManager, Repository } from "typeorm";
 import { InjectRepository } from "@nestjs/typeorm";
 import { UserLocation } from "./location.entity";
-import { LocationType } from "./location.type";
 
 @Injectable()
 export class UserLocationRepository {
@@ -13,19 +12,62 @@ export class UserLocationRepository {
     @InjectRepository(UserLocation)
     private readonly repository: Repository<UserLocation>,
   ) { }
-  async updateCurrentLocation(userId: string, locationId: string): Promise<UserLocation | null> {
-    // PostgreSQL의 트랜잭션을 사용하여 원자적 업데이트 수행
-    return this.repository.manager.transaction(async transactionalEntityManager => {
-      // 모든 위치의 isCurrent를 false로 설정
-      await transactionalEntityManager.update(UserLocation, { userId }, { isCurrent: false });
+  
+  async updateCurrentLocation(
+    userId: string,
+    id: string,
+    transactionalEntityManager?: EntityManager
+  ): Promise<UserLocation | null> {
+    const manager = transactionalEntityManager || this.repository.manager;
 
-      // 선택된 위치의 isCurrent를 true로 설정
-      await transactionalEntityManager.update(UserLocation, { id: locationId, userId }, { isCurrent: true });
+    return manager.transaction(async transactionalEntityManager => {
+      try {
+        this.logger.debug(`Starting updateCurrentLocation for user: ${userId}, location: ${id}`);
 
-      // 업데이트된 위치 반환
-      return transactionalEntityManager.findOne(UserLocation, { where: { id: locationId, userId } });
+        // 먼저 선택된 위치가 존재하는지 확인
+        const locationExists = await transactionalEntityManager.findOne(UserLocation, {
+          where: { id: id, userId }
+        });
+
+        if (!locationExists) {
+          this.logger.warn(`Location not found for user: ${userId}, location: ${id}`);
+          return null;
+        }
+
+        // 모든 위치의 isCurrent를 false로 설정
+        const updateAllResult = await transactionalEntityManager.update(
+          UserLocation,
+          { userId },
+          { isCurrent: false }
+        );
+        this.logger.debug(`Updated all locations: ${updateAllResult.affected} rows affected`);
+
+        // 선택된 위치의 isCurrent를 true로 설정
+        const updateSelectedResult = await transactionalEntityManager.update(
+          UserLocation,
+          { id: id, userId },
+          { isCurrent: true }
+        );
+        this.logger.debug(`Updated selected location: ${updateSelectedResult.affected} rows affected`);
+
+        // 업데이트된 위치 반환
+        const updatedLocation = await transactionalEntityManager.findOne(UserLocation, {
+          where: { id: id, userId }
+        });
+
+        if (!updatedLocation) {
+          throw new Error('Failed to retrieve updated location');
+        }
+
+        this.logger.log(`Successfully updated current location for user: ${userId}`);
+        return updatedLocation;
+      } catch (error) {
+        this.logger.error(`Failed to update current location for user: ${userId}`, error.stack);
+        throw error;
+      }
     });
   }
+
 
   async save(location: UserLocation): Promise<UserLocation> {
     return this.repository.save(location);
@@ -103,7 +145,6 @@ export class UserLocationRepository {
     latitude: string,
     longitude: string,
     isCurrent: boolean,
-    locationType: LocationType, // 기본값 설정
     isAgreed: boolean,
   ): Promise<UserLocation> {
     // 기존 위치 정보를 조회
@@ -121,7 +162,6 @@ export class UserLocationRepository {
         latitude,
         longitude,
         isCurrent,
-        locationType: locationType, // 기본값 설정
         isAgreed: isAgreed, // 기본값 설정
         updatedAt: new Date() // 현재 날짜로 설정
       });
