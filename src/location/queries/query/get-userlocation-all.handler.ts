@@ -1,6 +1,6 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { LocationViewRepository } from 'src/location/location-view.repository';
-import { GetAllAddressesQuery } from './get-all-addresses.query';
+import { GetAllAddressesQuery } from '../impl/get-all-addresses.query';
 
 @QueryHandler(GetAllAddressesQuery)
 export class GetUserLocationsHandler implements IQueryHandler<GetAllAddressesQuery> {

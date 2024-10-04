@@ -11,7 +11,7 @@ import { GetCurrentLocationQuery } from './queries/impl/get-userlocation-iscurre
 import { UserLocationDto } from './dto/userlocation.dto';
 import { AddressDto } from './dto/address.dto';
 import { SaveAddressCommand } from './commands/impl/save-address.command';
-import { GetAllAddressesQuery } from './queries/query/get-all-addresses.query';
+import { GetAllAddressesQuery } from './queries/impl/get-all-addresses.query';
 
 @ApiTags('locations')
 @Controller('locations')
