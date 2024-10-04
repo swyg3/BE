@@ -101,6 +101,7 @@ export class RegisterUserHandler
       name,
       phoneNumber,
       isEmailVerified: true,
+      agreeReceiveLocation: false,
     });
     return this.userRepository.save(newUser);
   }
@@ -113,6 +114,7 @@ export class RegisterUserHandler
         name: user.name,
         phoneNumber: user.phoneNumber,
         isEmailVerified: true,
+        agreeReceiveLocation: user.agreeReceiveLocation,
       },
       1,
     );

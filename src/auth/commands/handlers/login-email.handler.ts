@@ -152,7 +152,6 @@ export class LoginEmailCommandHandler
           storeAddress: user.storeAddress,
           storePhoneNumber: user.storePhoneNumber,
           isBusinessNumberVerified: user.isBusinessNumberVerified,
-          agreeReceiveLocation: user.agreeReceiveLocation,
         },
         user.version || 1,
       );

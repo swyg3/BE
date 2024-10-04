@@ -29,6 +29,7 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 import { DeleteUserCommand } from "./commands/commands/delete-user.command";
+import {UpdateUserLocationCommand} from "./commands/commands/update-user-location-agree.command";
 
 @ApiTags("Users")
 @Controller("users")

@@ -18,7 +18,7 @@ export class UserRepository {
 
   async findByEmail(email: string): Promise<User | null> {
     return this.userRepository.findOne({
-      where: { email, isDeleted: false },
+      where: { email, isDeleted: false }
     });
   }
 
@@ -65,6 +65,10 @@ export class UserRepository {
       const savedUser = await this.userRepository.save(newUser);
       return { user: savedUser, isNewUser: true };
     }
+  }
+
+  async updateUserLocation(userId: string, agree: boolean): Promise<void> {
+    await this.userRepository.update(userId, { agreeReceiveLocation: agree });
   }
 
   async softDelete(userId: string): Promise<void> {
