@@ -13,8 +13,8 @@ export const UserLocationSchema = new Schema(
       index: {
         name: "GSI_KEY_Index",
         type: "global",
-        rangeKey: "updatedAt"
-      }
+        rangeKey: "updatedAt",
+      },
     },
     userId: {
       type: String,
@@ -23,6 +23,14 @@ export const UserLocationSchema = new Schema(
         name: "UserIdIndex",
         type: "global",
       },
+    },
+    searchTerm: {
+      type: String,
+      required: true,
+    },
+    roadAddress: {
+      type: String,
+      required: true,
     },
     latitude: {
       type: String,
@@ -33,6 +41,10 @@ export const UserLocationSchema = new Schema(
       required: true,
     },
     isCurrent: {
+      type: Boolean,
+      default: false,
+    },
+    isAgreed: {
       type: Boolean,
       default: false,
     },
