@@ -6,13 +6,16 @@ import { LocationType } from "./location.type";
 
 @Injectable()
 export class UserLocationRepository {
+  
   private readonly logger = new Logger(UserLocationRepository.name);
 
   constructor(
     @InjectRepository(UserLocation)
     private readonly repository: Repository<UserLocation>,
   ) {}
-
+  async save(location: UserLocation): Promise<UserLocation> {
+    return this.repository.save(location);
+  }
   async saveUserLocation({
     userId,
     latitude,

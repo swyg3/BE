@@ -37,6 +37,7 @@ export class NaverMapsClient {
 
   async getGeocode(query: string): Promise<GeocodingResult> {
     try {
+      console.log(`Requesting geocode for query: ${query}`);
       const response: AxiosResponse = await lastValueFrom(
         this.httpService.get(this.geocodeApiUrl, {
           params: { query },
@@ -47,6 +48,7 @@ export class NaverMapsClient {
           }
         })
       );
+      console.log('API Response:', JSON.stringify(response.data, null, 2));
 
       if (response.data.status === 'OK' && response.data.addresses && response.data.addresses.length > 0) {
         const { x, y } = response.data.addresses[0];

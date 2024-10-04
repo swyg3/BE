@@ -25,6 +25,14 @@ export const UserLocationSchema = new Schema(
         type: "global",
       },
     },
+    searchTerm: {
+      type: String,
+      required: true,
+    },
+    roadAddress: {
+      type: String,
+      required: true,
+    },
     latitude: {
       type: String,
       required: true,

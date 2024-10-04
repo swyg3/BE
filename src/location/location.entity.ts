@@ -9,6 +9,12 @@ export class UserLocation {
   @Column()
   userId: string;
 
+  @Column({ nullable: true })
+  searchTerm: string; // 검색어
+
+  @Column()
+  roadAddress: string; // 도로명주소
+
   @Column()
   latitude: string;
 

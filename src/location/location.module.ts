@@ -8,13 +8,13 @@ import { UserLocationSchema } from './location-view.schema';
 import { UserLocationSavedHandler } from './events/handlers/location-save-event.handler';
 import { GetUserLocationsHandler } from './queries/query/get-userlocation-all.handler';
 import { LocationController } from './location.controller';
-import { LocationHandler } from './commands/handlers/add-location.handler';
 import { LocationViewRepository } from './location-view.repository';
 import { ProductModule } from 'src/product/product.module';
 import { GetCurrentLocationHandler } from './queries/query/get-userlocation-iscurrent.handler';
+import { SaveAddressHandler } from './commands/handlers/save-address.handler';
 
 const CommandHandlers = [
-  LocationHandler
+  SaveAddressHandler
 ];
 const EventsHandlers = [
   UserLocationSavedHandler

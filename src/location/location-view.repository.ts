@@ -8,6 +8,8 @@ import { LocationType } from "./location.type";
 export interface LocationView {
   locationId: string;
   userId: string;
+  searchTerm: string;
+  roadAddress: string;
   latitude: string;
   longitude: string;
   isCurrent: boolean;
@@ -141,6 +143,8 @@ export class LocationViewRepository {
       return {
         locationId: currentLocation.locationId,
         userId: currentLocation.userId,
+        searchTerm: currentLocation.searchTerm,
+        roadAddress: currentLocation.roadAddress,
         latitude: currentLocation.latitude,
         longitude: currentLocation.longitude,
         isCurrent: currentLocation.isCurrent,

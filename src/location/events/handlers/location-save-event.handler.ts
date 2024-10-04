@@ -19,12 +19,14 @@ export class UserLocationSavedHandler
       const locationView: LocationView = {
         locationId: event.aggregateId,
         userId: event.data.userId,
+        searchTerm: event.data.searchTerm,
+        roadAddress: event.data.roadAddress,
         latitude: event.data.latitude,
         longitude: event.data.longitude,
-        isCurrent: true,
+        isCurrent: event.data.isCurrent,
         locationType: event.data.locationType,
         isAgreed: event.data.isAgreed,
-        updatedAt: event.data.updatedAt || new Date()
+        updatedAt: event.data.updatedAt || new Date(),
       };
 
       await this.locationViewRepository.create(locationView);
