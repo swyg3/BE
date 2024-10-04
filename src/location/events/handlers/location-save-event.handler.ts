@@ -24,7 +24,6 @@ export class UserLocationSavedHandler
         latitude: event.data.latitude,
         longitude: event.data.longitude,
         isCurrent: event.data.isCurrent,
-        locationType: event.data.locationType,
         isAgreed: event.data.isAgreed,
         updatedAt: event.data.updatedAt || new Date(),
       };

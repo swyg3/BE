@@ -3,7 +3,6 @@ import { SaveAddressCommand } from '../impl/save-address.command';
 import { UserLocationRepository } from 'src/location/location.repository';
 import { UserLocation } from 'src/location/location.entity';
 import { NaverMapsClient } from 'src/shared/infrastructure/database/navermap.config';
-import { LocationType } from 'src/location/location.type';
 import { UserLocationSavedEvent } from 'src/location/events/impl/location-save-event';
 import { Logger } from '@nestjs/common';
 
@@ -29,7 +28,6 @@ export class SaveAddressHandler implements ICommandHandler<SaveAddressCommand> {
         newLocation.latitude = geocodeResult.y;
         newLocation.longitude = geocodeResult.x;
         newLocation.isCurrent = false; 
-        newLocation.locationType = LocationType.SEARCH;
         newLocation.isAgreed = true; 
         newLocation.updatedAt = new Date();
 
@@ -46,7 +44,6 @@ export class SaveAddressHandler implements ICommandHandler<SaveAddressCommand> {
               latitude: savedLocation.latitude,
               longitude: savedLocation.longitude,
               isCurrent: savedLocation.isCurrent,
-              locationType: savedLocation.locationType,
               isAgreed: savedLocation.isAgreed,
               updatedAt: savedLocation.updatedAt,
             },

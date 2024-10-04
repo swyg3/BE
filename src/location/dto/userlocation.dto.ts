@@ -1,5 +1,4 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { LocationType } from '../location.type';
 
 export class UserLocationDto {
   @ApiProperty({ description: '위치 ID', example: 'uuid-string' })
@@ -16,13 +15,6 @@ export class UserLocationDto {
 
   @ApiProperty({ description: '현재 선택한 위치이며 계산에 쓰일 위치인지', example: true })
   isCurrent: boolean;
-
-  @ApiProperty({ 
-    description: '위치 타입', 
-    enum: LocationType,
-    example: LocationType.REALTIME 
-  })
-  locationType: LocationType;
 
   @ApiProperty({ description: 'GPS 동의 여부', example: true })
   isAgreed: boolean;

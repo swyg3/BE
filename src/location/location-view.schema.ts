@@ -1,5 +1,4 @@
 import { model, Schema } from "dynamoose";
-import { LocationType } from "./location.type";
 
 export const UserLocationSchema = new Schema(
   {
@@ -44,11 +43,6 @@ export const UserLocationSchema = new Schema(
     isCurrent: {
       type: Boolean,
       default: false,
-    },
-    locationType: {
-      type: String,
-      enum: Object.values(LocationType),
-      default: LocationType.SEARCH,
     },
     isAgreed: {
       type: Boolean,

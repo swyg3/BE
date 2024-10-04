@@ -1,4 +1,3 @@
-import { LocationType } from "src/location/location.type";
 import { BaseEvent } from "src/shared/infrastructure/event-sourcing";
 
 
@@ -15,7 +14,6 @@ export class UserLocationSavedEvent implements BaseEvent {
       latitude: string;
       longitude: string;
       isCurrent: boolean;
-      locationType: LocationType;
       isAgreed: boolean;
       updatedAt: Date;
       // 새로 추가된 필드
