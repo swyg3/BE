@@ -158,47 +158,22 @@ export class LocationViewRepository {
     }
   }
 
-  async findAllLocations(userId: string): Promise<Array<{ locationId: string; address: string; latitude: string; longitude: string }>> {
+  async findAllLocations(userId: string): Promise<LocationView[]> {
     try {
       this.logger.log(`Fetching all locations and reverse geocoding for user: ${userId}`);
       const result = await this.locationViewModel
-        .query("userId").eq(userId)
+        .query("userId")
+        .eq(userId)
         .using("UserIdIndex")
         .exec();
-
+  
       this.logger.debug(`Found ${result.length} locations for user ${userId}`);
-
-      const locations = await Promise.all(result.map(async (location: LocationView) => {
-        try {
-          this.logger.debug(`Reverse geocoding for location: ${location.locationId}, coords: ${location.latitude},${location.longitude}`);
-          const address = await this.naverMapsClient.getReverseGeocode(location.latitude, location.longitude);
-          return {
-            locationId: location.locationId,
-            address,
-            latitude: location.latitude,
-            longitude: location.longitude,
-            isCurrent: location.isCurrent,
-            locationType: location.locationType,
-            isAgreed: location.isAgreed,
-          };
-        } catch (reverseGeocodingError) {
-          this.logger.error(`Reverse geocoding failed for location ${location.locationId}: ${reverseGeocodingError.message}`);
-          return {
-            locationId: location.locationId,
-            address: 'Address not found',
-            latitude: location.latitude,
-            longitude: location.longitude,
-            isCurrent: location.isCurrent,
-            locationType: location.locationType,
-            isAgreed: location.isAgreed,
-          };
-        }
-      }));
-
-      return locations;
+  
+      return result;
     } catch (error) {
       this.logger.error(`Failed to fetch all locations: ${error.message}`, error.stack);
       throw error;
     }
   }
+  
 }
