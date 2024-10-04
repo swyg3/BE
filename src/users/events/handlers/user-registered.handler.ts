@@ -25,6 +25,7 @@ export class UserRegisteredHandler
         email: event.data.email,
         name: event.data.name,
         phoneNumber: event.data.phoneNumber,
+        agreeReceiveLocation: event.data.agreeReceiveLocation,
         isEmailVerified: event.data.isEmailVerified,
       });
     } catch (error) {

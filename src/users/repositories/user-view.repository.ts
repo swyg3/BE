@@ -7,6 +7,7 @@ export interface UserView {
   email: string;
   name: string;
   phoneNumber: string;
+  agreeReceiveLocation: boolean;
   isEmailVerified: boolean;
   lastLoginAt?: Date;
 }

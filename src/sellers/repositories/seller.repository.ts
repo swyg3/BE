@@ -45,20 +45,25 @@ export class SellerRepository {
     });
 
     if (existingSeller) {
+      const { agreeReceiveLocation, ...updateData } = sellerData;
       await this.sellerRepository.update(
         { email },
         {
-          ...sellerData,
+          ...updateData,
           isDeleted: false, 
           deletedAt: null,
         }
       );
-      const updatedUser = await this.sellerRepository.findOne({ where: { email } });
-      return { seller: updatedUser, isNewSeller: false };
+      const updatedSeller = await this.sellerRepository.findOne({ where: { email } });
+      return { seller: updatedSeller, isNewSeller: false };
     } else {
-      const newUser = this.sellerRepository.create({ email, ...sellerData });
-      const savedUser = await this.sellerRepository.save(newUser);
-      return { seller: savedUser, isNewSeller: true };
+      const newSeller = this.sellerRepository.create({
+        email,
+        ...sellerData,
+        agreeReceiveLocation: false,
+      });
+      const savedSeller = await this.sellerRepository.save(newSeller);
+      return { seller: savedSeller, isNewSeller: true };
     }
   }
 

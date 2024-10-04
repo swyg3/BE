@@ -254,7 +254,6 @@ export class LoginOAuthCallbackCommandHandler
           phoneNumber: "휴대폰 번호를 입력해주세요",
           password: "",
           isEmailVerified: true,
-          agreeReceiveLocation: userInfo.agreeReceiveLocation,
         },
       );
       return {
@@ -278,7 +277,6 @@ export class LoginOAuthCallbackCommandHandler
           storeAddress: "매장 주소를 입력해주세요.",
           storePhoneNumber: "매장 전화번호를 입력해주세요.",
           isBusinessNumberVerified: false,
-          agreeReceiveLocation: userInfo.agreeReceiveLocation,
         },
       );
       return {
