@@ -209,4 +209,21 @@ export class UsersController {
       message: "성공적으로 회원 탈퇴 처리되었습니다.",
     };
   }
+
+  @Patch("settings/gps/:id")
+  @UseGuards(JwtAuthGuard)
+  async updateUserLocation(
+      @ValidateUUID("id") id: string,
+      @GetUser() user: JwtPayload,
+      @Body() body: { agree: boolean },
+  ): Promise<CustomResponse> {
+    if (user.userId !== id) {
+      throw new ForbiddenException("본인 확인이 필요합니다.");
+    }
+    await this.commandBus.execute(new UpdateUserLocationCommand(id, body.agree));
+    return {
+      success: true,
+      message: "성공적으로 GPS 동의여부를 수정하였습니다.",
+    };
+  }
 }
