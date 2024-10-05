@@ -1,4 +1,5 @@
 export enum Category {
+  ALL = "ALL",
   KOREAN = "KOREAN",
   JAPANESE = "JAPANESE",
   CHINESE = "CHINESE",

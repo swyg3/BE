@@ -13,28 +13,11 @@ export const ProductSchema = new Schema(
     GSI_KEY: {
       type: String,
       default: "PRODUCT",
-      index: [
-        {
-          name: "DiscountRateIndex",
-          type: "global",
-          rangeKey: "discountRate"
-        },
-        {
-          name: "DistanceIndex",
-          type: "global",
-          rangeKey: "distance"
-        },
-        {
-          name: "DistanceDiscountIndex",
-          type: "global",
-          rangeKey: "distanceDiscountScore"
-        },
-        {
-          name: "ProductNameIndex",
-          type: "global",
-          rangeKey: "name"
-        }
-      ]
+      index: {
+        name: "GSI_KEY_Index",
+        type: "global",
+        rangeKey: "productId"
+      }
     },
     sellerId: {
       type: String,
@@ -73,19 +56,19 @@ export const ProductSchema = new Schema(
         {
           name: "NameDiscountRateIndex",
           type: "global",
-          rangeKey: "discountRate",
+          rangeKey: "discountRate"
         },
         {
           name: "NameDistanceIndex",
           type: "global",
-          rangeKey: "distance",
+          rangeKey: "distance"
         },
         {
           name: "NameDistanceDiscountIndex",
           type: "global",
-          rangeKey: "distanceDiscountScore",
-        },
-      ],
+          rangeKey: "distanceDiscountScore"
+        }
+      ]
     },
     productImageUrl: {
       type: String,
@@ -129,19 +112,11 @@ export const ProductSchema = new Schema(
       type: Number,
       required: false,
       default: 0,
-      index: {
-        name: "DistanceIndex",
-        type: "global",
-      }
     },
     distanceDiscountScore: {
       type: Number,
       required: false,
       default: 0,
-      index: {
-        name: "DistanceDiscountIndex",
-        type: "global",
-      }
     }
   },
   {

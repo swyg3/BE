@@ -4,6 +4,7 @@ import { SortOrder } from "dynamoose/dist/General";
 import { ConfigService } from "@nestjs/config/dist/config.service";
 import { DistanceCalculator } from "../util/distance-calculator";
 import { Polygon } from "typeorm";
+import { Category } from "../product.category";
 
 export enum SortByOption {
   DiscountRate = 'discountRate',
@@ -252,7 +253,7 @@ export class ProductViewRepository {
 
   
   async findProductsByCategoryAndSort(param: {
-    category: string;
+    category: Category;
     sortBy: SortByOption;
     order: 'asc' | 'desc';
     limit: number;
@@ -269,25 +270,32 @@ export class ProductViewRepository {
   }> {
     const { category, sortBy, order, limit, exclusiveStartKey, previousPageKey, latitude, longitude } = param;
     
-    // 카테고리로 먼저 필터링
-    const query = this.productViewModel.query('category').eq(category);
-    let items: ProductView[] = await query.exec();
-
+    let items: ProductView[];
+  
+    if (category === Category.ALL) {
+      // 모든 카테고리의 제품을 가져옵니다
+      items = await this.productViewModel.scan().exec();
+    } else {
+      // 특정 카테고리로 필터링
+      const query = this.productViewModel.query('category').eq(category);
+      items = await query.exec();
+    }
+  
     // 거리 관련 정렬일 경우 거리 계산
     if ((sortBy === SortByOption.Distance || sortBy === SortByOption.DistanceDiscountScore) && latitude && longitude) {
       const userLocation = this.createPolygonFromCoordinates(Number(latitude), Number(longitude));
       items = await this.calculateDistances(items, userLocation);
     }
-
+  
     // 정렬 적용
     items = this.sortItems(items, sortBy, order);
-
+  
     // 페이지네이션 적용
     const { paginatedItems, lastEvaluatedKey } = this.applyPagination(items, limit, exclusiveStartKey);
-
+  
     return this.formatResult(paginatedItems, lastEvaluatedKey, category, sortBy, order, limit, latitude, longitude, previousPageKey);
   }
-
+  
   private async calculateDistances(items: ProductView[], userLocation: Polygon): Promise<ProductView[]> {
     return Promise.all(items.map(async (item) => {
       if (item.locationX && item.locationY) {
@@ -301,8 +309,10 @@ export class ProductViewRepository {
       return item;
     }));
   }
-
+  
   private sortItems(items: ProductView[], sortBy: SortByOption, order: 'asc' | 'desc'): ProductView[] {
+    console.log('Before sorting:', items.map(item => item.discountRate)); // Debugging line
+  
     return items.sort((a, b) => {
       let comparison = 0;
       switch (sortBy) {
@@ -313,13 +323,16 @@ export class ProductViewRepository {
           comparison = (a.distance || Infinity) - (b.distance || Infinity);
           break;
         case SortByOption.DistanceDiscountScore:
-          comparison = (b.distanceDiscountScore || -Infinity) - (a.distanceDiscountScore || -Infinity);
+          comparison = (a.distanceDiscountScore || -Infinity) - (b.distanceDiscountScore || -Infinity);
           break;
+        default:
+          comparison = 0;
       }
       return order === 'asc' ? comparison : -comparison;
     });
   }
-
+  
+  
   private applyPagination(items: ProductView[], limit: number, exclusiveStartKey?: string): { paginatedItems: ProductView[], lastEvaluatedKey: any } {
     let startIndex = 0;
     if (exclusiveStartKey) {
@@ -327,17 +340,17 @@ export class ProductViewRepository {
       startIndex = items.findIndex(item => item.productId === startKey.productId);
       startIndex = startIndex === -1 ? 0 : startIndex + 1;
     }
-
+  
     const paginatedItems = items.slice(startIndex, startIndex + limit);
     const lastEvaluatedKey = paginatedItems.length === limit ? { productId: paginatedItems[paginatedItems.length - 1].productId } : null;
-
+  
     return { paginatedItems, lastEvaluatedKey };
   }
-
+  
   private formatResult(
     items: ProductView[],
     lastEvaluatedKey: any,
-    category: string,
+    category: Category,
     sortBy: SortByOption,
     order: 'asc' | 'desc',
     limit: number,
@@ -380,7 +393,6 @@ export class ProductViewRepository {
       count: items.length
     };
   }
-
   
   async searchProducts(param: {
     searchTerm: string;
