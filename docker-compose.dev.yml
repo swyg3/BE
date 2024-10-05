@@ -32,16 +32,16 @@ services:
       - postgres
       - redis
       - dynamodb-local
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:${NODE_PORT}/health" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    deploy:
-      resources:
-        limits:
-          cpus: "0.5"
-          memory: 1G
+    # healthcheck:
+    #   test: [ "CMD", "curl", "-f", "http://localhost:${NODE_PORT}/health" ]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 3
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: "0.5"
+    #       memory: 1G
 
   redis:
     image: redis:latest
@@ -53,16 +53,16 @@ services:
     ports:
       - "${REDIS_PORT}:${REDIS_PORT}"
     command: redis-server --maxmemory 200mb --maxmemory-policy allkeys-lru
-    healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    deploy:
-      resources:
-        limits:
-          cpus: "0.2"
-          memory: 250M
+    # healthcheck:
+    #   test: [ "CMD", "redis-cli", "ping" ]
+    #   interval: 10s
+    #   timeout: 5s
+    #   retries: 5
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: "0.2"
+    #       memory: 250M
 
   postgres:
     image: postgres:13
@@ -77,16 +77,16 @@ services:
       - "${DB_PORT}:${DB_PORT}"
     volumes:
       - postgres_data_dev:/var/lib/postgresql/data
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${DB_USERNAME}" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    deploy:
-      resources:
-        limits:
-          cpus: "0.3"
-          memory: 300M
+    # healthcheck:
+    #   test: [ "CMD-SHELL", "pg_isready -U ${DB_USERNAME}" ]
+    #   interval: 10s
+    #   timeout: 5s
+    #   retries: 5
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: "0.3"
+    #       memory: 300M
 
   dynamodb-local:
     image: amazon/dynamodb-local:latest
@@ -98,16 +98,16 @@ services:
     command: "-jar DynamoDBLocal.jar -sharedDb -port ${DYNAMODB_PORT}"
     volumes:
       - dynamodb_data:/home/dynamodblocal
-    healthcheck:
-      test: [ "CMD-SHELL", "curl -f http://localhost:${DYNAMODB_PORT} || exit 1" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    deploy:
-      resources:
-        limits:
-          cpus: "0.2"
-          memory: 300M
+    # healthcheck:
+    #   test: [ "CMD-SHELL", "curl -f http://localhost:${DYNAMODB_PORT} || exit 1" ]
+    #   interval: 10s
+    #   timeout: 5s
+    #   retries: 5
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: "0.2"
+    #       memory: 300M
 
   dynamodb-admin:
     image: aaronshaf/dynamodb-admin
@@ -140,16 +140,16 @@ services:
     volumes:
       - ./prometheus:/etc/prometheus
       - prometheus_data:/prometheus
-    healthcheck:
-      test: [ "CMD", "wget", "-q", "--tries=1", "--spider", "http://localhost:${PROMETHEUS_PORT}" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    deploy:
-      resources:
-        limits:
-          cpus: "0.2"
-          memory: 300M
+    # healthcheck:
+    #   test: [ "CMD", "wget", "-q", "--tries=1", "--spider", "http://localhost:${PROMETHEUS_PORT}" ]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 3
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: "0.2"
+    #       memory: 300M
 
   node-exporter:
     image: prom/node-exporter:latest
@@ -188,16 +188,16 @@ services:
       - grafana_data:/var/lib/grafana
     depends_on:
       - prometheus
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:${GRAFANA_PORT}" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    deploy:
-      resources:
-        limits:
-          cpus: "0.2"
-          memory: 300M
+    # healthcheck:
+    #   test: [ "CMD", "curl", "-f", "http://localhost:${GRAFANA_PORT}" ]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 3
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: "0.2"
+    #       memory: 300M
 
 volumes:
   postgres_data_dev:
