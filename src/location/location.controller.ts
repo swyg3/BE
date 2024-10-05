@@ -142,6 +142,6 @@ export class LocationController {
     const result = await this.commandBus.execute(new SetCurrentLocationCommand(user.userId, id));
     return { 
       id: result.id,
-      roadAddress: result.roadAddress 
-    };
+      roadAddress: encodeURIComponent(result.roadAddress)
+        };
 }}
