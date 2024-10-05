@@ -37,6 +37,7 @@ export class LocationViewRepository {
         ...locationView,
         latitude: locationView.latitude.toString(),
         longitude: locationView.longitude.toString(),
+        roadAddress: encodeURIComponent(locationView.roadAddress), // roadAddress 인코딩
       });
 
       this.logger.log(`LocationView 생성 성공: ${item.locationId}`);
@@ -177,7 +178,6 @@ export class LocationViewRepository {
             ...location, // 기존 location 객체의 모든 필드를 그대로 복사
             isCurrent: location.locationId === newCurrentLocationId,
             updatedAt: new Date(), // ISO 문자열로 변환
-            roadAddress: encodeURIComponent(location.roadAddress), // roadAddress 인코딩
         }));
 
         // 3. 배치 작업 실행
