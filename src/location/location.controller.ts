@@ -132,13 +132,16 @@ export class LocationController {
     content: {
       'application/json': {
         example: {
-          message: 'Current location updated successfully'
+         id: '123e4567-e89b-12d3-a456-426614174000',
+          roadAddress: '서울특별시 강남구 테헤란로 123'
         }
       }
     }
   })
   async setCurrentLocation(@GetUser() user: JwtPayload, @Query('id') id: string) {
-    await this.commandBus.execute(new SetCurrentLocationCommand(user.userId, id));
-    return { message: 'Current location updated successfully' };
-  }
-}
+    const result = await this.commandBus.execute(new SetCurrentLocationCommand(user.userId, id));
+    return { 
+      id: result.id,
+      roadAddress: result.roadAddress 
+    };
+}}

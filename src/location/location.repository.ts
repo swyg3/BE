@@ -5,6 +5,9 @@ import { UserLocation2 } from "./location.entity";
 
 @Injectable()
 export class UserLocationRepository {
+  findOne(id: string) {
+    throw new Error('Method not implemented.');
+  }
 
   private readonly logger = new Logger(UserLocationRepository.name);
 
@@ -17,23 +20,23 @@ export class UserLocationRepository {
     userId: string,
     id: string,
     transactionalEntityManager?: EntityManager
-  ): Promise<UserLocation2 | null> {
+  ): Promise<{ id: string; userId: string; roadAddress: string } | null> {
     const manager = transactionalEntityManager || this.repository.manager;
-
+  
     return manager.transaction(async transactionalEntityManager => {
       try {
         this.logger.debug(`Starting updateCurrentLocation for user: ${userId}, location: ${id}`);
-
+  
         // 먼저 선택된 위치가 존재하는지 확인
         const locationExists = await transactionalEntityManager.findOne(UserLocation2, {
           where: { id: id, userId }
         });
-
+  
         if (!locationExists) {
           this.logger.warn(`Location not found for user: ${userId}, location: ${id}`);
           return null;
         }
-
+  
         // 모든 위치의 isCurrent를 false로 설정
         const updateAllResult = await transactionalEntityManager.update(
           UserLocation2,
@@ -41,7 +44,7 @@ export class UserLocationRepository {
           { isCurrent: false }
         );
         this.logger.debug(`Updated all locations: ${updateAllResult.affected} rows affected`);
-
+  
         // 선택된 위치의 isCurrent를 true로 설정
         const updateSelectedResult = await transactionalEntityManager.update(
           UserLocation2,
@@ -49,25 +52,30 @@ export class UserLocationRepository {
           { isCurrent: true }
         );
         this.logger.debug(`Updated selected location: ${updateSelectedResult.affected} rows affected`);
-
+  
         // 업데이트된 위치 반환
         const updatedLocation = await transactionalEntityManager.findOne(UserLocation2, {
           where: { id: id, userId }
         });
-
+  
         if (!updatedLocation) {
           throw new Error('Failed to retrieve updated location');
         }
-
+  
         this.logger.log(`Successfully updated current location for user: ${userId}`);
-        return updatedLocation;
+        
+        // 반환 타입에 맞게 객체 구성
+        return {
+          id: updatedLocation.id,
+          userId: updatedLocation.userId,
+          roadAddress: updatedLocation.roadAddress
+        };
       } catch (error) {
         this.logger.error(`Failed to update current location for user: ${userId}`, error.stack);
         throw error;
       }
     });
   }
-
 
   async save(location: UserLocation2): Promise<UserLocation2> {
     return this.repository.save(location);
