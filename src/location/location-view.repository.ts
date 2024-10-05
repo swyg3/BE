@@ -1,9 +1,8 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { UserLocation } from "./location-view.schema";
 import { InjectModel, Model } from "nestjs-dynamoose";
 import { NaverMapsClient } from "src/shared/infrastructure/database/navermap.config";
 
-export interface LocationView {
+export interface LocationView2 {
   locationId: string;
   userId: string;
   searchTerm: string;
@@ -21,16 +20,16 @@ export class LocationViewRepository {
   private readonly logger = new Logger(LocationViewRepository.name);
 
   constructor(
-    @InjectModel("LocationView")
+    @InjectModel("LocationView2")
     private readonly locationViewModel: Model<
-      LocationView,
+      LocationView2,
       { locationId: string }
     >,
     private readonly naverMapsClient: NaverMapsClient
   ) { }
 
 
-  async create(locationView: LocationView): Promise<LocationView> {
+  async create(locationView: LocationView2): Promise<LocationView2> {
     try {
       this.logger.log(`LocationView 생성 시도: ${locationView.locationId}`);
 
@@ -74,7 +73,7 @@ export class LocationViewRepository {
     }
 
     try {
-      const locations = await UserLocation.query("userId").eq(userId).exec();
+      const locations = await this.locationViewModel.query("userId").eq(userId).exec();
 
       if (locations.length === 0) {
         this.logger.log(`${userId}에 대한 위치 정보가 없음`);
@@ -82,7 +81,7 @@ export class LocationViewRepository {
       }
 
       for (const location of locations) {
-        await UserLocation.update({ locationId: location.locationId }, { isCurrent: false });
+        await this.locationViewModel.update({ locationId: location.locationId }, { isCurrent: false });
       }
 
       this.logger.log(`모든 위치를 false로 설정: ${userId}`);
@@ -95,7 +94,7 @@ export class LocationViewRepository {
 
 
   // 판매자ID로 상품 목록 조회
-  async findAlllocationbyuserId(userId: string): Promise<LocationView[]> {
+  async findAlllocationbyuserId(userId: string): Promise<LocationView2[]> {
     try {
       this.logger.log(`LocationView 조회: userId=${userId}`);
       const results = await this.locationViewModel
@@ -108,18 +107,18 @@ export class LocationViewRepository {
       return [];
     }
   }
-  // 위치 정보 삭제
-  async delete(userId: string): Promise<void> {
-    try {
-      this.logger.log(`LocationView 삭제: ${userId}`);
-      await UserLocation.delete({ userId });
-    } catch (error) {
-      this.logger.error(`LocationView 삭제 실패: ${error.message}`, error.stack);
-      throw error;
-    }
-  }
+  // // 위치 정보 삭제
+  // async delete(userId: string): Promise<void> {
+  //   try {
+  //     this.logger.log(`LocationView 삭제: ${userId}`);
+  //     await this.locationViewModel.delete({ userId });
+  //   } catch (error) {
+  //     this.logger.error(`LocationView 삭제 실패: ${error.message}`, error.stack);
+  //     throw error;
+  //   }
+  // }
 
-  async findCurrentLocation(userId: string): Promise<LocationView | null> {
+  async findCurrentLocation(userId: string): Promise<LocationView2 | null> {
     try {
       this.logger.log(`현재 위치 조회: ${userId}`);
 
@@ -154,7 +153,7 @@ export class LocationViewRepository {
     }
   }
 
-  async findAllLocations(userId: string): Promise<LocationView[]> {
+  async findAllLocations(userId: string): Promise<LocationView2[]> {
     try {
       this.logger.log(`Fetching all locations and reverse geocoding for user: ${userId}`);
       const result = await this.locationViewModel

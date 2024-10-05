@@ -1,6 +1,6 @@
 import { model, Schema } from "dynamoose";
 
-export const UserLocationSchema = new Schema(
+export const UserLocation2Schema = new Schema(
   {
     locationId: {
       type: String,
@@ -57,7 +57,7 @@ export const UserLocationSchema = new Schema(
   }
 );
 
-export const UserLocation = model("UserLocation", UserLocationSchema, {
+export const UserLocation2 = model("UserLocation2", UserLocation2Schema, {
   create: true,
   update: true,
   waitForActive: true,

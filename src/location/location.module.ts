@@ -2,9 +2,9 @@ import { forwardRef, Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserLocationRepository } from './location.repository';
-import { UserLocation } from './location.entity';
+import { UserLocation2 } from './location.entity';
 import { DynamooseModule } from 'nestjs-dynamoose';
-import { UserLocationSchema } from './location-view.schema';
+import { UserLocation2Schema } from './location-view.schema';
 import { UserLocationSavedHandler } from './events/handlers/location-save-event.handler';
 import { GetUserLocationsHandler } from './queries/query/get-userlocation-all.handler';
 import { LocationController } from './location.controller';
@@ -32,9 +32,9 @@ const QuerysHandlers = [
   imports: [
     forwardRef(() => ProductModule),
     CqrsModule,
-    TypeOrmModule.forFeature([UserLocation]),
+    TypeOrmModule.forFeature([UserLocation2]),
     DynamooseModule.forFeature([
-      { name: "LocationView", schema: UserLocationSchema },
+      { name: "LocationView2", schema: UserLocation2Schema },
     ]),
 
   ],

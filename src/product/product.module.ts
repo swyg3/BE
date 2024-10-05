@@ -30,7 +30,7 @@ import { GetNearestProductsHandler } from "./queries/handlers/get-nearest-produc
 import { FindProductsByCategoryHandler } from "./queries/handlers/get-product-by-category.handler";
 import { SearchProductsHandler } from "./queries/handlers/get-search-products.handler";
 import { GetProductByDiscountRateHandler } from "./queries/handlers/get-products-by-discountRate.handler";
-import { UserLocationSchema } from "src/location/location-view.schema";
+import { UserLocation2Schema } from "src/location/location-view.schema";
 import { LocationModule } from "src/location/location.module";
 import { LocationViewRepository } from "src/location/location-view.repository";
 
@@ -55,8 +55,8 @@ const EventsHandlers = [
     ]),
     DynamooseModule.forFeature([
       { 
-        name: 'LocationView',
-        schema: UserLocationSchema,
+        name: 'LocationView2',
+        schema: UserLocation2Schema,
       }
     ]),
     SellersModule,
@@ -112,8 +112,7 @@ const EventsHandlers = [
     GeocodingService,
     NaverMapsClient,
     SearchProductsHandler,
-    GetProductByDiscountRateHandler
-    
+    GetProductByDiscountRateHandler    
     
   ],
   controllers: [ProductController,GeocodingController],

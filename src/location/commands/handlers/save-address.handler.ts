@@ -1,7 +1,7 @@
 import { CommandHandler, EventBus, ICommandHandler } from '@nestjs/cqrs';
 import { SaveAddressCommand } from '../impl/save-address.command';
 import { UserLocationRepository } from 'src/location/location.repository';
-import { UserLocation } from 'src/location/location.entity';
+import { UserLocation2 } from 'src/location/location.entity';
 import { NaverMapsClient } from 'src/shared/infrastructure/database/navermap.config';
 import { UserLocationSavedEvent } from 'src/location/events/impl/location-save-event';
 import { Logger } from '@nestjs/common';
@@ -15,13 +15,13 @@ export class SaveAddressHandler implements ICommandHandler<SaveAddressCommand> {
         private readonly eventBus: EventBus
     ) { }
 
-    async execute(command: SaveAddressCommand): Promise<UserLocation> {
+    async execute(command: SaveAddressCommand): Promise<UserLocation2> {
 
         const { userId, addressDto } = command;
         const { roadAddress, searchTerm } = addressDto;       
          const geocodeResult = await this.naverMapsClient.getGeocode(roadAddress);
 
-        const newLocation = new UserLocation();
+        const newLocation = new UserLocation2();
         newLocation.userId = userId;
         newLocation.searchTerm = searchTerm;
         newLocation.roadAddress = roadAddress;
