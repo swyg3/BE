@@ -33,19 +33,6 @@ export class LocationViewRepository {
     try {
       this.logger.log(`LocationView 생성 시도: ${locationView.locationId}`);
 
-      // 기존 위치 정보를 비동기로 동시에 처리
-      await Promise.all([
-        this.findAlllocationbyuserId(locationView.userId),
-        this.setAllLocationsToFalse(locationView.userId)
-      ]);
-
-      // 이미 존재하는지 확인
-      const existingItem = await this.locationViewModel.get({ locationId: locationView.locationId });
-      if (existingItem) {
-        this.logger.warn(`LocationView already exists: ${locationView.locationId}`);
-        return existingItem;
-      }
-
       const item = await this.locationViewModel.create({
         ...locationView,
         latitude: locationView.latitude.toString(),
