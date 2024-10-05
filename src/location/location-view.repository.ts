@@ -191,7 +191,6 @@ export class LocationViewRepository {
             isCurrent: location.locationId === newCurrentLocationId,
             updatedAt: new Date(), // ISO 문자열로 변환
             roadAddress: encodeURIComponent(location.roadAddress), // roadAddress 인코딩
-            searchTerm: encodeURIComponent(location.searchTerm)    // searchTerm 인코딩
         }));
 
         // 3. 배치 작업 실행
