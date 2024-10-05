@@ -8,7 +8,7 @@ export class DeleteOrderAggregate extends AggregateRoot {
         private readonly id: string,
     ) { super(); }
 
-    // event3. 이벤트 형식 맞추기
+    // event3. 이벤트 형식 맞추기 //
     register(
         id: string,
         userId: string,
