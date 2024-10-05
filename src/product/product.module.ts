@@ -77,7 +77,7 @@ const EventsHandlers = [
         // xxx.jpg -> .jpg
         const ext = extname(file.originalname);
 
-        if (ext !== ".jpg" && ext !== ".jpeg" && ext !== ".png") {
+        if (ext !== ".jpg" && ext !== ".jpeg" && ext !== ".png"&& ext !== ".PNG") {
           return cb(
             new BadRequestException("jpg/jpeg/png 파일만 업로드 가능합니다!"),
             false,
