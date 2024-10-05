@@ -24,43 +24,43 @@ export class LocationController {
     private readonly queryBus: QueryBus,
   ) {}
 
-  @Put('current/insert')
-  @ApiOperation({ summary: '사용자 진입시 현재 위치 설정' })
-  @ApiResponse({ status: 200, description: '현재 위치 설정 성공' })
-  @ApiResponse({ status: 400, description: '잘못된 요청' })
-  async createCurrentLocation(
-    @GetUser() user: JwtPayload,
-    @Body() locationDataDto: LocationDataDto,
-  ) {
-    const { longitude, latitude } = locationDataDto;
-    return this.commandBus.execute(
-      new AddCurrentLocationCommand(user.userId, longitude, latitude, true, true)
-    );
-  }
+  // @Put('current/insert')
+  // @ApiOperation({ summary: '사용자 진입시 현재 위치 설정' })
+  // @ApiResponse({ status: 200, description: '현재 위치 설정 성공' })
+  // @ApiResponse({ status: 400, description: '잘못된 요청' })
+  // async createCurrentLocation(
+  //   @GetUser() user: JwtPayload,
+  //   @Body() locationDataDto: LocationDataDto,
+  // ) {
+  //   const { longitude, latitude } = locationDataDto;
+  //   return this.commandBus.execute(
+  //     new AddCurrentLocationCommand(user.userId, longitude, latitude, true, true)
+  //   );
+  // }
 
-  @Get('current')
-  @ApiOperation({ summary: '현재 선택된 위치 조회' })
-  @ApiResponse({ 
-    status: 200, 
-    description: '현재 위치 조회 성공',
+  // @Get('current')
+  // @ApiOperation({ summary: '현재 선택된 위치 조회' })
+  // @ApiResponse({ 
+  //   status: 200, 
+  //   description: '현재 위치 조회 성공',
   
-  })
-  @ApiResponse({ status: 404, description: '현재 위치가 설정되어 있지 않음' })
-  async getCurrentLocation(@GetUser() user: JwtPayload) {
-    return this.queryBus.execute(new GetCurrentLocationQuery(user.userId));
-  }
+  // })
+  // @ApiResponse({ status: 404, description: '현재 위치가 설정되어 있지 않음' })
+  // async getCurrentLocation(@GetUser() user: JwtPayload) {
+  //   return this.queryBus.execute(new GetCurrentLocationQuery(user.userId));
+  // }
 
  
-  @Get('all')
-  @ApiOperation({ summary: '사용자의 모든 저장된 위치 조회' })
-  @ApiResponse({ 
-    status: 200, 
-    description: '모든 저장된 위치 조회 성공',
-    type: [UserLocationDto],
-  })
-  async getUserLocations(@GetUser() user: JwtPayload) {
-    return this.queryBus.execute(new GetUserLocationsQuery(user.userId));
-  }
+  // @Get('all')
+  // @ApiOperation({ summary: '사용자의 모든 저장된 위치 조회' })
+  // @ApiResponse({ 
+  //   status: 200, 
+  //   description: '모든 저장된 위치 조회 성공',
+  //   type: [UserLocationDto],
+  // })
+  // async getUserLocations(@GetUser() user: JwtPayload) {
+  //   return this.queryBus.execute(new GetUserLocationsQuery(user.userId));
+  // }
   @Post('address/insert')
   @ApiOperation({ summary: '검색 주소 저장' })
   @ApiBody({
