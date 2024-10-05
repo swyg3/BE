@@ -1,7 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { DeepPartial, EntityManager, Repository } from "typeorm";
 import { InjectRepository } from "@nestjs/typeorm";
-import { UserLocation } from "./location.entity";
+import { UserLocation2 } from "./location.entity";
 
 @Injectable()
 export class UserLocationRepository {
@@ -9,15 +9,15 @@ export class UserLocationRepository {
   private readonly logger = new Logger(UserLocationRepository.name);
 
   constructor(
-    @InjectRepository(UserLocation)
-    private readonly repository: Repository<UserLocation>,
+    @InjectRepository(UserLocation2)
+    private readonly repository: Repository<UserLocation2>,
   ) { }
   
   async updateCurrentLocation(
     userId: string,
     id: string,
     transactionalEntityManager?: EntityManager
-  ): Promise<UserLocation | null> {
+  ): Promise<UserLocation2 | null> {
     const manager = transactionalEntityManager || this.repository.manager;
 
     return manager.transaction(async transactionalEntityManager => {
@@ -25,7 +25,7 @@ export class UserLocationRepository {
         this.logger.debug(`Starting updateCurrentLocation for user: ${userId}, location: ${id}`);
 
         // 먼저 선택된 위치가 존재하는지 확인
-        const locationExists = await transactionalEntityManager.findOne(UserLocation, {
+        const locationExists = await transactionalEntityManager.findOne(UserLocation2, {
           where: { id: id, userId }
         });
 
@@ -36,7 +36,7 @@ export class UserLocationRepository {
 
         // 모든 위치의 isCurrent를 false로 설정
         const updateAllResult = await transactionalEntityManager.update(
-          UserLocation,
+          UserLocation2,
           { userId },
           { isCurrent: false }
         );
@@ -44,14 +44,14 @@ export class UserLocationRepository {
 
         // 선택된 위치의 isCurrent를 true로 설정
         const updateSelectedResult = await transactionalEntityManager.update(
-          UserLocation,
+          UserLocation2,
           { id: id, userId },
           { isCurrent: true }
         );
         this.logger.debug(`Updated selected location: ${updateSelectedResult.affected} rows affected`);
 
         // 업데이트된 위치 반환
-        const updatedLocation = await transactionalEntityManager.findOne(UserLocation, {
+        const updatedLocation = await transactionalEntityManager.findOne(UserLocation2, {
           where: { id: id, userId }
         });
 
@@ -69,7 +69,7 @@ export class UserLocationRepository {
   }
 
 
-  async save(location: UserLocation): Promise<UserLocation> {
+  async save(location: UserLocation2): Promise<UserLocation2> {
     return this.repository.save(location);
   }
   async saveUserLocation({
@@ -82,13 +82,13 @@ export class UserLocationRepository {
     latitude: string;
     longitude: string;
     isCurrent?: boolean;
-  }): Promise<UserLocation> {
+  }): Promise<UserLocation2> {
     const userLocation = this.repository.create({
       userId,
       latitude,
       longitude,
       isCurrent,
-    } as DeepPartial<UserLocation>);
+    } as DeepPartial<UserLocation2>);
 
     return await this.repository.save(userLocation);
   }
@@ -101,7 +101,7 @@ export class UserLocationRepository {
     userId: string;
     latitude: string;
     longitude: string;
-  }): Promise<UserLocation> {
+  }): Promise<UserLocation2> {
     await this.unsetCurrentLocation(userId);
 
     const userLocation = await this.repository.findOne({ where: { userId, latitude, longitude } });
@@ -114,18 +114,18 @@ export class UserLocationRepository {
     }
   }
 
-  async findCurrentLocation(userId: string): Promise<UserLocation | null> {
+  async findCurrentLocation(userId: string): Promise<UserLocation2 | null> {
     return await this.repository.findOne({ where: { userId, isCurrent: true } });
   }
 
-  async findUserLocationByUserId(userId: string): Promise<UserLocation[]> {
+  async findUserLocationByUserId(userId: string): Promise<UserLocation2[]> {
     return await this.repository.find({ where: { userId } });
   }
 
   async unsetCurrentLocation(userId: string): Promise<void> {
     await this.repository
       .createQueryBuilder()
-      .update(UserLocation)
+      .update(UserLocation2)
       .set({ isCurrent: false })
       .where("userId = :userId AND isCurrent = :isCurrent", { userId, isCurrent: true })
       .execute();
@@ -134,7 +134,7 @@ export class UserLocationRepository {
   async setAllLocationsToFalse(userId: string): Promise<void> {
     await this.repository
       .createQueryBuilder()
-      .update(UserLocation)
+      .update(UserLocation2)
       .set({ isCurrent: false })
       .where("userId = :userId", { userId })
       .execute();
@@ -146,7 +146,7 @@ export class UserLocationRepository {
     longitude: string,
     isCurrent: boolean,
     isAgreed: boolean,
-  ): Promise<UserLocation> {
+  ): Promise<UserLocation2> {
     // 기존 위치 정보를 조회
     const existingLocation = await this.repository.findOne({ where: { userId, latitude, longitude } });
 

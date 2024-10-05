@@ -1,7 +1,7 @@
 import { EventsHandler, IEventHandler } from "@nestjs/cqrs";
 import { Logger } from "@nestjs/common";
 import { UserLocationSavedEvent } from "../impl/location-save-event";
-import { LocationView, LocationViewRepository } from "src/location/location-view.repository";
+import { LocationView2, LocationViewRepository } from "src/location/location-view.repository";
 
 @EventsHandler(UserLocationSavedEvent)
 export class UserLocationSavedHandler
@@ -16,7 +16,7 @@ export class UserLocationSavedHandler
     this.logger.log(`UserLocationSavedEvent 처리중: ${event.aggregateId}`);
 
     try {
-      const locationView: LocationView = {
+      const locationView: LocationView2 = {
         locationId: event.aggregateId,
         userId: event.data.userId,
         searchTerm: event.data.searchTerm,
