@@ -7,19 +7,13 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { DynamooseModule } from "nestjs-dynamoose";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
-import { AuthModule } from "./auth/auth.module";
-import { InventoryModule } from "./inventory/inventory.module";
 import { MetricsModule } from "./metrics/metrics.module";
 import { OrderItemsModule } from "./order-items/order-items.module";
 import { OrderModule } from "./order/order.module";
-import { PUBLIC_FOLDER_PATH } from "./product/const/path.const";
-import { ProductModule } from "./product/product.module";
-import { SellersModule } from "./sellers/sellers.module";
 import { configValidationSchema } from "./shared/infrastructure/config/config.validation";
 import { getDynamoConfig } from "./shared/infrastructure/database/dynamodb.config";
 import { getMongoConfig } from "./shared/infrastructure/database/mongodb.config";
 import { getTypeOrmConfig } from "./shared/infrastructure/database/typeorm.config";
-import { UsersModule } from "./users/users.module";
 
 @Module({
   imports: [
@@ -58,15 +52,9 @@ import { UsersModule } from "./users/users.module";
       inject: [ConfigService],
     }),
     ServeStaticModule.forRoot({
-      rootPath: PUBLIC_FOLDER_PATH,
       serveRoot: "/public",
     }),
     MetricsModule,
-    AuthModule,
-    UsersModule,
-    SellersModule,
-    ProductModule,
-    InventoryModule,
     OrderModule,
     OrderItemsModule,
   ],
