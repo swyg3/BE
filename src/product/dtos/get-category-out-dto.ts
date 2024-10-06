@@ -1,7 +1,7 @@
-import { DyProductView } from "../repositories/dy-product-view.repository";
+import { ProductView } from "../repositories/product-view.repository";
 
 export class GetCategoryQueryOutputDto {
-    items: DyProductView[];
+    items: ProductView[];
     lastEvaluatedUrl: string | undefined;
     firstEvaluatedUrl: string | undefined;
     prevPageUrl:string | undefined;

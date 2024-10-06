@@ -1,4 +1,4 @@
-import { Schema } from 'dynamoose';
+import { Schema } from "dynamoose";
 
 export const SellerSchema = new Schema(
   {
@@ -10,10 +10,10 @@ export const SellerSchema = new Schema(
       type: String,
       required: true,
       index: {
-        name: 'EmailIndex', // 인덱스 이름
-        type: 'global',     // 글로벌 보조 인덱스로 설정
-        rangeKey: 'createdAt', // 선택적 정렬 키 설정
-        project: true, 
+        name: "EmailIndex", // 인덱스 이름
+        type: "global", // 글로벌 보조 인덱스로 설정
+        rangeKey: "createdAt", // 선택적 정렬 키 설정
+        project: true,
       },
     },
     name: {
@@ -44,6 +44,10 @@ export const SellerSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    agreeReceiveLocation: {
+      type: Boolean,
+      default: false,
+    },
     lastLoginAt: {
       type: Date,
       default: null,
@@ -51,9 +55,9 @@ export const SellerSchema = new Schema(
   },
   {
     timestamps: {
-      createdAt: 'createdAt',
-      updatedAt: 'updatedAt',
+      createdAt: "createdAt",
+      updatedAt: "updatedAt",
     },
     saveUnknown: false,
-  }
+  },
 );

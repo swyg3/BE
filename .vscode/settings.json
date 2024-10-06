@@ -1,0 +1,13 @@
+{
+    "sqltools.connections": [
+        {
+            "maxRows": 500,
+            "previewLimit": 50,
+            "driver": "DynamoDB Driver",
+            "region": "local",
+            "accessKeyId": "local",
+            "secretAccessKey": "local",
+            "name": "moonco"
+        }
+    ]
+}

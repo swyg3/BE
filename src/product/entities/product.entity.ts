@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   ManyToOne,
   JoinColumn,
+  UpdateDateColumn,
 } from "typeorm";
 import { Category } from "../product.category";
 import { Seller } from "src/sellers/entities/seller.entity";
@@ -51,10 +52,32 @@ export class Product {
   @Column({ type: "bigint", name: "discounted_price", nullable: true })
   discountedPrice: number;
 
+  @Column({ type: "int", nullable: true })
+  quantity: number;
+
+  @Column({ type: "timestamp", nullable: true })
+  expirationDate: Date;
+
+  @Column({ type: 'varchar', nullable: true })
+  locationX: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  locationY: string;
+
+  @Column({ type: 'float', nullable: true })
+  distance: number;
+  
   @CreateDateColumn({
     type: "timestamp",
     name: "created_at",
     default: () => "CURRENT_TIMESTAMP",
   })
   createdAt: Date;
+
+  @UpdateDateColumn({
+    type: "timestamp",
+    name: "updated_at",
+    default: () => "CURRENT_TIMESTAMP",
+  })
+  updatedAt: Date;
 }

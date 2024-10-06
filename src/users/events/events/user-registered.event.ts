@@ -11,6 +11,7 @@ export class UserRegisteredEvent implements BaseEvent {
       name: string;
       phoneNumber: string;
       isEmailVerified: boolean;
+      agreeReceiveLocation: boolean;
     },
     public readonly version: number,
   ) {}

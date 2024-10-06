@@ -99,9 +99,15 @@ export class RegisterSellerHandler
   }
 
   private async checkExistingSeller(email: string): Promise<void> {
-    const existingUser = await this.sellerRepository.findByEmail(email);
+    const existingUser = await this.sellerRepository.findByEmailIncludingDeleted(email);
     if (existingUser) {
-      throw new BadRequestException("이미 가입한 이메일입니다.");
+      if (existingUser.isDeleted) {
+        throw new BadRequestException(
+          "이전에 탈퇴한 계정입니다. [마이 페이지]에서 가입한 계정을 재활성화해주세요."
+        );
+      } else {
+        throw new BadRequestException("이미 가입한 이메일입니다.");
+      }
     }
   }
 
@@ -122,6 +128,7 @@ export class RegisterSellerHandler
       ...additionalInfo,
       isEmailVerified: true,
       isBusinessNumberVerified: true,
+      agreeReceiveLocation: false,
     });
     return this.sellerRepository.save(newSeller);
   }
@@ -138,6 +145,7 @@ export class RegisterSellerHandler
         storePhoneNumber: seller.storePhoneNumber,
         isEmailVerified: true,
         isBusinessNumberVerified: true,
+        agreeReceiveLocation: seller.agreeReceiveLocation,
       },
       1,
     );
