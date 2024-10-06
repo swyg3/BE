@@ -20,6 +20,8 @@ import { getDynamoConfig } from "./shared/infrastructure/database/dynamodb.confi
 import { HttpModule } from "@nestjs/axios";
 import { CqrsModule } from "@nestjs/cqrs";
 import { LocationModule } from './location/location.module';
+import { OrderItemsModule } from "./order-items/order-items.module";
+import { OrderModule } from "./order/order.module";
 
 @Module({
   imports: [
@@ -64,6 +66,8 @@ import { LocationModule } from './location/location.module';
     InventoryModule,
     HttpModule,
     CqrsModule,
+    OrderModule,
+    OrderItemsModule,
     LocationModule,
   ],
   controllers: [AppController],
