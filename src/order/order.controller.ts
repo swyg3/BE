@@ -1,10 +1,8 @@
-import { Body, Controller, Delete, Get, HttpException, HttpStatus, Logger, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpException, HttpStatus, Logger, Param, Post } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { CreateOrderCommand } from './commands/create-order.command';
 import { DeleteOrderCommand } from './commands/delete-order.command';
-import { UpdateOrderCommand } from './commands/update-order.command';
 import { CreateOrderDto } from './dtos/create-order.dto';
-import { UpdateOrderDto } from './dtos/update-order.dto';
 import { GetOrderQuery } from './queries/get-order.query';
 
 @Controller('order')
@@ -46,22 +44,21 @@ export class OrderController {
         }
     }
 
-    // 주문 내역 수정
-    @Patch(':id')
-    async updateOrders(@Param('id') id: string, @Body() updateOrderDto: UpdateOrderDto) {
-        const { orderId, totalAmount, totalPrice, pickupTime, paymentMethod, status } = updateOrderDto;
-        this.logger.log(`Updating order with ID: ${orderId}`);
+    // // 주문 내역 수정
+    // @Patch(':id')
+    // async updateOrders(@Param('id') id: string, @Body() updateOrderDto: UpdateOrderDto) {
+    //     const { totalAmount, totalPrice, pickupTime, paymentMethod, status } = updateOrderDto;
 
-        try {
-            const result = await this.commandBus.execute(
-                new UpdateOrderCommand(orderId, totalAmount, totalPrice, pickupTime, paymentMethod, status)
-            );
-            return result;
-        } catch (error) {
-            this.logger.error(`Error updating order with ID ${orderId}: ${error.message}`);
-            throw new HttpException('Failed to update order', HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
+    //     try {
+    //         const result = await this.commandBus.execute(
+    //             new UpdateOrderCommand(id, userId, totalAmount, totalPrice, pickupTime, paymentMethod, status)
+    //         );
+    //         return result;
+    //     } catch (error) {
+    //         this.logger.error(`Error updating order with ID ${orderId}: ${error.message}`);
+    //         throw new HttpException('Failed to update order', HttpStatus.INTERNAL_SERVER_ERROR);
+    //     }
+    // }
 
     // 주문 취소
     @Delete(':id')
