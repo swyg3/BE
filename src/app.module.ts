@@ -1,6 +1,7 @@
+import { HttpModule } from "@nestjs/axios";
 import { Module } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
-import { MongooseModule } from "@nestjs/mongoose";
+import { CqrsModule } from "@nestjs/cqrs";
 import { ServeStaticModule } from "@nestjs/serve-static";
 import { ThrottlerModule } from "@nestjs/throttler";
 import { TypeOrmModule } from "@nestjs/typeorm";
@@ -17,7 +18,6 @@ import { ProductModule } from "./product/product.module";
 import { SellersModule } from "./sellers/sellers.module";
 import { configValidationSchema } from "./shared/infrastructure/config/config.validation";
 import { getDynamoConfig } from "./shared/infrastructure/database/dynamodb.config";
-import { getMongoConfig } from "./shared/infrastructure/database/mongodb.config";
 import { getTypeOrmConfig } from "./shared/infrastructure/database/typeorm.config";
 import { UsersModule } from "./users/users.module";
 
@@ -46,15 +46,10 @@ import { UsersModule } from "./users/users.module";
       useFactory: getTypeOrmConfig,
       inject: [ConfigService],
     }),
-    MongooseModule.forRootAsync({
-      imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) =>
-        await getMongoConfig(configService),
-      inject: [ConfigService],
-    }),
     DynamooseModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => getDynamoConfig(configService),
+      useFactory: (configService: ConfigService) =>
+        getDynamoConfig(configService),
       inject: [ConfigService],
     }),
     ServeStaticModule.forRoot({
@@ -67,6 +62,8 @@ import { UsersModule } from "./users/users.module";
     SellersModule,
     ProductModule,
     InventoryModule,
+    HttpModule,
+    CqrsModule,
     OrderModule,
     OrderItemsModule,
   ],
