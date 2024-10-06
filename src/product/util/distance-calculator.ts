@@ -1,12 +1,9 @@
-// src/utils/distance-calculator.ts
-
 interface Polygon {
   type: 'Polygon';
   coordinates: number[][][];
 }
 
 export class DistanceCalculator {
-  
   private static readonly EARTH_RADIUS = 6371; // km
   private static readonly a = 6378137; // 지구의 장반경 (미터)
   private static readonly b = 6356752.3142; // 지구의 단반경 (미터)
@@ -55,7 +52,8 @@ export class DistanceCalculator {
     const deltaSigma = B * sinSigma * (cos2SigmaM + B / 4 * (cosSigma * (-1 + 2 * cos2SigmaM * cos2SigmaM) -
       B / 6 * cos2SigmaM * (-3 + 4 * sinSigma * sinSigma) * (-3 + 4 * cos2SigmaM * cos2SigmaM)));
 
-    return this.b * A * (sigma - deltaSigma);
+    const distanceInMeters = this.b * A * (sigma - deltaSigma);
+    return Number((distanceInMeters / 1000).toFixed(1)); // 미터를 킬로미터로 변환하고 소수점 첫째 자리까지 반올림
   }
 
   private static calculatePolygonCenter(polygon: Polygon): [number, number] {
@@ -89,6 +87,7 @@ export class DistanceCalculator {
   private static toDegrees(radians: number): number {
     return radians * 180 / Math.PI;
   }
+
   public static createPolygonFromCoordinates(lat: number, lon: number): Polygon {
     return {
       type: 'Polygon',

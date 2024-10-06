@@ -317,13 +317,13 @@ export class ProductViewRepository {
       let comparison = 0;
       switch (sortBy) {
         case SortByOption.DiscountRate:
-          comparison = (a.discountRate || 0) - (b.discountRate || 0);
+          comparison = (b.discountRate || 0) - (a.discountRate || 0);
           break;
         case SortByOption.Distance:
-          comparison = (a.distance || Infinity) - (b.distance || Infinity);
+          comparison = (b.distance || Infinity) - (a.distance || Infinity);
           break;
         case SortByOption.DistanceDiscountScore:
-          comparison = (a.distanceDiscountScore || -Infinity) - (b.distanceDiscountScore || -Infinity);
+          comparison = (b.distanceDiscountScore || -Infinity) - (a.distanceDiscountScore || -Infinity);
           break;
         default:
           comparison = 0;
@@ -509,10 +509,11 @@ export class ProductViewRepository {
     };
   }
 
-  private  calculateRecommendationScore(product: ProductView): number {
+  private calculateRecommendationScore(product: ProductView): number {
     const distanceScore = 1 / (1 + (product.distance || Infinity));
     const discountScore = (product.discountRate || 0) / 100;
-    return (distanceScore + discountScore) / 2;
+    const score = (distanceScore + discountScore) / 2;
+    return Math.round(score * 100); // 100을 곱하여 더 의미 있는 범위의 정수로 변환
   }
 
   private  createPolygonFromCoordinates(latitude: number, longitude: number): Polygon {
