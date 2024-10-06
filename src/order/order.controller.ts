@@ -1,31 +1,27 @@
 import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpException,
-  HttpStatus,
-  Logger,
-  Param,
-  Post,
-  UseGuards,
+    Body,
+    Controller,
+    Delete,
+    Get,
+    HttpException,
+    HttpStatus,
+    Logger,
+    Param,
+    Post
 } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
+import {
+    ApiBearerAuth,
+    ApiBody,
+    ApiOperation,
+    ApiParam,
+    ApiResponse,
+    ApiTags,
+} from "@nestjs/swagger";
 import { CreateOrderCommand } from "./commands/create-order.command";
 import { DeleteOrderCommand } from "./commands/delete-order.command";
 import { CreateOrderDto } from "./dtos/create-order.dto";
 import { GetOrderQuery } from "./queries/get-order.query";
-import {
-  ApiBearerAuth,
-  ApiBody,
-  ApiOperation,
-  ApiParam,
-  ApiResponse,
-  ApiTags,
-} from "@nestjs/swagger";
-import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
-import { GetUser } from "src/shared/decorators/get-user.decorator";
-import { JwtPayload } from "src/shared/interfaces/jwt-payload.interface";
 
 @ApiTags("Orders")
 @Controller("order")
@@ -86,7 +82,7 @@ export class OrderController {
     status: 500,
     description: "주문 생성 중 서버 오류가 발생했습니다.",
   })
-  // @ApiBearerAuth()
+  @ApiBearerAuth()
   // @UseGuards(JwtAuthGuard)
   @Post()
   async createOrder(
