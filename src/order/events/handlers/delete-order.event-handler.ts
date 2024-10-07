@@ -17,7 +17,7 @@ export interface OrderView {
 export interface OrderItemsView {
     id: string; // 기본키
     orderId: string; // 삭제 기준
-    productId: number;
+    productId: string;
     quantity: number;
     price: number;
 }
