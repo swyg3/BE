@@ -1,6 +1,7 @@
 import {
     Body,
     Controller,
+    Get,
     HttpException,
     HttpStatus,
     Logger,
@@ -21,6 +22,7 @@ import { JwtPayload } from "src/shared/interfaces/jwt-payload.interface";
 import { v4 as uuidv4 } from 'uuid';
 import { CreateOrderCommand } from "./commands/create-order.command";
 import { CreateOrderDto } from "./dtos/create-order.dto";
+import { GetOrderQuery } from "./queries/get-order.query";
 
 @ApiTags("Orders")
 @Controller("order")
@@ -101,7 +103,7 @@ export class OrderController {
                 HttpStatus.UNAUTHORIZED,
             );
         }
-        
+
         const {
         totalAmount,
         totalPrice,
@@ -134,66 +136,60 @@ export class OrderController {
     }
 }
 
-//   // 사용자별 전체 주문 목록
-//   @ApiOperation({
-//     summary: "사용자별 주문 목록 조회",
-//     description: "특정 사용자의 모든 주문 목록을 조회합니다.",
-//   })
-//   @ApiParam({ name: "userId", type: "string", description: "사용자 ID" })
-//   @ApiResponse({
-//     status: 200,
-//     description: "주문 목록 조회 성공",
-//     schema: {
-//       type: "object",
-//       properties: {
-//         success: { type: "boolean", example: true },
-//         data: {
-//           type: "array",
-//           items: {
-//             type: "object",
-//             properties: {
-//               orderId: {
-//                 type: "string",
-//                 example: "123e4567-e89b-12d3-a456-426614174000",
-//               },
-//               totalAmount: { type: "number", example: 100 },
-//               totalPrice: { type: "number", example: 100 },
-//               status: { type: "string", example: "PENDING" },
-//             },
-//           },
-//         },
-//       },
-//     },
-//   })
-//   @ApiResponse({ status: 403, description: "금지됨 - 사용자 ID 불일치" })
-//   @ApiResponse({
-//     status: 500,
-//     description: "주문 목록 조회 중 서버 오류가 발생했습니다.",
-//   })
-//   @ApiBearerAuth()
-//   @UseGuards(JwtAuthGuard)
-//   @Get(":userId")
-//   async getOrders(
-//     @Param("userId") userId: string,
-//     @GetUser() user: JwtPayload,
-//   ) {
-//     if (user.userId !== userId) {
-//         throw new ForbiddenException('자신의 주문만 생성할 수 있습니다.');
-//     }
-
-//     try {
-//       const result = await this.queryBus.execute(new GetOrderQuery(userId));
-//       return result;
-//     } catch (error) {
-//       this.logger.error(
-//         `Error fetching orders for user ${userId}: ${error.message}`,
-//       );
-//       throw new HttpException(
-//         "Failed to fetch orders",
-//         HttpStatus.INTERNAL_SERVER_ERROR,
-//       );
-//     }
-//   }
+    // 사용자별 전체 주문 목록
+    @ApiOperation({
+        summary: "사용자별 주문 목록 조회",
+        description: "JWT 토큰을 사용하여 사용자의 모든 주문 목록을 조회합니다.",
+    })
+    @ApiResponse({
+        status: 200,
+        description: "주문 목록 조회 성공",
+        schema: {
+        type: "object",
+        properties: {
+            success: { type: "boolean", example: true },
+            data: {
+            type: "array",
+            items: {
+                type: "object",
+                properties: {
+                orderId: {
+                    type: "string",
+                    example: "123e4567-e89b-12d3-a456-426614174000",
+                },
+                totalAmount: { type: "number", example: 100 },
+                totalPrice: { type: "number", example: 100 },
+                status: { type: "string", example: "PENDING" },
+                },
+            },
+            },
+        },
+        },
+    })
+    @ApiResponse({
+        status: 500,
+        description: "주문 목록 조회 중 서버 오류가 발생했습니다.",
+    })
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard)
+    @Get()
+    async getOrders(@GetUser() user: JwtPayload) {
+        try {
+            const result = await this.queryBus.execute(new GetOrderQuery(user.userId));
+            return {
+                success: true,
+                data: result,
+            };
+            } catch (error) {
+            this.logger.error(
+                `Error fetching orders for user ${user.userId}: ${error.message}`,
+            );
+            throw new HttpException(
+                "Failed to fetch orders",
+                HttpStatus.INTERNAL_SERVER_ERROR,
+            );
+        }
+    }
 
   // // 주문 내역 수정
   // @Patch(':id')
