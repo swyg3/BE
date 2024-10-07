@@ -1,10 +1,12 @@
 import {
     Body,
     Controller,
+    Delete,
     Get,
     HttpException,
     HttpStatus,
     Logger,
+    Param,
     Post,
     UseGuards
 } from "@nestjs/common";
@@ -13,6 +15,7 @@ import {
     ApiBearerAuth,
     ApiBody,
     ApiOperation,
+    ApiParam,
     ApiResponse,
     ApiTags
 } from "@nestjs/swagger";
@@ -21,6 +24,7 @@ import { GetUser } from "src/shared/decorators/get-user.decorator";
 import { JwtPayload } from "src/shared/interfaces/jwt-payload.interface";
 import { v4 as uuidv4 } from 'uuid';
 import { CreateOrderCommand } from "./commands/create-order.command";
+import { DeleteOrderCommand } from "./commands/delete-order.command";
 import { CreateOrderDto } from "./dtos/create-order.dto";
 import { GetOrderQuery } from "./queries/get-order.query";
 
@@ -51,8 +55,8 @@ export class OrderController {
             paymentMethod: "CASH",
             status: "PENDING",
             items: [
-                { productId: 345, quantity: 2, price: 50 },
-                { productId: 678, quantity: 1, price: 50 },
+                { productId: "123e4567-e89b-12d3-a456-426614174000", quantity: 2, price: 50 },
+                { productId: "456e4567-e89b-12d3-a456-426614174000", quantity: 1, price: 50 },
             ],
             },
             summary: "유효한 주문 생성 정보",
@@ -211,55 +215,51 @@ export class OrderController {
   //     }
   // }
 
-//   // 주문 취소
-//   @ApiOperation({
-//     summary: "주문 취소",
-//     description: "특정 주문을 취소합니다.",
-//   })
-//   @ApiParam({ name: "id", type: "string", description: "주문 ID" })
-//   @ApiResponse({
-//     status: 200,
-//     description: "주문 취소 성공",
-//     schema: {
-//       type: "object",
-//       properties: {
-//         success: { type: "boolean", example: true },
-//         message: {
-//           type: "string",
-//           example: "성공적으로 주문이 취소되었습니다.",
-//         },
-//       },
-//     },
-//   })
-//   @ApiResponse({ status: 403, description: "금지됨 - 사용자 ID 불일치" })
-//   @ApiResponse({
-//     status: 500,
-//     description: "주문 취소 중 서버 오류가 발생했습니다.",
-//   })
-//   @ApiBearerAuth()
-//   @UseGuards(JwtAuthGuard)
-//   @Delete(":id")
-//   async cancelOrders(
-//     @Param("id") id: string,
-//     @GetUser() user: JwtPayload,
-//   ) {
-//     this.logger.log(`Cancelling order with ID: ${id}`);
+  // 주문 취소
+    @ApiOperation({
+        summary: "주문 취소",
+        description: "특정 주문을 취소합니다.",
+    })
+    @ApiParam({ name: "id", type: "string", description: "주문 ID" })
+    @ApiResponse({
+        status: 200,
+        description: "주문 취소 성공",
+        schema: {
+        type: "object",
+        properties: {
+            success: { type: "boolean", example: true },
+            message: {
+            type: "string",
+            example: "성공적으로 주문이 취소되었습니다.",
+            },
+        },
+        },
+    })
+    @ApiResponse({ status: 403, description: "금지됨 - 사용자 ID 불일치" })
+    @ApiResponse({
+        status: 500,
+        description: "주문 취소 중 서버 오류가 발생했습니다.",
+    })
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard)
+    @Delete(":id")
+    async cancelOrders(
+        @Param("id") id: string,
+        @GetUser() user: JwtPayload,
+    ) {
+        this.logger.log(`Cancelling order with ID: ${id}`);
 
-//     // if (user.userId !== userId) {
-//     //     throw new ForbiddenException('자신의 주문만 취소할 수 있습니다.');
-//     // }
-
-//     try {
-//       const result = await this.commandBus.execute(new DeleteOrderCommand(id));
-//       return result;
-//     } catch (error) {
-//       this.logger.error(
-//         `Error cancelling order with ID ${id}: ${error.message}`,
-//       );
-//       throw new HttpException(
-//         "Failed to cancel order",
-//         HttpStatus.INTERNAL_SERVER_ERROR,
-//       );
-//     }
-//   }
+        try {
+        const result = await this.commandBus.execute(new DeleteOrderCommand(id));
+        return result;
+        } catch (error) {
+        this.logger.error(
+            `Error cancelling order with ID ${id}: ${error.message}`,
+        );
+        throw new HttpException(
+            "Failed to cancel order",
+            HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+        }
+    }
 }
