@@ -18,7 +18,7 @@ export class CreateOrderAggregate extends AggregateRoot {
         status: string,
         items: {
             orderId: string;
-            productId: number;
+            productId: string;
             quantity: number;
             price: number;
         }[],
