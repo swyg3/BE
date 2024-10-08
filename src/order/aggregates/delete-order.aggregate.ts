@@ -19,7 +19,7 @@ export class DeleteOrderAggregate extends AggregateRoot {
         items: {
             id: string;
             orderId: string;
-            productId: number;
+            productId: string;
             quantity: number;
             price: number;
         }[],

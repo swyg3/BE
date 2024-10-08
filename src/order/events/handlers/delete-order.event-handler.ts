@@ -17,7 +17,7 @@ export interface OrderView {
 export interface OrderItemsView {
     id: string; // 기본키
     orderId: string; // 삭제 기준
-    productId: number;
+    productId: string;
     quantity: number;
     price: number;
 }
@@ -44,19 +44,18 @@ export class DeleteOrderEventHandler implements IEventHandler<DeleteOrderEvent> 
         // 2. 해당 주문번호의 모든 주문 아이템 삭제 (OrderItemsView)
         const orderId = event.data.id; // 주문 번호로 사용
 
-        // 주문 아이템 조회 후 삭제
-        const deleteItemsPromises = event.data.items.map(async (item) => {
-            if (item.orderId === orderId) {
-                // orderId에 해당하는 아이템을 id로 찾아서 삭제
-                await this.orderItemsViewModel.delete({ id: item.id });
-                this.logger.log(`DynamoDB에서 주문 아이템 삭제 완료: ${item.id}`);
-            }
+        // 주문 아이템 조회 (GSI인 orderId를 사용하여 조회)
+        const orderItems = await this.orderItemsViewModel.query("orderId").eq(orderId).exec();
+        this.logger.log(`DynamoDB에서 조회된 주문 아이템들: ${orderItems.length}개`);
+
+        // 조회된 주문 아이템 삭제
+        const deleteItemsPromises = orderItems.map(async (item) => {
+            await this.orderItemsViewModel.delete({ id: item.id });
+            this.logger.log(`DynamoDB에서 주문 아이템 삭제 완료: ${item.id}`);
         });
 
         // 모든 주문 아이템 삭제 대기
         await Promise.all(deleteItemsPromises);
         this.logger.log('모든 주문 항목이 삭제되었습니다.');
-
-        console.log('주문이 삭제되었습니다: ', event);
     }
 }

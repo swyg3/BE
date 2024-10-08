@@ -15,7 +15,7 @@ export class CreateOrderEvent implements BaseEvent {
             status: string,
             items: {
                 orderId: string;
-                productId: number;
+                productId: string;
                 quantity: number;
                 price: number;
             }[],

@@ -17,7 +17,7 @@ export const OrderItemsViewSchema = new Schema(
             },
         },
         productId: {
-            type: Number,
+            type: String,
             required: true, // 제품 ID
         },
         quantity: {
