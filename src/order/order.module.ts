@@ -25,6 +25,6 @@ import { OrderViewSchema } from './schemas/order-view.schema';
     EventSourcingModule,
   ],
   controllers: [OrderController],
-  providers: [CreateOrderCommandHandler, GetOrderQueryHandler, DeleteOrderCommandHandler, CreateOrderEventHandler, DeleteOrderEventHandler]
+  providers: [CreateOrderCommandHandler, GetOrderQueryHandler, CreateOrderEventHandler, DeleteOrderEventHandler, DeleteOrderCommandHandler]
 })
 export class OrderModule {}

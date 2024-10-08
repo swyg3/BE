@@ -4,14 +4,6 @@ import { OrderItemDto } from 'src/order-items/dtos/order-items.dto';
 
 export class CreateOrderDto {
     @IsNotEmpty()
-    @IsString()
-    id: string;
-
-    @IsNotEmpty()
-    @IsString()
-    userId: string;
-
-    @IsNotEmpty()
     @IsNumber()
     totalAmount: number;
 

@@ -16,14 +16,6 @@ export const OrderViewSchema = new Schema(
                 type: "global",
             },
         },
-        /*sellerId: {
-            type: Number,
-            required: true,
-            index: { // 글로벌 보조 인덱스 설정
-                name: "SellerIdIndex",
-                type: "global",
-            },
-        },*/
         status: {
             type: String,
             required: true,
