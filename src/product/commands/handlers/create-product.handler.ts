@@ -90,8 +90,7 @@ export class CreateProductHandler
       }
 
       const id = savedProduct.id;
-      const discountRate =
-        ((originalPrice - discountedPrice) / originalPrice) * 100;
+      const discountRate = Math.round(((originalPrice - discountedPrice) / originalPrice) * 100);
       this.logger.log(`Received expirationDate: ${expirationDate}`);
       this.logger.log(expirationDate);
 

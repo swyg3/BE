@@ -101,6 +101,8 @@ export class LocationController {
   @ApiBody({ type: AddressDto })
   @ApiResponse({ status: 201, description: '주소 저장 성공', type: AddressDto })
   @ApiResponse({ status: 400, description: '잘못된 요청' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
   async saveAddress(@GetUser() user: JwtPayload, @Body() addressDto: AddressDto) {
     return this.commandBus.execute(new SaveAddressCommand(user.userId, addressDto));
   }
@@ -108,6 +110,8 @@ export class LocationController {
   @Get('address/getall')
   @ApiOperation({ summary: '모든 주소 목록 조회' })
   @ApiResponse({ status: 200, description: '주소 목록 조회 성공', type: [AddressDto] })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
   async getAllAddresses(@GetUser() user: JwtPayload) {
     return this.queryBus.execute(new GetAllAddressesQuery(user.userId));
   }
@@ -138,6 +142,8 @@ export class LocationController {
       }
     }
   })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
   async setCurrentLocation(@GetUser() user: JwtPayload, @Query('id') id: string) {
     const result = await this.commandBus.execute(new SetCurrentLocationCommand(user.userId, id));
     return { 

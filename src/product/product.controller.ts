@@ -157,7 +157,6 @@ export class ProductController {
   @Get("get/:id")
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
   async getProductById(@Param("id") id: string): Promise<CustomResponse> {
     const product = await this.queryBus.execute(new GetProductByIdQuery(id));
 
