@@ -31,8 +31,8 @@ export interface ProductView {
   locationY: string;
   distance: number;
   distanceDiscountScore: number;
+  inventoryUpdatedAt:Date;
 }
-type ProductViewItem = Item<ProductView> & ProductView;
 
 
 @Injectable()

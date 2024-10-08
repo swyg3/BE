@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { DeepPartial, DeleteResult, Repository } from "typeorm";
+import { DeepPartial, DeleteResult, In, Repository } from "typeorm";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Inventory } from "../inventory.entity";
 
@@ -42,6 +42,12 @@ export class InventoryRepository {
   async findOneByProductId(productId: string): Promise<Inventory | null> {
     return this.repository.findOne({
       where: { productId },
+    });
+  }
+  
+  async findManyByProductIds(productIds: string[]): Promise<Inventory[]> {
+    return this.repository.find({
+      where: { productId: In(productIds) },
     });
   }
 

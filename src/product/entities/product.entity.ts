@@ -63,9 +63,15 @@ export class Product {
 
   @Column({ type: 'varchar', nullable: true })
   locationY: string;
+  
+  @Column({ type: 'float', nullable: true })
+  discountRate: number;
 
   @Column({ type: 'float', nullable: true })
   distance: number;
+
+  @Column({ type: 'float', nullable: true })
+  distanceDiscountScore: number;
   
   @CreateDateColumn({
     type: "timestamp",
