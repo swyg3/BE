@@ -1,95 +1,146 @@
-import { Inject, Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Product } from './entities/product.entity';
 import { InjectModel, Model } from 'nestjs-dynamoose';
-import { ProductView } from './repositories/product-view.repository';
+import { ProductView, SortByOption } from './repositories/product-view.repository';
 import { ConfigService } from '@nestjs/config';
 import { Category } from './product.category';
-import { DistanceCalculator } from './util/distance-calculator';
-import { CreateProductDto, FindProductsParams, ProductQueryResult, SortByOption, PaginationResult } from './dto';
 import { Inventory } from 'src/inventory/inventory.entity';
 import { InventoryRepository } from 'src/inventory/repositories/inventory.repository';
 import { ProductRepository } from './repositories/product.repository';
 import { REDIS_CLIENT } from 'src/shared/infrastructure/redis/redis.config';
 import Redis from 'ioredis';
+import { CreateProductDto } from './dtos/create-product.dto';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 
-// Product와 해당하는 Inventory를 가진 객체 타입 정의
 interface ProductWithInventory {
     product: Product;
     inventory: Inventory;
 }
 
+export interface FindProductsParams {
+    category: Category;
+    sortBy: SortByOption;
+    order: 'asc' | 'desc';
+    limit: number;
+    exclusiveStartKey?: string;
+    previousPageKey?: string;
+    latitude?: string;
+    longitude?: string;
+}
+
+export interface ProductQueryResult {
+    items: ProductView[];
+    lastEvaluatedUrl: string | null;
+    firstEvaluatedUrl: string | null;
+    prevPageUrl: string | null;
+    count: number;
+}
+
 @Injectable()
 export class ProductService {
+    private readonly logger = new Logger(ProductService.name);
+
     constructor(
         private productRepository: ProductRepository,
         private inventoryRepository: InventoryRepository,
         @InjectModel("ProductView")
         private readonly productViewModel: Model<ProductView, { productId: string }>,
         private readonly configService: ConfigService,
-        @Inject(REDIS_CLIENT) private readonly redis: Redis
-
+        @Inject(REDIS_CLIENT) private readonly redis: Redis,
+        @InjectDataSource() private dataSource: DataSource
     ) { }
+    async checkProductsDirectly(category: string): Promise<void> {
+        const query = `
+          SELECT p.*, i.quantity 
+          FROM product p 
+          LEFT JOIN inventory i ON p.inventory_id = i.id 
+          WHERE p.category = $1 AND (i.quantity > 0 OR i.quantity IS NULL)
+          LIMIT 10
+        `;
 
-    // Command: 제품 생성/수정
+        try {
+            const result = await this.dataSource.query(query, [category]);
+            this.logger.log('Direct query result:', JSON.stringify(result, null, 2));
+        } catch (error) {
+            this.logger.error('Error executing direct query:', error);
+        }
+    }
     async createOrUpdateProduct(productData: CreateProductDto): Promise<void> {
-        // PostgreSQL에 제품 데이터 저장
-        const product = await this.productRepository.save(productData);
-        // 읽기 모델(DynamoDB)에 동기화
-        await this.syncToReadModel(product);
+        try {
+            const product = await this.productRepository.save(productData);
+            await Promise.all([
+                this.syncToReadModel(product),
+                this.addToRedisGeo(product)
+            ]);
+        } catch (error) {
+            this.logger.error(`Error in createOrUpdateProduct: ${error.message}`, error.stack);
+            throw error;
+        }
     }
 
-    // Query: 제품 검색 및 정렬
+    private async addToRedisGeo(product: Product): Promise<void> {
+        if (product.locationX && product.locationY) {
+            await this.redis.geoadd('products', Number(product.locationX), Number(product.locationY), product.id);
+        }
+    }
+
     async findProductsByCategoryAndSort(params: FindProductsParams): Promise<ProductQueryResult> {
-        const { category, sortBy, order, limit, latitude, longitude } = params;
+        try {
+            const { category, sortBy, order, limit, latitude, longitude } = params;
+            let products = await this.fetchProductsFromPostgres(category);
 
-        // 1. PostgreSQL에서 기본 데이터 조회
-        let products = await this.fetchProductsFromPostgres(category);
+            if (this.shouldCalculateDistance(sortBy, latitude, longitude)) {
+                products = await this.calculateAndUpdateDistances(products, Number(latitude), Number(longitude));
+            }
 
-        // 2. 거리 및 점수 계산 (필요한 경우)
-        if (this.shouldCalculateDistance(sortBy, latitude, longitude)) {
-            products = await this.calculateAndUpdateDistances(products, Number(latitude), Number(longitude));
+            const sortedProducts = this.sortProducts(products, sortBy, order);
+            const { paginatedItems: paginatedProducts, lastEvaluatedKey } = this.applyPagination(sortedProducts, limit, params.exclusiveStartKey);
+
+            await this.syncToReadModel(paginatedProducts);
+            const items = await this.fetchFromDynamoDB(paginatedProducts.map(p => p.id));
+
+            return this.formatResult(items, lastEvaluatedKey, params);
+        } catch (error) {
+            this.logger.error(`Error in findProductsByCategoryAndSort: ${error.message}`, error.stack);
+            throw error;
         }
-
-        // 3. 정렬 및 페이지네이션
-        const sortedProducts = this.sortProducts(products, sortBy, order);
-        const { paginatedProducts, lastEvaluatedKey } = this.applyPagination(sortedProducts, limit, params.exclusiveStartKey);
-
-        // 4. 읽기 모델 (DynamoDB) 동기화
-        await this.syncToReadModel(paginatedProducts);
-
-        // 5. DynamoDB에서 최종 데이터 조회
-        const items = await this.fetchFromDynamoDB(paginatedProducts.map(p => p.id));
-
-        // 6. 결과 포맷팅 및 반환
-        return this.formatResult(items, lastEvaluatedKey, params);
     }
 
-    // 1-1. PostgreSQL에서 제품 데이터 가져오기
     private async fetchProductsFromPostgres(category: Category): Promise<Product[]> {
-        if (category === Category.ALL) {
-            // 모든 카테고리의 제품을 가져옵니다.
-            return this.productRepository.find();
+        const queryBuilder = this.productRepository.createQueryBuilder('product')
+            .leftJoinAndSelect('product.inventory', 'inventory') // 조인 조건 제거
+            .leftJoinAndSelect('product.seller', 'seller')
+            .where('product.category = :category', { category })
+            .andWhere('(inventory.quantity > :minQuantity OR inventory.quantity IS NULL)', { minQuantity: 0 });
+
+        const products = await queryBuilder
+            .orderBy('product.discountRate', 'DESC')
+            .take(100)
+            .getMany();
+
+        this.logger.log(`Fetched ${products.length} products from PostgreSQL`);
+        if (products.length > 0) {
+            this.logger.debug('First product:', JSON.stringify(products[0], null, 2));
         } else {
-            // 특정 카테고리의 제품만 가져옵니다.
-            return this.productRepository.find({ where: { category } });
+            this.logger.warn(`No products found for category: ${category}`);
         }
+
+        return products;
     }
 
-    // 2-1. 거리 계산 필요 여부 확인
     private shouldCalculateDistance(sortBy: SortByOption, latitude?: string, longitude?: string): boolean {
         return (sortBy === SortByOption.Distance || sortBy === SortByOption.DistanceDiscountScore) && !!latitude && !!longitude;
     }
 
-    // 2-2. 거리 계산 및 업데이트 distance, distancediscountscore은 때마다 postgres에 업데이트가 되어야함 event역시 발생 
     private async calculateAndUpdateDistances(products: Product[], latitude: number, longitude: number): Promise<Product[]> {
-        const userLocation = DistanceCalculator.createPolygonFromCoordinates(latitude, longitude);
+        const productIds = products.map(p => p.id);
+        const distances = await this.calculateDistancesWithRedis(latitude, longitude, productIds);
 
         return Promise.all(products.map(async (product) => {
-            if (product.locationX && product.locationY) {
-                const itemLocation = DistanceCalculator.createPolygonFromCoordinates(Number(product.locationX), Number(product.locationY));
-                product.distance = DistanceCalculator.vincentyDistance(userLocation, itemLocation);
+            const distanceInMeters = distances[product.id];
+            if (distanceInMeters !== undefined) {
+                product.distance = +(distanceInMeters / 1000).toFixed(2);
                 product.distanceDiscountScore = this.calculateRecommendationScore(product);
                 return this.productRepository.save(product);
             }
@@ -97,7 +148,21 @@ export class ProductService {
         }));
     }
 
-    // 3-1. 제품 정렬 프론트 요구에의해 asc가 내림차순이도록 
+    private async calculateDistancesWithRedis(latitude: number, longitude: number, productIds: string[]): Promise<Record<string, number>> {
+        const distances: Record<string, number> = {};
+        for (const productId of productIds) {
+            try {
+                const distance = await (this.redis.geodist as any)('products', productId, `${longitude},${latitude}`, 'm');
+                if (distance !== null) {
+                    distances[productId] = parseFloat(distance);
+                }
+            } catch (error) {
+                this.logger.error(`Error calculating distance for product ${productId}: ${error.message}`);
+            }
+        }
+        return distances;
+    }
+
     private sortProducts(products: Product[], sortBy: SortByOption, order: 'asc' | 'desc'): Product[] {
         return products.sort((a, b) => {
             let comparison = 0;
@@ -111,104 +176,115 @@ export class ProductService {
                 case SortByOption.DistanceDiscountScore:
                     comparison = (b.distanceDiscountScore || -Infinity) - (a.distanceDiscountScore || -Infinity);
                     break;
-                // 필요에 따라 다른 정렬 옵션 추가
             }
             return order === 'asc' ? comparison : -comparison;
         });
     }
 
-    // 3-2. 페이지네이션 적용
-    // start = 0 으로 지정, exkey 존재시 이것을 첫번째 키로
-    // 여기서 productid를 추츨하여 start index로
-    private applyPagination(products: Product[], limit: number, exclusiveStartKey?: string): PaginationResult {
+    private applyPagination(items: Product[], limit: number, exclusiveStartKey?: string): { paginatedItems: Product[], lastEvaluatedKey: any } {
         let startIndex = 0;
         if (exclusiveStartKey) {
             const startKey = JSON.parse(decodeURIComponent(exclusiveStartKey));
-            startIndex = products.findIndex(product => product.id === startKey.productId);
+            startIndex = items.findIndex(item => item.id === startKey.productId);
             startIndex = startIndex === -1 ? 0 : startIndex + 1;
         }
 
-        const paginatedProducts = products.slice(startIndex, startIndex + limit);
-        const lastEvaluatedKey = paginatedProducts.length === limit ? { productId: paginatedProducts[paginatedProducts.length - 1].id } : null;
+        const paginatedItems = items.slice(startIndex, startIndex + limit);
+        const lastEvaluatedKey = paginatedItems.length === limit ? { productId: paginatedItems[paginatedItems.length - 1].id } : null;
 
-        return { paginatedProducts, lastEvaluatedKey };
+        return { paginatedItems, lastEvaluatedKey };
     }
 
-    // 4-1. 읽기 모델(DynamoDB) 동기화 뷰모델에 배치 업데이트
-    // 재고 + 상품 => view 생성 그때마다 재고도 반영 할 수 있음
     private async syncToReadModel(products: Product | Product[]): Promise<void> {
         const productsToSync = Array.isArray(products) ? products : [products];
-
-        // 모든 Product ID를 추출
         const productIds = productsToSync.map(product => product.id);
-
-        // 한 번의 쿼리로 모든 Inventory를 가져옵니다. (최적화된 접근)
         const inventories = await this.getInventoriesByProductIds(productIds);
 
-        // Product와 해당 Inventory를 매핑
         const productsWithInventory: ProductWithInventory[] = productsToSync.map(product => {
             const inventory = inventories.find(inv => inv.productId === product.id);
             if (!inventory) {
-                throw new Error(`Inventory not found for product ID: ${product.id}`);
+                throw new Error(`해당 제품 ID에 대한 재고를 찾을 수 없습니다: ${product.id}`);
             }
             return { product, inventory };
         });
 
-        // ProductView로 변환
         const productViews: ProductView[] = productsWithInventory.map(({ product, inventory }) =>
             this.mapToViewModel(product, inventory)
         );
 
-        // DynamoDB에 배치 업데이트 (배치 크기 조절)
-        const BATCH_SIZE = 25; // DynamoDB의 최대 배치 크기
+        const BATCH_SIZE = 100;
         for (let i = 0; i < productViews.length; i += BATCH_SIZE) {
             const batch = productViews.slice(i, i + BATCH_SIZE);
             await this.productViewModel.batchPut(batch);
         }
     }
 
-    // 4-1-1. Inventory를 가져오는 예시 함수
     private async getInventoriesByProductIds(productIds: string[]): Promise<Inventory[]> {
-        // Inventory를 한 번에 가져오는 로직 구현
-        // 예를 들어, 데이터베이스 조회
-        return await this.inventoryRepository.findManyByProductIds(productIds);    }
-
-    // 4-2. DynamoDB에서 데이터 가져오기 배치로 업데이트
-    private async fetchFromDynamoDB(productIds: string[]): Promise<ProductView[]> {
-        const formattedProductIds = productIds.map(id => ({ productId: id }));
-        return this.productViewModel.batchGet(formattedProductIds);
+        return this.inventoryRepository.findManyByProductIds(productIds);
     }
 
-    // 결과 포맷팅
-    private formatResult(items: ProductView[], lastEvaluatedKey: any, params: FindProductsParams): ProductQueryResult {
+    private async fetchFromDynamoDB(productIds: string[]): Promise<ProductView[]> {
+        console.log(`Attempting to fetch ${productIds.length} products from DynamoDB`);
+        console.log('Product IDs:', productIds);
+        if (productIds.length === 0) {
+            console.warn('No product IDs to fetch from DynamoDB');
+        }
+        const formattedProductIds = productIds.map(id => ({ productId: id }));
+        console.log('Formatted product IDs:', formattedProductIds);
+
+        try {
+            const items = await this.productViewModel.batchGet(formattedProductIds);
+            console.log(`Fetched ${items.length} items from DynamoDB`);
+            return items;
+        } catch (error) {
+            console.error('Error fetching from DynamoDB:', error);
+            throw error;
+        }
+    }
+
+    private formatResult(
+        items: ProductView[],
+        lastEvaluatedKey: any,
+        params: FindProductsParams
+    ): ProductQueryResult {
         const appUrl = this.configService.get<string>('APP_URL');
-        const createUrlWithKey = (key: Record<string, any> | null) => {
+        const createUrlWithKey = (key: Record<string, any> | null, prevKey: string | null = null) => {
             if (!key || !appUrl) return null;
             const baseUrl = new URL("/api/products/category", appUrl);
-            Object.entries(params).forEach(([key, value]) => {
-                if (value !== undefined) baseUrl.searchParams.append(key, value.toString());
+            Object.entries(params).forEach(([paramKey, value]) => {
+                if (value !== undefined) baseUrl.searchParams.append(paramKey, value.toString());
             });
-            if (key) baseUrl.searchParams.append('exclusiveStartKey', encodeURIComponent(JSON.stringify(key)));
+            baseUrl.searchParams.append('exclusiveStartKey', encodeURIComponent(JSON.stringify(key)));
+            if (prevKey) {
+                baseUrl.searchParams.append('previousPageKey', encodeURIComponent(prevKey));
+            }
             return baseUrl.toString();
         };
 
-        const lastEvaluatedUrl = createUrlWithKey(lastEvaluatedKey);
         const firstEvaluatedKey = items.length > 0 ? { productId: items[0].productId } : null;
-        const firstEvaluatedUrl = createUrlWithKey(firstEvaluatedKey);
+        const firstEvaluatedUrl = createUrlWithKey(firstEvaluatedKey, params.previousPageKey);
+        const lastEvaluatedUrl = lastEvaluatedKey ? createUrlWithKey(lastEvaluatedKey, JSON.stringify(firstEvaluatedKey)) : null;
+
+        let prevPageUrl: string | null = null;
+        if (params.previousPageKey) {
+            const prevKey = JSON.parse(decodeURIComponent(params.previousPageKey));
+            prevPageUrl = createUrlWithKey(prevKey, null);
+        }
 
         return {
             items,
             lastEvaluatedUrl,
             firstEvaluatedUrl,
+            prevPageUrl,
             count: items.length
         };
     }
 
-    // ProductEntity를 ProductView로 매핑
     private mapToViewModel(product: Product, inventory: Inventory): ProductView {
         return {
             productId: product.id,
-            GSI_KEY: "PRODUCT",  // 하드코딩된 값 추가
+            GSI_KEY: "PRODUCT",
+            sellerId: product.sellerId ? product.sellerId.id : null,  // seller가 있으면 id를 할당
             name: product.name,
             originalPrice: product.originalPrice,
             discountedPrice: product.discountedPrice,
@@ -218,25 +294,21 @@ export class ProductService {
             distanceDiscountScore: product.distanceDiscountScore,
             productImageUrl: product.productImageUrl,
             description: product.description,
-            availableStock: inventory.quantity,  // Inventory에서 가져옴
+            availableStock: inventory.quantity,
             expirationDate: product.expirationDate,
             locationX: product.locationX,
             locationY: product.locationY,
-            sellerId: product.sellerId.id,
             createdAt: product.createdAt,
             updatedAt: product.updatedAt,
-            inventoryUpdatedAt: inventory.updatedAt  // 재고 처리시간 
+            inventoryUpdatedAt: inventory.updatedAt
         };
     }
 
-
-    // 추천 점수 계산
     private calculateRecommendationScore(product: Product): number {
-        // 거리와 할인율을 고려한 추천 점수 계산 로직
         const distanceWeight = 0.6;
         const discountWeight = 0.4;
-        const normalizedDistance = 1 - (product.distance || 0) / 10000; // 거리를 0~1 사이 값으로 정규화 (10km를 최대로 가정)
-        const normalizedDiscount = (product.discountRate || 0) / 100; // 할인율을 0~1 사이 값으로 정규화
+        const normalizedDistance = 1 - Math.min((product.distance || 0) / 10, 1);
+        const normalizedDiscount = (product.discountRate || 0) / 100;
 
         return (normalizedDistance * distanceWeight) + (normalizedDiscount * discountWeight);
     }

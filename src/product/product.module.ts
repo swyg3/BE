@@ -33,6 +33,9 @@ import { GetProductByDiscountRateHandler } from "./queries/handlers/get-products
 import { UserLocation2Schema } from "src/location/location-view.schema";
 import { LocationModule } from "src/location/location.module";
 import { LocationViewRepository } from "src/location/location-view.repository";
+import { ProductService } from "./product.service";
+import { Inventory } from "src/inventory/inventory.entity";
+import { InventoryModule } from "src/inventory/inventory.module";
 
 const CommandHandlers = [
   CreateProductHandler,
@@ -49,7 +52,7 @@ const EventsHandlers = [
     CqrsModule,
     EventSourcingModule,
     RedisModule,
-    TypeOrmModule.forFeature([Product, Seller]),
+    TypeOrmModule.forFeature([Product, Seller, Inventory]),
     DynamooseModule.forFeature([
       { name: "ProductView", schema: ProductSchema },
     ]),
@@ -61,6 +64,7 @@ const EventsHandlers = [
     ]),
     SellersModule,
     forwardRef(() => LocationModule),
+    InventoryModule, 
     HttpModule,
     MulterModule.register({
       limits: {
@@ -112,12 +116,13 @@ const EventsHandlers = [
     GeocodingService,
     NaverMapsClient,
     SearchProductsHandler,
-    GetProductByDiscountRateHandler    
+    GetProductByDiscountRateHandler,
+    ProductService    
     
   ],
   controllers: [ProductController,GeocodingController],
   exports: [ProductRepository, SellerRepository,
-     ProductViewRepository,NaverMapsClient
+     ProductViewRepository,NaverMapsClient,ProductService
   ],
 })
 export class ProductModule {}

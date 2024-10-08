@@ -6,12 +6,14 @@ import {
   ManyToOne,
   JoinColumn,
   UpdateDateColumn,
+  OneToOne,
 } from "typeorm";
 import { Category } from "../product.category";
 import { Seller } from "src/sellers/entities/seller.entity";
 import { PRODUCTS_PUBLIC_IMAGE_PATH } from "./../const/path.const";
 import { join } from "path";
 import { Transform } from "class-transformer";
+import { Inventory } from "src/inventory/inventory.entity";
 
 @Entity("product")
 export class Product {
@@ -52,9 +54,6 @@ export class Product {
   @Column({ type: "bigint", name: "discounted_price", nullable: true })
   discountedPrice: number;
 
-  @Column({ type: "int", nullable: true })
-  quantity: number;
-
   @Column({ type: "timestamp", nullable: true })
   expirationDate: Date;
 
@@ -72,6 +71,9 @@ export class Product {
 
   @Column({ type: 'float', nullable: true })
   distanceDiscountScore: number;
+
+  @OneToOne(() => Inventory, inventory => inventory.product, { cascade: true })
+  inventory: Inventory;
   
   @CreateDateColumn({
     type: "timestamp",

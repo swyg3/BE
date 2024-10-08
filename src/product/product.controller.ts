@@ -36,6 +36,9 @@ import { SearchProductsQuery } from "./queries/impl/get-search-products";
 import { JwtPayload } from "src/shared/interfaces/jwt-payload.interface";
 import { GetUser } from "src/shared/decorators/get-user.decorator";
 import { LocationViewRepository } from "src/location/location-view.repository";
+import { Category } from "./product.category";
+import { SortByOption } from "./repositories/product-view.repository";
+import { ProductService, FindProductsParams, ProductQueryResult } from './product.service';
 
 
 @ApiTags("Products")
@@ -47,7 +50,9 @@ export class ProductController {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
-    private readonly locationViewRepository: LocationViewRepository
+    private readonly locationViewRepository: LocationViewRepository,
+    private readonly productService: ProductService,
+
   ) { }
 
 
@@ -234,6 +239,7 @@ export class ProductController {
     };
   }
 
+  
   @Get('category')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
@@ -244,19 +250,33 @@ export class ProductController {
     @Query() findProductsByCategoryDto: FindProductsByCategoryDto,
   ) {
     const { category, sortBy, order, limit, exclusiveStartKey, previousPageKey } = findProductsByCategoryDto;
-    
-    // isCurrent를 true로 설정하여 현재 위치 정보를 가져옵니다.
+
     const currentLocation = await this.locationViewRepository.findCurrentLocation(user.userId);
     if (!currentLocation) {
       throw new NotFoundException('현재 위치 정보가 설정되어 있지 않습니다.');
     }
-    // 비구조화 할당을 통해 latitude와 longitude를 추출
     const { latitude, longitude } = currentLocation;
 
-    const query = new FindProductsByCategoryQuery(category, sortBy, order, limit, 
-      latitude, longitude, exclusiveStartKey, previousPageKey);
-
-    const result = await this.queryBus.execute(query);
+    // Category enum으로 변환
+    const categoryEnum = Category[category as keyof typeof Category];
+    if (!categoryEnum) {
+      throw new NotFoundException('유효하지 않은 카테고리입니다.');
+    }
+// SortByOption enum으로 변환
+const sortByEnum = SortByOption[sortBy as keyof typeof SortByOption];
+if (!sortByEnum) {
+  throw new NotFoundException('유효하지 않은 정렬 옵션입니다.');
+}
+    const result = await this.productService.findProductsByCategoryAndSort({
+      category: categoryEnum,
+      sortBy:sortByEnum,
+      order,
+      limit,
+      latitude: latitude.toString(),
+      longitude: longitude.toString(),
+      exclusiveStartKey,
+      previousPageKey,
+    });
 
     return {
       success: true,
@@ -335,5 +355,30 @@ export class ProductController {
     return this.queryBus.execute(query);
   }
 
-
+  // @Get('category')
+  // @ApiOperation({ summary: 'Find products by category and sort' })
+  // @ApiResponse({ status: 200, description: 'Return a list of products.' })
+  // @ApiResponse({ status: 400, description: 'Bad Request.' })
+  // async findProductsByCategoryAndSort(
+  //   @Query('category') category: Category,
+  //   @Query('sortBy') sortBy: SortByOption,
+  //   @Query('order') order: 'asc' | 'desc',
+  //   @Query('limit') limit: number,
+  //   @Query('exclusiveStartKey') exclusiveStartKey?: string,
+  //   @Query('previousPageKey') previousPageKey?: string,
+  //   @Query('latitude') latitude?: string,
+  //   @Query('longitude') longitude?: string,
+  // ): Promise<ProductQueryResult> {
+  //   const params: FindProductsParams = {
+  //     category,
+  //     sortBy,
+  //     order,
+  //     limit,
+  //     exclusiveStartKey,
+  //     previousPageKey,
+  //     latitude,
+  //     longitude,
+  //   };
+  //   return this.productService.findProductsByCategoryAndSort(params);
+  // }
 }
