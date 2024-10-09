@@ -17,9 +17,8 @@ export class SellerLoggedInEventHandler
   ) {}
 
   async handle(event: SellerLoggedInEvent) {
-    this.logger.log(`판매자 로그인 이벤트 처리: sellerId=${event.aggregateId}`);
     this.logger.log(
-      `이벤트 핸들러에서 수신한 데이터: ${JSON.stringify(event)}`,
+      `판매자 로그인 이벤트 처리: ${JSON.stringify(event)}`,
     );
 
     const updateData = {
@@ -34,7 +33,6 @@ export class SellerLoggedInEventHandler
       isBusinessVerified: event.data.isBusinessNumberVerified,
       agreeReceiveLocation: event.data.agreeReceiveLocation,
     };
-    this.logger.log(`updateData: ${updateData}`);
 
     // DynamoDB에서 로그인 시간 업데이트
     const updatedSeller = await this.sellerViewRepository.update(

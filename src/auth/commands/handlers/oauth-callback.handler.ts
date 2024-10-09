@@ -52,28 +52,18 @@ export class LoginOAuthCallbackCommandHandler
 
     try {
       // 1. 인증 코드로 액세스 토큰 요청
-      this.logger.log(`1단계 시작: 액세스 토큰 요청 (제공자: ${provider})`);
       const oauthAccessToken = await this.getAccessToken(provider, code);
-      this.logger.log(
-        `1단계 완료: 액세스 토큰 획득 성공 (토큰 길이: ${oauthAccessToken})`,
-      );
 
       // 2. 액세스 토큰으로 사용자 정보 요청
-      this.logger.log(`2단계 시작: 사용자 정보 요청 (제공자: ${provider})`);
       const userInfo = await this.getUserInfo(provider, oauthAccessToken);
-      this.logger.log(
-        `2단계 완료: 사용자 정보 획득 성공 (이메일: ${userInfo.email})`,
-      );
 
       // 3. 사용자 생성 또는 업데이트
-      this.logger.log(`3단계 시작: 사용자 정보 처리 (유형: ${userType})`);
       const result = await this.handleUserOrSellerLogin(userType, userInfo);
       this.logger.log(
-        `3단계 완료: 사용자 정보 처리 완료 (ID: ${result.id}, 이메일: ${result.email}, 신규 여부: ${result.isNew})`,
+        `사용자 정보 처리 완료 (ID: ${result.id}, 이메일: ${result.email}, 신규 여부: ${result.isNew})`,
       );
 
       // 4. JWT 생성
-      this.logger.log(`4단계 시작: JWT 토큰 생성`);
       const {
         accessToken,
         refreshToken,
@@ -85,25 +75,17 @@ export class LoginOAuthCallbackCommandHandler
         userType,
       );
 
-      this.logger.log(
-        `4단계 완료: JWT 토큰 생성 완료 ${accessToken}, ${accessTokenExpiresIn}, ${refreshToken}, ${refreshTokenExpiresIn}`,
-      );
-
       await this.refreshTokenService.storeRefreshToken(result.id, refreshToken);
 
-      this.logger.log(`리프레시 토큰 저장 완료 (사용자 ID: ${result.id})`);
-
-      // 5. 이벤트 발행
-      this.logger.log(`5단계 시작: 로그인 이벤트 발행`);
+      // 5. 이벤트 발행//
       const event = this.createEvent(userType, result, provider);
       await this.eventBusService.publishAndSave(event);
 
       this.logger.log(
-        `5단계 완료: 로그인 이벤트 발행 완료 (이벤트 타입: ${event.constructor.name})`,
+        `로그인 이벤트 발행 완료 (이벤트 타입: ${event.constructor.name})`,
       );
 
       // 6. JWT 및 사용자 정보 반환
-      this.logger.log(`6단계: 최종 응답 데이터 준비`);
       const response = {
         provider,
         [userType === UserType.USER ? "userId" : "sellerId"]: result.id,
@@ -123,7 +105,7 @@ export class LoginOAuthCallbackCommandHandler
         },
       };
       this.logger.log(
-        `OAuth 로그인 프로세스 완료: 사용자 ${response.email} 로그인 성공`,
+        `OAuth 로그인 프로세스 완료: 사용자 ${response.email}, ${response.name} 로그인 성공`,
       );
 
       return response;
@@ -155,10 +137,6 @@ export class LoginOAuthCallbackCommandHandler
       `${provider.toUpperCase()}_CALLBACK_URL`,
     );
 
-    this.logger.log(`액세스 토큰 요청 시작 (제공자: ${provider})`);
-    this.logger.log(`토큰 URL: ${tokenUrl}`);
-    this.logger.log(`리다이렉트 URI: ${redirectUri}`);
-
     try {
       const params = {
         grant_type: "authorization_code",
@@ -173,9 +151,6 @@ export class LoginOAuthCallbackCommandHandler
       }
 
       const response = await axios.post(tokenUrl, null, { params });
-
-      this.logger.log(`액세스 토큰 요청 성공 (상태 코드: ${response.status})`);
-      this.logger.log(`응답 데이터: ${JSON.stringify(response.data)}`);
 
       return response.data.access_token;
     } catch (error) {
@@ -201,16 +176,11 @@ export class LoginOAuthCallbackCommandHandler
     const userInfoUrl = this.configService.get<string>(
       `${provider.toUpperCase()}_USER_INFO_URL`,
     );
-    this.logger.log(`사용자 정보 요청 시작 (제공자: ${provider})`);
-    this.logger.log(`사용자 정보 URL: ${userInfoUrl}`);
 
     try {
       const response = await axios.get(userInfoUrl, {
         headers: { Authorization: `Bearer ${oauthAccessToken}` },
       });
-
-      this.logger.log(`사용자 정보 요청 성공 (상태 코드: ${response.status})`);
-      this.logger.log(`원본 사용자 정보: ${JSON.stringify(response.data)}`);
 
       const normalizedInfo = this.normalizeUserInfo(provider, response.data);
       this.logger.log(
@@ -253,7 +223,6 @@ export class LoginOAuthCallbackCommandHandler
     userType: string,
     userInfo: any,
   ): Promise<LoginResult> {
-    this.logger.log(`handleUserOrSellerLogin userType: ${userType}`);
 
     if (userType === UserType.USER) {
       const { user, isNewUser } = await this.userRepository.upsert(

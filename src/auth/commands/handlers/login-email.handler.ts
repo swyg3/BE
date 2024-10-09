@@ -55,15 +55,10 @@ export class LoginEmailCommandHandler
         accessTokenExpiresIn,
         refreshTokenExpiresIn,
       } = await this.tokenService.generateTokens(user.id, user.email, userType);
-      this.logger.log(
-        `JWT 생성: ${accessToken}, ${accessTokenExpiresIn}, ${refreshToken}, ${refreshTokenExpiresIn}`,
-      );
+
       await this.refreshTokenService.storeRefreshToken(user.id, refreshToken);
 
       // 3. 로그인 이벤트 생성 및 발행
-      this.logger.log(
-        `${userType} 사용자 ID ${user.id}에 대한 이벤트 생성 및 발행`,
-      );
       const event = this.createLoggedInEvent(user, userType, "email");
       await this.eventBusService.publishAndSave(event);
 
