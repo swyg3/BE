@@ -241,26 +241,6 @@ export class OrderController {
         }
     }
 
-  // // 주문 내역 수정
-  // @Patch(':id')
-  // async updateOrders(@Param('id') id: string, @Body() updateOrderDto: UpdateOrderDto, @GetUser() user: JwtPayload) {
-  //     const { totalAmount, totalPrice, pickupTime, paymentMethod, status } = updateOrderDto;
-
-  //     if (user.userId !== userId) {
-  //     throw new ForbiddenException('자신의 주문만 수정할 수 있습니다.');
-  //     }
-
-  //     try {
-  //         const result = await this.commandBus.execute(
-  //             new UpdateOrderCommand(id, userId, totalAmount, totalPrice, pickupTime, paymentMethod, status)
-  //         );
-  //         return result;
-  //     } catch (error) {
-  //         this.logger.error(`Error updating order with ID ${orderId}: ${error.message}`);
-  //         throw new HttpException('Failed to update order', HttpStatus.INTERNAL_SERVER_ERROR);
-  //     }
-  // }
-
   // 주문 취소
     @ApiOperation({
         summary: "주문 취소",
