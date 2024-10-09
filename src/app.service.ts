@@ -1,9 +1,9 @@
 import { Injectable } from "@nestjs/common";
-import { CustomMetricsService } from "./metrics/custom-metrics.service";
+import { MetricsService } from "./metrics/metrics.service";
 
 @Injectable()
 export class AppService {
-  constructor(private customMetricsService: CustomMetricsService) {}
+  constructor(private customMetricsService: MetricsService) {}
 
   getHello(): string {
     return "Hello World!";

@@ -1,17 +1,21 @@
 import { Module } from "@nestjs/common";
 import { PrometheusModule } from "@willsoto/nestjs-prometheus";
 import { MetricsController } from "./metrics.controller";
-import { CustomMetricsService } from "./custom-metrics.service";
+import { MetricsService } from "./metrics.service";
 import {
   makeCounterProvider,
   makeHistogramProvider,
 } from "@willsoto/nestjs-prometheus";
+import { TypeOrmModule } from "@nestjs/typeorm";
+import { Event } from "../shared/infrastructure/event-sourcing";
+import { MetricsRepository } from "./metrics.repository";
 
 @Module({
-  imports: [PrometheusModule.register()],
+  imports: [PrometheusModule.register(),TypeOrmModule.forFeature([Event])],
   controllers: [MetricsController],
   providers: [
-    CustomMetricsService,
+    MetricsService,
+    MetricsRepository,
     makeCounterProvider({
       name: "http_requests_total",
       help: "Total number of HTTP requests",
@@ -29,6 +33,6 @@ import {
       buckets: [1, 2, 5, 10, 20, 30],
     }),
   ],
-  exports: [CustomMetricsService],
+  exports: [MetricsService],
 })
 export class MetricsModule {}

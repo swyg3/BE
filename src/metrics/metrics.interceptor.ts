@@ -5,11 +5,11 @@ import {
   CallHandler,
 } from "@nestjs/common";
 import { Observable, tap } from "rxjs";
-import { CustomMetricsService } from "./custom-metrics.service";
+import { MetricsService } from "./metrics.service";
 
 @Injectable()
 export class MetricsInterceptor implements NestInterceptor {
-  constructor(private customMetricsService: CustomMetricsService) {}
+  constructor(private customMetricsService: MetricsService) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const request = context.switchToHttp().getRequest();

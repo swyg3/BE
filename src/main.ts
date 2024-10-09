@@ -1,7 +1,7 @@
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
 import { MetricsInterceptor } from "./metrics/metrics.interceptor";
-import { CustomMetricsService } from "./metrics/custom-metrics.service";
+import { MetricsService } from "./metrics/metrics.service";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { ValidationPipe, VersioningType } from "@nestjs/common";
 import { HttpExceptionFilter } from "./shared/filters/http-exception.filter";
@@ -19,7 +19,7 @@ async function bootstrap() {
 
   // 인터셉터 설정
   app.useGlobalInterceptors(
-    new MetricsInterceptor(app.get(CustomMetricsService)),
+    new MetricsInterceptor(app.get(MetricsService)),
   );
   app.useGlobalInterceptors(new DateTransformInterceptor());
 
