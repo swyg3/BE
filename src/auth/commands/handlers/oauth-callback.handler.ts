@@ -77,7 +77,7 @@ export class LoginOAuthCallbackCommandHandler
 
       await this.refreshTokenService.storeRefreshToken(result.id, refreshToken);
 
-      // 5. 이벤트 발행
+      // 5. 이벤트 발행//
       const event = this.createEvent(userType, result, provider);
       await this.eventBusService.publishAndSave(event);
 
