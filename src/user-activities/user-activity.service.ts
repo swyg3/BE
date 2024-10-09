@@ -22,5 +22,5 @@ export class UserActivityService {
   async getUserEcoImpact(userId: string) {
     return this.userActivityRepository.getUserEcoImpact(userId);
   }
-
+ // 
 }
