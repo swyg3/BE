@@ -46,10 +46,6 @@ export class LoginOAuthCallbackCommandHandler
   async execute(command: OAuthCallbackCommand): Promise<any> {
     const { provider, code, userType } = command;
 
-    this.logger.log(
-      `OAuth 로그인 요청 시작: 제공자=${provider}, 사용자 유형=${UserType[userType]}, 코드=${code.substring(0, 10)}...`,
-    );
-
     try {
       // 1. 인증 코드로 액세스 토큰 요청
       const oauthAccessToken = await this.getAccessToken(provider, code);
@@ -60,7 +56,7 @@ export class LoginOAuthCallbackCommandHandler
       // 3. 사용자 생성 또는 업데이트
       const result = await this.handleUserOrSellerLogin(userType, userInfo);
       this.logger.log(
-        `사용자 정보 처리 완료 (ID: ${result.id}, 이메일: ${result.email}, 신규 여부: ${result.isNew})`,
+        `사용자 정보 처리 완료 (ID: ${result.id}, 이메일: ${result.email}, 이름: ${result.name} 신규 여부: ${result.isNew})`,
       );
 
       // 4. JWT 생성
@@ -183,9 +179,6 @@ export class LoginOAuthCallbackCommandHandler
       });
 
       const normalizedInfo = this.normalizeUserInfo(provider, response.data);
-      this.logger.log(
-        `정규화된 사용자 정보: ${JSON.stringify(normalizedInfo)}`,
-      );
 
       return normalizedInfo;
     } catch (error) {

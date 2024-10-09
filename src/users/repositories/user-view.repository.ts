@@ -60,7 +60,7 @@ export class UserViewRepository {
         updates, 
         { return: 'item'}
       );
-      this.logger.log(`UserView 업데이트 성공: ${updatedUser}`);
+      this.logger.log(`UserView 업데이트 성공`);
       return updatedUser;
     } catch (error) {
       this.logger.error(`UserView 업데이트 실패: ${error.message}`, error.stack);
