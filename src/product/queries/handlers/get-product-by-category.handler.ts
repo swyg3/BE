@@ -28,8 +28,6 @@ export class FindProductsByCategoryHandler implements IQueryHandler<FindProducts
       ...(previousPageKey && { previousPageKey })
     };
 
-    this.logger.log(`Executing find products by category query with parameters: ${JSON.stringify(param)}`);
-
     const result = await this.productViewRepository.findProductsByCategoryAndSort(param);
 
     this.logger.log(`Query result: ${result.count} items found`);

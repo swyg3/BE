@@ -166,14 +166,10 @@ export class AuthController {
     @UserTypes() userType: UserType,
   ): Promise<CustomResponse> {
     try {
-      console.log(
-        `Received OAuth callback - Provider: ${provider}, Code: ${code}, userType: ${userType}`,
-      );
 
       const result = await this.commandBus.execute(
         new OAuthCallbackCommand(provider, code, userType),
       );
-      console.log(`Command created - userType: ${result.userType}`);
 
       return {
         success: true,

@@ -20,7 +20,6 @@ export class RefreshTokenService {
       throw new Error("유효하지 않은 만료 시간 설정");
     }
     await this.redisClient.set(key, refreshToken, "EX", seconds);
-    this.logger.log(`리프레시 토큰 저장: ${userId}`);
   }
 
   async getRefreshToken(userId: string): Promise<string | null> {

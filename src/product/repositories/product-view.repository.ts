@@ -311,7 +311,6 @@ export class ProductViewRepository {
   }
   
   private sortItems(items: ProductView[], sortBy: SortByOption, order: 'asc' | 'desc'): ProductView[] {
-    console.log('Before sorting:', items.map(item => item.discountRate)); // Debugging line
   
     return items.sort((a, b) => {
       let comparison = 0;
