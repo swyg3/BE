@@ -25,14 +25,12 @@ export class RefreshTokenService {
   async getRefreshToken(userId: string): Promise<string | null> {
     const key = `refresh_token:${userId}`;
     const token = await this.redisClient.get(key);
-    this.logger.log(`리프레시 토큰 조회: ${userId}`);
     return token;
   }
 
   async deleteRefreshToken(userId: string): Promise<void> {
     const key = `refresh_token:${userId}`;
     await this.redisClient.del(key);
-    this.logger.log(`리프레시 토큰 삭제: ${userId}`);
   }
 
   async addToBlacklist(token: string): Promise<void> {

@@ -17,9 +17,6 @@ export class SellerLoggedInEventHandler
   ) {}
 
   async handle(event: SellerLoggedInEvent) {
-    this.logger.log(
-      `판매자 로그인 이벤트 처리: ${JSON.stringify(event)}`,
-    );
 
     const updateData = {
       lastLoginAt: new Date(),

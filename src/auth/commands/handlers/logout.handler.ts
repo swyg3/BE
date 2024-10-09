@@ -26,7 +26,6 @@ export class LogoutHandler implements ICommandHandler<LogoutCommand> {
       await this.invalidateAccessToken(accessToken);
       await this.publishLogoutEvent(userId, userType);
 
-      this.logger.log(`로그아웃 처리 완료: ${userId}, ${userType}`);
       return true;
     } catch (error) {
       this.handleError(error);
@@ -38,7 +37,7 @@ export class LogoutHandler implements ICommandHandler<LogoutCommand> {
     if (refreshToken) {
       await this.refreshTokenService.addToBlacklist(refreshToken);
       await this.refreshTokenService.deleteRefreshToken(userId);
-      this.logger.log(`리프레시 토큰 무효화 완료: ${userId}`);
+      this.logger.log(`로그아웃 처리 토큰 무효화 완료: ${userId}`);
     } else {
       this.logger.warn(`사용자 ${userId}의 리프레시 토큰을 찾을 수 없습니다.`);
     }
@@ -46,7 +45,6 @@ export class LogoutHandler implements ICommandHandler<LogoutCommand> {
 
   private async invalidateAccessToken(accessToken: string): Promise<void> {
     await this.refreshTokenService.addToBlacklist(accessToken);
-    this.logger.log(`액세스 토큰 무효화 완료: ${accessToken}`);
   }
 
   private async publishLogoutEvent(
