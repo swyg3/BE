@@ -214,6 +214,33 @@ export class OrderController {
                     },
                 },
             },
+            example: {
+                success: true,
+                data: [
+                    {
+                        id: "deec95a1-7811-41cd-85d4-97ea4256bc11",
+                        totalAmount: 100,
+                        createdAt: "2024-10-09 17:12:15",
+                        pickupTime: "2024-09-10 03:00:00",
+                        paymentMethod: "CASH",
+                        userId: "dcdc2d66-2e59-4f99-920e-91222106b9e7",
+                        status: "PENDING",
+                        updatedAt: "2024-10-09 17:12:15",
+                        totalPrice: 100,
+                    },
+                    {
+                        id: "ff4e87da-6be2-4e7c-8a83-d30a6353e4b1",
+                        totalAmount: 150,
+                        createdAt: "2024-10-09 17:12:15",
+                        pickupTime: "2024-09-10 04:00:00",
+                        paymentMethod: "CARD",
+                        userId: "dcdc2d66-2e59-4f99-920e-91222106b9e7",
+                        status: "COMPLETED",
+                        updatedAt: "2024-10-09 17:12:15",
+                        totalPrice: 150,
+                    },
+                ],
+            },
         }
     })
     @ApiResponse({
