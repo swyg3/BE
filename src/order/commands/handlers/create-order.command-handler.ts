@@ -25,12 +25,9 @@ export class CreateOrderCommandHandler implements ICommandHandler<CreateOrderCom
 
     async execute(command: CreateOrderCommand): Promise<any> {
         const { id, userId, totalAmount, totalPrice, pickupTime, items, paymentMethod, status } = command;
-
+    
         try {
-            // 트랜잭션 처리 시작
             return await this.orderRepository.manager.transaction(async (transactionalEntityManager) => {
-
-                // 1. 같은 상품 중복 여부 체크 및 수량 합치기
                 const mergedItems = items.reduce((acc, currentItem) => {
                     const existingItem = acc.find(item => item.productId === currentItem.productId);
                     
@@ -42,8 +39,7 @@ export class CreateOrderCommandHandler implements ICommandHandler<CreateOrderCom
                     
                     return acc;
                 }, []);
-
-                // 2. 주문 생성
+    
                 const newOrder = this.orderRepository.create({
                     id,
                     userId,
@@ -56,8 +52,7 @@ export class CreateOrderCommandHandler implements ICommandHandler<CreateOrderCom
                 });
                 const savedOrder = await transactionalEntityManager.save(newOrder);
                 this.logger.log(`Saved Order: ${JSON.stringify(savedOrder)}`);
-
-                // 3. 주문 내역 생성 (병합된 항목으로)
+    
                 const orderItems = mergedItems.map(item => {
                     return this.orderItemsRepository.create({
                         orderId: savedOrder.id,
@@ -68,28 +63,22 @@ export class CreateOrderCommandHandler implements ICommandHandler<CreateOrderCom
                 });
                 const savedItems = await transactionalEntityManager.save(orderItems);
                 this.logger.log(`Saved Order Items: ${JSON.stringify(savedItems)}`);
-
-                // 4. 재고 확인 및 차감 + 재고 이벤트 발행
+    
                 for (const item of mergedItems) {
-                    // 해당 상품의 재고 확인
                     const inventory = await transactionalEntityManager.findOne(Inventory, { where: { productId: item.productId } });
-
+    
                     if (!inventory) {
                         throw new ConflictException(`해당 상품의 재고가 없습니다: ${item.productId}`);
                     }
-
+    
                     if (inventory.quantity < item.quantity) {
                         throw new ConflictException(`재고가 부족합니다: ${item.productId}`);
                     }
-
-                    // 재고 차감
+    
                     inventory.quantity -= item.quantity;
-
-                    // 재고 업데이트
                     const updatedInventory = await transactionalEntityManager.save(inventory);
                     this.logger.log(`Updated Inventory for product: ${item.productId}, remaining quantity: ${inventory.quantity}`);
-
-                    // 5. 재고 이벤트 발행
+    
                     const inventoryUpdatedEvent = new InventoryUpdatedEvent(
                         updatedInventory.id,
                         {
@@ -100,12 +89,11 @@ export class CreateOrderCommandHandler implements ICommandHandler<CreateOrderCom
                         },
                         1
                     );
-
+    
                     await this.eventBusService.publishAndSave(inventoryUpdatedEvent);
                     this.logger.log(`Inventory event published: ${JSON.stringify(inventoryUpdatedEvent)}`);
                 }
-
-                // 6. aggregate에서 주문 등록 이벤트 생성
+    
                 const event = new CreateOrderEvent(
                     savedOrder.id,
                     {
@@ -127,14 +115,31 @@ export class CreateOrderCommandHandler implements ICommandHandler<CreateOrderCom
                     },
                     1
                 );
-
-                // 7. 이벤트 발행
+    
                 await this.eventBusService.publishAndSave(event);
                 this.logger.log(`Order event published: ${JSON.stringify(event)}`);
+    
+                // 주문 정보 반환
+                return {
+                    success: true,
+                    data: {
+                        orderId: savedOrder.id,
+                        totalAmount: savedOrder.totalAmount,
+                        totalPrice: savedOrder.totalPrice,
+                        pickupTime: savedOrder.pickupTime,
+                        paymentMethod: savedOrder.paymentMethod,
+                        status: savedOrder.status,
+                        items: savedItems.map(item => ({
+                            productId: item.productId,
+                            quantity: item.quantity,
+                            price: item.price,
+                        })),
+                    },
+                };
             });
         } catch (error) {
             this.logger.error(`Failed to create order: ${error.message}`);
             throw error;
         }
-    }
+    }    
 }
