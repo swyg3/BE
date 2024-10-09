@@ -55,8 +55,8 @@ export class OrderController {
             paymentMethod: "CASH",
             status: "PENDING",
             items: [
-                { productId: "123e4567-e89b-12d3-a456-426614174000", quantity: 2, price: 50 },
-                { productId: "456e4567-e89b-12d3-a456-426614174000", quantity: 1, price: 50 },
+                { productId: "22a1b7b1-546d-4f1e-95b4-21b3583a7ef9", quantity: 2, price: 50 },
+                { productId: "3d32b618-7c61-4016-8517-0eee204de8c5", quantity: 1, price: 50 },
             ],
             },
             summary: "유효한 주문 생성 정보",
@@ -67,21 +67,65 @@ export class OrderController {
         status: 201,
         description: "주문 생성 성공",
         schema: {
-        type: "object",
-        properties: {
-            success: { type: "boolean", example: true },
-            data: {
             type: "object",
             properties: {
-                orderId: {
-                type: "string",
-                example: "123e4567-e89b-12d3-a456-426614174000",
+                success: { type: "boolean", example: true },
+                data: {
+                    type: "object",
+                    properties: {
+                        orderId: {
+                            type: "string",
+                            example: "123e4567-e89b-12d3-a456-426614174000",
+                        },
+                        totalAmount: {
+                            type: "number",
+                            example: 100,
+                        },
+                        totalPrice: {
+                            type: "number",
+                            example: 100,
+                        },
+                        pickupTime: {
+                            type: "string",
+                            format: "date-time",
+                            example: "2024-09-09T18:00:00Z",
+                        },
+                        paymentMethod: {
+                            type: "string",
+                            example: "CASH",
+                        },
+                        status: {
+                            type: "string",
+                            example: "PENDING",
+                        },
+                        items: {
+                            type: "array",
+                            items: {
+                                type: "object",
+                                properties: {
+                                    productId: { type: "string", example: "22a1b7b1-546d-4f1e-95b4-21b3583a7ef9" },
+                                    quantity: { type: "number", example: 2 },
+                                    price: { type: "number", example: 50 },
+                                },
+                            },
+                            example: [
+                                {
+                                    productId: "22a1b7b1-546d-4f1e-95b4-21b3583a7ef9",
+                                    quantity: 2,
+                                    price: 50,
+                                },
+                                {
+                                    productId: "3d32b618-7c61-4016-8517-0eee204de8c5",
+                                    quantity: 1,
+                                    price: 50,
+                                },
+                            ],
+                        },
+                    },
                 },
             },
-            },
         },
-        },
-    })
+    }) 
     @ApiResponse({
         status: 500,
         description: "주문 생성 중 서버 오류가 발생했습니다.",
@@ -149,26 +193,28 @@ export class OrderController {
         status: 200,
         description: "주문 목록 조회 성공",
         schema: {
-        type: "object",
-        properties: {
-            success: { type: "boolean", example: true },
-            data: {
-            type: "array",
-            items: {
-                type: "object",
-                properties: {
-                orderId: {
-                    type: "string",
-                    example: "123e4567-e89b-12d3-a456-426614174000",
-                },
-                totalAmount: { type: "number", example: 100 },
-                totalPrice: { type: "number", example: 100 },
-                status: { type: "string", example: "PENDING" },
+            type: "object",
+            properties: {
+                success: { type: "boolean", example: true },
+                data: {
+                    type: "array",
+                    items: {
+                        type: "object",
+                        properties: {
+                            id: { type: "string", example: "deec95a1-7811-41cd-85d4-97ea4256bc11" },
+                            totalAmount: { type: "number", example: 100 },
+                            createdAt: { type: "string", format: "date-time", example: "2024-10-09 17:12:15" },
+                            pickupTime: { type: "string", format: "date-time", example: "2024-09-10 03:00:00" },
+                            paymentMethod: { type: "string", example: "CASH" },
+                            userId: { type: "string", example: "dcdc2d66-2e59-4f99-920e-91222106b9e7" },
+                            status: { type: "string", example: "PENDING" },
+                            updatedAt: { type: "string", format: "date-time", example: "2024-10-09 17:12:15" },
+                            totalPrice: { type: "number", example: 100 },
+                        },
+                    },
                 },
             },
-            },
-        },
-        },
+        }
     })
     @ApiResponse({
         status: 500,
@@ -184,7 +230,7 @@ export class OrderController {
                 success: true,
                 data: result,
             };
-            } catch (error) {
+        } catch (error) {
             this.logger.error(
                 `Error fetching orders for user ${user.userId}: ${error.message}`,
             );

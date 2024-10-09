@@ -12,6 +12,7 @@ export interface OrderView {
     paymentMethod: string;
     createdAt: Date;
     updatedAt: Date;
+    totalPrice: number;
 }
 
 export interface OrderItemsView {
