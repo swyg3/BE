@@ -31,7 +31,7 @@ export class OrderItemsController {
                     items: {
                         type: "object",
                         properties: {
-                            itemId: {
+                            orderId: {
                                 type: "string",
                                 example: "item12345",
                             },
