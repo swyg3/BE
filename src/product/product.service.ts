@@ -9,7 +9,6 @@ import { InventoryRepository } from 'src/inventory/repositories/inventory.reposi
 import { ProductRepository } from './repositories/product.repository';
 import { REDIS_CLIENT } from 'src/shared/infrastructure/redis/redis.config';
 import Redis from 'ioredis';
-import { CreateProductDto } from './dtos/create-product.dto';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 
@@ -50,45 +49,13 @@ export class ProductService {
         @Inject(REDIS_CLIENT) private readonly redis: Redis,
         @InjectDataSource() private dataSource: DataSource
     ) { }
-    async checkProductsDirectly(category: string): Promise<void> {
-        const query = `
-          SELECT p.*, i.quantity 
-          FROM product p 
-          LEFT JOIN inventory i ON p.inventory_id = i.id 
-          WHERE p.category = $1 AND (i.quantity > 0 OR i.quantity IS NULL)
-          LIMIT 10
-        `;
-
-        try {
-            const result = await this.dataSource.query(query, [category]);
-            this.logger.log('Direct query result:', JSON.stringify(result, null, 2));
-        } catch (error) {
-            this.logger.error('Error executing direct query:', error);
-        }
-    }
-    async createOrUpdateProduct(productData: CreateProductDto): Promise<void> {
-        try {
-            const product = await this.productRepository.save(productData);
-            await Promise.all([
-                this.syncToReadModel(product),
-                this.addToRedisGeo(product)
-            ]);
-        } catch (error) {
-            this.logger.error(`Error in createOrUpdateProduct: ${error.message}`, error.stack);
-            throw error;
-        }
-    }
-
-    private async addToRedisGeo(product: Product): Promise<void> {
-        if (product.locationX && product.locationY) {
-            await this.redis.geoadd('products', Number(product.locationX), Number(product.locationY), product.id);
-        }
-    }
-
+  
     async findProductsByCategoryAndSort(params: FindProductsParams): Promise<ProductQueryResult> {
         try {
-            const { category, sortBy, order, limit, latitude, longitude } = params;
-            let products = await this.fetchProductsFromPostgres(category);
+          const { category, sortBy, order, limit, latitude, longitude, exclusiveStartKey, previousPageKey } = params;
+                // 1. PostgreSQL에서 카테고리별 상품 조회
+
+          let products = await this.fetchProductsFromPostgres(category);
 
             if (this.shouldCalculateDistance(sortBy, latitude, longitude)) {
                 products = await this.calculateAndUpdateDistances(products, Number(latitude), Number(longitude));
@@ -108,26 +75,18 @@ export class ProductService {
     }
 
     private async fetchProductsFromPostgres(category: Category): Promise<Product[]> {
-        const queryBuilder = this.productRepository.createQueryBuilder('product')
-            .leftJoinAndSelect('product.inventory', 'inventory') // 조인 조건 제거
-            .leftJoinAndSelect('product.seller', 'seller')
-            .where('product.category = :category', { category })
-            .andWhere('(inventory.quantity > :minQuantity OR inventory.quantity IS NULL)', { minQuantity: 0 });
-
-        const products = await queryBuilder
-            .orderBy('product.discountRate', 'DESC')
-            .take(100)
-            .getMany();
-
-        this.logger.log(`Fetched ${products.length} products from PostgreSQL`);
-        if (products.length > 0) {
-            this.logger.debug('First product:', JSON.stringify(products[0], null, 2));
-        } else {
-            this.logger.warn(`No products found for category: ${category}`);
-        }
-
-        return products;
+      const queryBuilder = this.productRepository.createQueryBuilder('product')
+        .select(['product.id', 'product.locationX', 'product.locationY', 'product.discountRate']);
+    
+      // 카테고리가 'all'이 아닌 경우에만 where 조건 추가
+      if (category !== Category.ALL) {
+        queryBuilder.where('product.category = :category', { category });
+      }
+    
+      const products = await queryBuilder.getMany();
+      return products;
     }
+    
 
     private shouldCalculateDistance(sortBy: SortByOption, latitude?: string, longitude?: string): boolean {
         return (sortBy === SortByOption.Distance || sortBy === SortByOption.DistanceDiscountScore) && !!latitude && !!longitude;
