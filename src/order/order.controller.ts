@@ -58,6 +58,7 @@ export class OrderController {
                 { productId: "22a1b7b1-546d-4f1e-95b4-21b3583a7ef9", quantity: 2, price: 50 },
                 { productId: "3d32b618-7c61-4016-8517-0eee204de8c5", quantity: 1, price: 50 },
             ],
+            memo: ["메모1", "메모2"],
             },
             summary: "유효한 주문 생성 정보",
         },
@@ -97,6 +98,11 @@ export class OrderController {
                         status: {
                             type: "string",
                             example: "PENDING",
+                        },
+                        memo: {
+                            type: "array",
+                            items: { type: "string" },
+                            example: ["메모1", "메모2"],
                         },
                         items: {
                             type: "array",
@@ -159,6 +165,7 @@ export class OrderController {
         paymentMethod,
         status,
         items,
+        memo
         } = createOrderDto;
 
     try {
@@ -173,6 +180,7 @@ export class OrderController {
                 paymentMethod,
                 status,
                 items,
+                memo,
             ),
         );
     } catch (error) {

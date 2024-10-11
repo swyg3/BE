@@ -24,7 +24,7 @@ export class CreateOrderCommandHandler implements ICommandHandler<CreateOrderCom
     ) {}
 
     async execute(command: CreateOrderCommand): Promise<any> {
-        const { id, userId, totalAmount, totalPrice, pickupTime, items, paymentMethod, status } = command;
+        const { id, userId, totalAmount, totalPrice, pickupTime, items, paymentMethod, status, memo } = command;
     
         try {
             return await this.orderRepository.manager.transaction(async (transactionalEntityManager) => {
@@ -49,6 +49,7 @@ export class CreateOrderCommandHandler implements ICommandHandler<CreateOrderCom
                     paymentMethod,
                     status,
                     createdAt: new Date(),
+                    memo,
                 });
                 const savedOrder = await transactionalEntityManager.save(newOrder);
                 this.logger.log(`Saved Order: ${JSON.stringify(savedOrder)}`);
@@ -112,6 +113,7 @@ export class CreateOrderCommandHandler implements ICommandHandler<CreateOrderCom
                         pickupTime,
                         createdAt: newOrder.createdAt,
                         updatedAt: new Date(),
+                        memo,
                     },
                     1
                 );
@@ -134,6 +136,7 @@ export class CreateOrderCommandHandler implements ICommandHandler<CreateOrderCom
                             quantity: item.quantity,
                             price: item.price,
                         })),
+                        memo,
                     },
                 };
             });
