@@ -1,19 +1,22 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsEnum, IsInt, IsOptional, IsString, Matches, Min } from "class-validator";
+import { IsEnum, IsInt, IsOptional, IsString, Min } from "class-validator";
 import { Category } from "../product.category";
 import { Type } from "class-transformer";
+
+export enum SortByOption {
+  DiscountRate = 'discountRate',
+  Distance = 'distance',
+  DistanceDiscountScore = 'distanceDiscountScore'
+}
 
 export class FindProductsByCategoryDto {
   @ApiProperty({ enum: Category, description: '제품 카테고리' })
   @IsEnum(Category)
   category: Category;
 
-  @ApiProperty({ 
-    enum: ['discountRate', 'distance', 'distanceDiscountScore'], 
-    description: '정렬 기준' 
-  })
-  @IsEnum(['discountRate', 'distance', 'distanceDiscountScore'])
-  sortBy: 'discountRate' | 'distance' | 'distanceDiscountScore';
+  @ApiProperty({ enum: SortByOption, description: '정렬 기준' })
+  @IsEnum(SortByOption)
+  sortBy: SortByOption;
 
   @ApiProperty({ enum: ['asc', 'desc'], description: '정렬 순서' })
   @IsEnum(['asc', 'desc'])
@@ -35,4 +38,13 @@ export class FindProductsByCategoryDto {
   @IsString()
   previousPageKey?: string;
 
+  @ApiProperty({ required: false, description: '위도' })
+  @IsOptional()
+  @IsString()
+  latitude?: string;
+
+  @ApiProperty({ required: false, description: '경도' })
+  @IsOptional()
+  @IsString()
+  longitude?: string;
 }
