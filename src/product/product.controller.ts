@@ -39,6 +39,7 @@ import { LocationViewRepository } from "src/location/location-view.repository";
 import { Category } from "./product.category";
 import { SortByOption } from "./repositories/product-view.repository";
 import { ProductService, FindProductsParams, ProductQueryResult } from './product.service';
+import { GetCategoryQueryOutputDto } from "./dtos/get-category-out-dto";
 
 
 @ApiTags("Products")
@@ -239,16 +240,15 @@ export class ProductController {
     };
   }
 
-  
   @Get('category')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: '카테고리별 제품 조회', description: '지정된 카테고리의 제품을 조회하고 정렬합니다.' })
-  @ApiResponse({ status: 200, description: '성공적으로 제품 목록을 반환함', type: [Object] })
+  @ApiResponse({ status: 200, description: '성공적으로 제품 목록을 반환함', type: GetCategoryQueryOutputDto })
   async findProductsByCategoryAndSort(
     @GetUser() user: JwtPayload,
     @Query() findProductsByCategoryDto: FindProductsByCategoryDto,
-  ) {
+  ): Promise<GetCategoryQueryOutputDto> {
     const { category, sortBy, order, limit, exclusiveStartKey, previousPageKey } = findProductsByCategoryDto;
 
     const currentLocation = await this.locationViewRepository.findCurrentLocation(user.userId);
@@ -257,37 +257,31 @@ export class ProductController {
     }
     const { latitude, longitude } = currentLocation;
 
-    // Category enum으로 변환
-    const categoryEnum = Category[category as keyof typeof Category];
-    if (!categoryEnum) {
-      throw new NotFoundException('유효하지 않은 카테고리입니다.');
-    }
-// SortByOption enum으로 변환
-const sortByEnum = SortByOption[sortBy as keyof typeof SortByOption];
-if (!sortByEnum) {
-  throw new NotFoundException('유효하지 않은 정렬 옵션입니다.');
-}
-    const result = await this.productService.findProductsByCategoryAndSort({
-      category: categoryEnum,
-      sortBy:sortByEnum,
+    const query = new FindProductsByCategoryQuery(
+      category,
+      sortBy,
       order,
-      limit,
-      latitude: latitude.toString(),
-      longitude: longitude.toString(),
+      Number(limit),
+      latitude,
+      longitude,
       exclusiveStartKey,
-      previousPageKey,
-    });
+      previousPageKey
+    );
+
+    const result = await this.queryBus.execute(query);
 
     return {
       success: true,
       message: '해당 상품 리스트 조회를 성공했습니다.',
-      data: result.items,
+      items: result.items,
       lastEvaluatedUrl: result.lastEvaluatedUrl,
       firstEvaluatedUrl: result.firstEvaluatedUrl,
       prevPageUrl: result.prevPageUrl,
       count: result.count,
     };
   }
+
+
 
 
   @Get('search')
@@ -331,28 +325,6 @@ if (!sortByEnum) {
       prevPageUrl: result.prevPageUrl,
       count: result.count,
     };
-  }
-
-  // 위치허용 API
-  @Get('nearest')
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: '가까운 상품 조회', description: '메인화면에서 사용자 위치 기반으로 가까운 상품을 조회합니다.' })
-  @ApiResponse({ status: 200, description: '가까운 상품 조회 성공' })
-  @ApiQuery({ name: 'lat', type: Number, description: '위도' })
-  @ApiQuery({ name: 'lon', type: Number, description: '경도' })
-  async getNearestProducts(
-    @GetUser() user: JwtPayload,  
-  ): Promise<any[]> {
-    // 현재 위치 정보를 가져옵니다.
-    const currentLocation = await this.locationViewRepository.findCurrentLocation(user.userId);
-    if (!currentLocation) {
-      throw new NotFoundException('현재 위치 정보가 설정되어 있지 않습니다.');
-    }
-
-    // 현재 위치를 사용하여 가까운 상품을 조회하는 쿼리를 생성합니다.
-    const query = new GetNearestProductsQuery(currentLocation.latitude, currentLocation.longitude);
-    return this.queryBus.execute(query);
   }
 
   // @Get('category')

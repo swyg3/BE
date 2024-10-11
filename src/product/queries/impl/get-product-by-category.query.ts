@@ -8,7 +8,5 @@ export class FindProductsByCategoryQuery {
     public readonly longitude: string,
     public readonly exclusiveStartKey?: string,
     public readonly previousPageKey?: string,
-
-
-  ) { }
+  ) {}
 }

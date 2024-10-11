@@ -21,9 +21,9 @@ export class Product {
   id: string;
 
   @ManyToOne(() => Seller, (seller) => seller.products, { eager: true })
-  @JoinColumn({ name: "id"})
+  @JoinColumn({ name: "seller_id", referencedColumnName: "id" })
   sellerId: Seller; // Seller를 참조하는 외래 키
-
+  
   @Column({
     type: "enum",
     enum: Category,
