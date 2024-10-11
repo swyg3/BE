@@ -111,7 +111,7 @@ export class FindProductsByCategoryHandler implements IQueryHandler<FindProducts
           comparison = (b.distanceDiscountScore || -Infinity) - (a.distanceDiscountScore || -Infinity);
           break;
       }
-      return order === 'asc' ? comparison : -comparison;
+      return order === 'desc' ? comparison : -comparison;
     });
   }
 
