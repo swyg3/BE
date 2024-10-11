@@ -40,7 +40,6 @@ import { Category } from "./product.category";
 import { SortByOption } from "./repositories/product-view.repository";
 import { ProductService, FindProductsParams, ProductQueryResult } from './product.service';
 import { GetCategoryQueryOutputDto } from "./dtos/get-category-out-dto";
-import { CurrentLocation } from "./util/location.decorator";
 
 
 @ApiTags("Products")
@@ -53,7 +52,6 @@ export class ProductController {
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
     private readonly locationViewRepository: LocationViewRepository,
-    private readonly productService: ProductService,
 
   ) { }
 
@@ -248,11 +246,15 @@ export class ProductController {
   @ApiResponse({ status: 200, description: '성공적으로 제품 목록을 반환함', type: GetCategoryQueryOutputDto })
   async findProductsByCategoryAndSort(
     @GetUser() user: JwtPayload,
-    @CurrentLocation() currentLocation: LocationView2,
     @Query() findProductsByCategoryDto: FindProductsByCategoryDto,
   ): Promise<GetCategoryQueryOutputDto> {
     const { category, sortBy, order, limit, exclusiveStartKey, previousPageKey } = findProductsByCategoryDto;
 
+    // 현재 위치 정보를 가져옵니다.
+    const currentLocation = await this.locationViewRepository.findCurrentLocation(user.userId);
+    if (!currentLocation) {
+      throw new NotFoundException('현재 위치 정보가 설정되어 있지 않습니다.');
+    }
     const { latitude, longitude } = currentLocation;
 
     const query = new FindProductsByCategoryQuery(
