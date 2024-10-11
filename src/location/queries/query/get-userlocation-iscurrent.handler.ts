@@ -1,5 +1,5 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
-import { LocationViewRepository } from 'src/location/location-view.repository';
+import { LocationViewRepository } from 'src/location/repositories/location-view.repository';
 import { GetCurrentLocationQuery } from '../impl/get-userlocation-iscurrent.query';
 
 @QueryHandler(GetCurrentLocationQuery)

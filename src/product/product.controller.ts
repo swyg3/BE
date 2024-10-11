@@ -35,7 +35,7 @@ import { FindProductsByCategoryQuery } from "./queries/impl/get-product-by-categ
 import { SearchProductsQuery } from "./queries/impl/get-search-products";
 import { JwtPayload } from "src/shared/interfaces/jwt-payload.interface";
 import { GetUser } from "src/shared/decorators/get-user.decorator";
-import { LocationView2, LocationViewRepository } from "src/location/location-view.repository";
+import { LocationView2, LocationViewRepository } from "src/location/repositories/location-view.repository";
 import { Category } from "./product.category";
 import { SortByOption } from "./repositories/product-view.repository";
 import { ProductService, FindProductsParams, ProductQueryResult } from './product.service';

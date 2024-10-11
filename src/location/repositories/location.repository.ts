@@ -1,7 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { DataSource, DeepPartial, EntityManager, Repository } from "typeorm";
 import { InjectRepository } from "@nestjs/typeorm";
-import { UserLocation2 } from "./location.entity";
+import { UserLocation2 } from "../entities/location.entity";
 
 @Injectable()
 export class UserLocationRepository {

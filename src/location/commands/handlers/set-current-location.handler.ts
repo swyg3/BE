@@ -1,9 +1,9 @@
 import { CommandHandler, ICommandHandler, EventBus } from '@nestjs/cqrs';
 import { Injectable, Logger } from '@nestjs/common';
-import { UserLocationRepository } from '../../location.repository';
+import { UserLocationRepository } from '../../repositories/location.repository';
 import { SetCurrentLocationCommand } from '../impl/set-current-location.command';
 import { CurrentLocationSetEvent } from 'src/location/events/impl/location-set.event';
-import { UserLocation2 } from 'src/location/location.entity';
+import { UserLocation2 } from 'src/location/entities/location.entity';
 
 @Injectable()
 @CommandHandler(SetCurrentLocationCommand)

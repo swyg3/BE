@@ -146,8 +146,21 @@ export class LocationController {
   @UseGuards(JwtAuthGuard)
   async setCurrentLocation(@GetUser() user: JwtPayload, @Query('id') id: string) {
     const result = await this.commandBus.execute(new SetCurrentLocationCommand(user.userId, id));
+    const maxAttempts = 10;
+    const interval = 100; // ms
+
+    for (let i = 0; i < maxAttempts; i++) {
+      const result = this.cache.get(`${user.userId}:${id}`);
+      if (result) {
+        this.cache.delete(`${user.userId}:${id}`);
     return { 
       id: result.id,
       roadAddress: encodeURIComponent(result.roadAddress)
         };
-}}
+      }
+      await new Promise(resolve => setTimeout(resolve, interval));
+    }
+
+    throw new Error('업데이트 결과를 가져오는 데 실패했습니다.');
+  }
+}
