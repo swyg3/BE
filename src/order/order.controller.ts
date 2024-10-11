@@ -218,6 +218,11 @@ export class OrderController {
                             status: { type: "string", example: "PENDING" },
                             updatedAt: { type: "string", format: "date-time", example: "2024-10-09 17:12:15" },
                             totalPrice: { type: "number", example: 100 },
+                            memo: {
+                                type: "array",
+                                items: { type: "string" },
+                                example: ["메모1", "메모2"],
+                            },
                         },
                     },
                 },
@@ -235,6 +240,7 @@ export class OrderController {
                         status: "PENDING",
                         updatedAt: "2024-10-09 17:12:15",
                         totalPrice: 100,
+                        memo: ["첫 번째 메모", "두 번째 메모"]
                     },
                     {
                         id: "ff4e87da-6be2-4e7c-8a83-d30a6353e4b1",
@@ -246,6 +252,7 @@ export class OrderController {
                         status: "COMPLETED",
                         updatedAt: "2024-10-09 17:12:15",
                         totalPrice: 150,
+                        memo: ["첫 번째 메모", "두 번째 메모"]
                     },
                 ],
             },
