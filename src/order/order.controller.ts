@@ -338,6 +338,150 @@ export class OrderController {
             }
     }
 
+    // 해당 주문 번호의 상세 내역
+    @ApiOperation({
+        summary: "해당 주문 번호의 상세 내역(영수증) 조회",
+        description: "해당 주문 번호의 상세 내역 조회을 조회합니다.",
+    })
+    @ApiResponse({
+        status: 200,
+        description: "주문 상세 내역 조회 성공",
+        schema: {
+            type: "object",
+            properties: {
+                success: { type: "boolean", example: true },
+                orders: {
+                    type: "array",
+                    items: {
+                        type: "object",
+                        properties: {
+                            id: { type: "string", example: "59bf69d3-10d7-4043-964d-e69f78d4b0b3" },
+                            totalAmount: { type: "number", example: 100 },
+                            createdAt: { type: "string", format: "date-time", example: "2024-10-11 22:42:06" },
+                            pickupTime: { type: "string", format: "date-time", example: "2024-09-10 03:00:00" },
+                            totalPrice: { type: "number", example: 100 },
+                            paymentMethod: { type: "string", example: "CASH" },
+                            memo: {
+                                type: "array",
+                                items: { type: "string" },
+                                example: ["메모1", "메모2"],
+                            },
+                            userId: { type: "string", example: "63f030cb-977a-4ae2-94c9-5fba1c3180e4" },
+                            status: { type: "string", example: "PENDING" },
+                            updatedAt: { type: "string", format: "date-time", example: "2024-10-11 22:42:06" },
+                        },
+                    },
+                },
+                orderItemsInfo: {
+                    type: "object",
+                    properties: {
+                        productImageUrl: { type: "string", example: "/public/products/377812a2-7130-46e6-bef7-a483e4ce8150.jpg" },
+                        locationY: { type: "string", example: "37.4995645" },
+                        discountRate: { type: "number", example: 10 },
+                        productId: { type: "string", example: "0711755b-b5ba-4b2a-a984-89c5e33d3f29" },
+                        originalPrice: { type: "number", example: 1000000 },
+                        distance: { type: "number", example: 0 },
+                        availableStock: { type: "number", example: 50 },
+                        locationX: { type: "string", example: "127.0314101" },
+                        description: { type: "string", example: "맛있어요" },
+                        GSI_KEY: { type: "string", example: "PRODUCT" },
+                        createdAt: { type: "string", format: "date-time", example: "2024-10-08 00:47:23" },
+                        distanceDiscountScore: { type: "number", example: 0 },
+                        sellerId: { type: "string", example: "792d3973-0cff-4e1a-9996-2d5304230dcd" },
+                        discountedPrice: { type: "number", example: 900000 },
+                        name: { type: "string", example: "딸기 타르트" },
+                        category: { type: "string", example: "KOREAN" },
+                        expirationDate: { type: "string", format: "date-time", example: "2025-01-01 08:59:59" },
+                        updatedAt: { type: "string", format: "date-time", example: "2024-10-08 00:47:23" },
+                        storeName: { type: "string", example: "맥도날드" },
+                        storeAddress: { type: "string", example: "서울시 강남구" },
+                        storeNumber: { type: "string", example: "01012341234" },
+                    },
+                },
+            },
+            example: {
+                success: true,
+                orders: [
+                    {
+                        totalAmount: 100,
+                        createdAt: "2024-10-11 22:42:06",
+                        pickupTime: "2024-09-10 03:00:00",
+                        totalPrice: 100,
+                        paymentMethod: "CASH",
+                        memo: ["메모1", "메모2"],
+                        id: "59bf69d3-10d7-4043-964d-e69f78d4b0b3",
+                        userId: "63f030cb-977a-4ae2-94c9-5fba1c3180e4",
+                        status: "PENDING",
+                        updatedAt: "2024-10-11 22:42:06",
+                    },
+                ],
+                orderItemsInfo: {
+                    productImageUrl: "/public/products/377812a2-7130-46e6-bef7-a483e4ce8150.jpg",
+                    locationY: "37.4995645",
+                    discountRate: 10,
+                    productId: "0711755b-b5ba-4b2a-a984-89c5e33d3f29",
+                    originalPrice: 1000000,
+                    distance: 0,
+                    availableStock: 50,
+                    locationX: "127.0314101",
+                    description: "맛있어요",
+                    GSI_KEY: "PRODUCT",
+                    createdAt: "2024-10-08 00:47:23",
+                    distanceDiscountScore: 0,
+                    sellerId: "792d3973-0cff-4e1a-9996-2d5304230dcd",
+                    discountedPrice: 900000,
+                    name: "딸기 타르트",
+                    category: "KOREAN",
+                    expirationDate: "2025-01-01 08:59:59",
+                    updatedAt: "2024-10-08 00:47:23",
+                    storeName: "맥도날드",
+                    storeAddress: "서울시 강남구",
+                    storeNumber: "01012341234",
+                },
+            },
+        },
+    })
+    @ApiResponse({
+        status: 500,
+        description: "주문 상세 내역 조회 중 서버 오류가 발생했습니다.",
+    })
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard)
+    @Get(':id')
+    async getOrderRecipts(@GetUser() user: JwtPayload, @Param('id') id: string) {
+        try {
+            // 주문 상세 내역 조회
+            const orders = await this.queryBus.execute(new GetOrderQuery(user.userId));
+            this.logger.log('user.userId의 주문 목록 조회:', JSON.stringify(orders));
+
+            // 주문 목록에서 주문 번호
+            const orderId = orders[0].id;
+            this.logger.log('user.userId의 주문 번호:', JSON.stringify(orderId));
+
+            // 주문 번호로 주문 아이템 ID 조회
+            const orderProductIds = await this.queryBus.execute(new GetOrderItemQuery(orderId));
+            this.logger.log('user.userId의 주문 아이템 id 조회:', JSON.stringify(orderProductIds));
+            
+            // 각 주문 아이템 id로 아이템 정보 조회
+            const orderItemsInfo = await this.queryBus.execute(new GetProductByIdQuery(orderProductIds[0]));
+            this.logger.log('user.userId의 주문 아이템 id로 아이템 정보 조회:', JSON.stringify(orderItemsInfo));
+
+        return {
+                success: true,
+                orders: orders,
+                orderItemsInfo: orderItemsInfo,
+                };
+            } catch (error) {
+                this.logger.error(
+                    `Error fetching order details for orderId ${id}: ${error.message}`,
+                );
+                throw new HttpException(
+                    "Failed to fetch order details",
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                );
+            }
+    }
+
   // 주문 취소
     @ApiOperation({
         summary: "주문 취소",
