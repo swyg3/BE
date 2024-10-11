@@ -1,7 +1,8 @@
 import { EventsHandler, IEventHandler } from '@nestjs/cqrs';
 import { CurrentLocationSetEvent } from '../impl/location-set.event';
-import { LocationViewRepository } from 'src/location/repositories/location-view.repository';
 import { Logger } from '@nestjs/common';
+import { LocationViewRepository } from 'src/location/repositories/location-view.repository';
+import { LocationResultCache } from 'src/location/caches/location-cache';
 
 @EventsHandler(CurrentLocationSetEvent)
 export class CurrentLocationSetHandler implements IEventHandler<CurrentLocationSetEvent> {
@@ -9,19 +10,20 @@ export class CurrentLocationSetHandler implements IEventHandler<CurrentLocationS
 
   constructor(
     private readonly locationViewRepository: LocationViewRepository,
+    private readonly cache: LocationResultCache
   ) {}
 
   async handle(event: CurrentLocationSetEvent) {
-    this.logger.log(`Handling CurrentLocationSetEvent for user: ${event.data.id}`);
+    this.logger.log(`Handling CurrentLocationSetEvent for user: ${event.data.userId}`);
+    const cacheKey = `${event.data.userId}:${event.data.id}`;
 
     try {
-      // LocationViewRepository의 메서드를 호출하여 현재 위치 업데이트
-      const updatedLocations = await this.locationViewRepository.updateCurrentLocation(event.data.userId, event.data.id);
-      this.logger.log(`Successfully updated current location for user: ${event.data.id}`);
-      return updatedLocations;
-
+      const updatedLocation = await this.locationViewRepository.updateCurrentLocation(event.data.userId, event.data.id);
+      this.logger.log(`Successfully updated current location for user: ${event.data.userId}`);
+      this.cache.set(cacheKey, updatedLocation);
     } catch (error) {
-      this.logger.error(`Failed to update current location for user: ${event.data.id}`, error.stack);
+      this.logger.error(`Failed to update current location for user: ${event.data.userId}`, error.stack);
+      this.cache.set(cacheKey, null);
     }
   }
 }

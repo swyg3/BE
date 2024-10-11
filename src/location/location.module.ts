@@ -14,6 +14,7 @@ import { GetCurrentLocationHandler } from './queries/query/get-userlocation-iscu
 import { SaveAddressHandler } from './commands/handlers/save-address.handler';
 import { CurrentLocationSetHandler } from './events/handlers/current-location-set.handler';
 import { UpdateCurrentLocationHandler } from './commands/handlers/set-current-location.handler';
+import { LocationResultCache } from './caches/location-cache';
 
 const CommandHandlers = [
   SaveAddressHandler,
@@ -42,6 +43,7 @@ const QuerysHandlers = [
   providers: [
     UserLocationRepository,
     LocationViewRepository,
+    LocationResultCache,
     ...CommandHandlers,
     ...EventsHandlers,
     ...QuerysHandlers,

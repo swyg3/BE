@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Body, Param, UseGuards, NotFoundException, BadRequestException, Post, Query, Patch } from '@nestjs/common';
+import { Controller, Get, Put, Body, Param, UseGuards, NotFoundException, BadRequestException, Post, Query, Patch, Inject } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody, ApiResponse } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -13,6 +13,7 @@ import { AddressDto } from './dto/address.dto';
 import { SaveAddressCommand } from './commands/impl/save-address.command';
 import { GetAllAddressesQuery } from './queries/impl/get-all-addresses.query';
 import { SetCurrentLocationCommand } from './commands/impl/set-current-location.command';
+import { LocationResultCache } from './caches/location-cache';
 
 @ApiTags('locations')
 @Controller('locations')
@@ -22,6 +23,7 @@ export class LocationController {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
+    @Inject(LocationResultCache) private cache: LocationResultCache,
   ) {}
 
   // @Put('current/insert')
@@ -137,7 +139,7 @@ export class LocationController {
       'application/json': {
         example: {
          id: '123e4567-e89b-12d3-a456-426614174000',
-          roadAddress: '서울특별시 강남구 테헤란로 123'
+         roadAddress: { type: 'string', example: '%EC%84%9C%EC%9A%B8%ED%8A%B9%EB%B3%84%EC%8B%9C%20%EA%B0%95%EB%82%A8%EA%B5%AC%20%ED%85%8C%ED%97%A4%EB%9E%80%EB%A1%9C%20123' }
         }
       }
     }
@@ -145,17 +147,22 @@ export class LocationController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   async setCurrentLocation(@GetUser() user: JwtPayload, @Query('id') id: string) {
-    const result = await this.commandBus.execute(new SetCurrentLocationCommand(user.userId, id));
+    const cacheKey = `${user.userId}:${id}`;
+
+    await this.commandBus.execute(new SetCurrentLocationCommand(user.userId, id));
     const maxAttempts = 10;
     const interval = 100; // ms
 
     for (let i = 0; i < maxAttempts; i++) {
-      const result = this.cache.get(`${user.userId}:${id}`);
-      if (result) {
-        this.cache.delete(`${user.userId}:${id}`);
-    return { 
-      id: result.id,
-      roadAddress: encodeURIComponent(result.roadAddress)
+      const result = this.cache.get(cacheKey);
+      if (result !== undefined) {
+        this.cache.delete(cacheKey);
+        if (result === null) {
+          throw new Error('위치 업데이트 중 오류가 발생했습니다.');
+        }
+        return {
+          id: result.locationId,
+          roadAddress: encodeURIComponent(result.roadAddress),
         };
       }
       await new Promise(resolve => setTimeout(resolve, interval));
