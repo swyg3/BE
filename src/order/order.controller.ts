@@ -20,6 +20,8 @@ import {
     ApiTags
 } from "@nestjs/swagger";
 import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
+import { GetOrderItemQuery } from "src/order-items/queries/get-order-item.query";
+import { GetProductByIdQuery } from "src/product/queries/impl/get-prouct-by-id.query";
 import { GetUser } from "src/shared/decorators/get-user.decorator";
 import { JwtPayload } from "src/shared/interfaces/jwt-payload.interface";
 import { v4 as uuidv4 } from 'uuid';
@@ -267,20 +269,35 @@ export class OrderController {
     @Get()
     async getOrders(@GetUser() user: JwtPayload) {
         try {
-            const result = await this.queryBus.execute(new GetOrderQuery(user.userId));
-            return {
+            // 주문 목록 조회
+            const orders = await this.queryBus.execute(new GetOrderQuery(user.userId));
+            this.logger.log('user.userId의 주문 목록 조회:', JSON.stringify(orders));
+
+            // 주문 목록에서 주문 번호
+            const orderId = orders[0].id;
+            this.logger.log('user.userId의 주문 번호:', JSON.stringify(orderId));
+
+            // 주문 번호로 주문 아이템 ID 조회
+            const orderProductIds = await this.queryBus.execute(new GetOrderItemQuery(orderId));
+            this.logger.log('user.userId의 주문 아이템 id 조회:', JSON.stringify(orderProductIds));
+            
+            // 각 주문 아이템 id로 아이템 정보 조회
+            const orderItemsInfo = await this.queryBus.execute(new GetProductByIdQuery(orderProductIds[0]));
+            this.logger.log('user.userId의 주문 아이템 id로 아이템 정보 조회:', JSON.stringify(orderItemsInfo));
+
+        return {
                 success: true,
-                data: result,
-            };
-        } catch (error) {
-            this.logger.error(
-                `Error fetching orders for user ${user.userId}: ${error.message}`,
-            );
-            throw new HttpException(
-                "Failed to fetch orders",
-                HttpStatus.INTERNAL_SERVER_ERROR,
-            );
-        }
+                data: orders,
+                };
+            } catch (error) {
+                this.logger.error(
+                    `Error fetching orders for user ${user.userId}: ${error.message}`,
+                );
+                throw new HttpException(
+                    "Failed to fetch orders",
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                );
+            }
     }
 
   // 주문 취소
