@@ -1,68 +1,120 @@
 import { IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 import { Logger } from "@nestjs/common";
-import { ProductView, ProductViewRepository, SortByOption } from "../../repositories/product-view.repository";
 import { ConfigService } from "@nestjs/config";
 import { FindProductsByCategoryQuery } from "../impl/get-product-by-category.query";
 import { GetCategoryQueryOutputDto } from "src/product/dtos/get-category-out-dto";
 import { Category } from "src/product/product.category";
+import { ProductView, ProductViewRepository, SortByOption } from "src/product/repositories/product-view.repository";
+import { RedisGeo } from "src/product/util/geoadd";
 
 
 @QueryHandler(FindProductsByCategoryQuery)
 export class FindProductsByCategoryHandler implements IQueryHandler<FindProductsByCategoryQuery> {
   constructor(
-    private readonly productViewRepository: ProductViewRepository,
+    private readonly productViewRepository: ProductViewRepository,  // 레포지토리 주입
     private readonly configService: ConfigService,
+    private readonly redisGeo: RedisGeo,
     private readonly logger: Logger
   ) {}
 
   async execute(query: FindProductsByCategoryQuery): Promise<GetCategoryQueryOutputDto> {
     this.logger.log(`Executing find products by category query with parameters: ${JSON.stringify(query)}`);
-
-    const validatedQuery = this.validateAndConvertQuery(query);
-    const result = await this.productViewRepository.findProductsByCategoryAndSort(validatedQuery);
-    const formattedResult = this.formatResult(result, query);
+    const category: Category = query.category; 
+    //카테고리 별로 아이템 뽑기
+    const items = await this.productViewRepository.fetchItemsByCategory(category);
+    
+    const processedItems = this.processItems(items, query);
+    const paginatedResult = this.paginateItems(await processedItems, query.limit, query.exclusiveStartKey);
+    const formattedResult = this.formatResult(paginatedResult, query);
 
     this.logger.log(`Query result: ${formattedResult.count} items found`);
 
     return formattedResult;
   }
 
-  private validateAndConvertQuery(query: FindProductsByCategoryQuery): {
-    category: Category;
+ 
+
+
+  private async processItems(items: ProductView[], query: {
     sortBy: SortByOption;
     order: 'asc' | 'desc';
-    limit: number;
     latitude?: string;
     longitude?: string;
-    exclusiveStartKey?: string;
-  } {
-    const category = Category[query.category as keyof typeof Category];
-    if (!category) {
-      throw new Error(`Invalid category: ${query.category}`);
+  }): Promise<ProductView[]> {
+    let processedItems = items;
+
+    if (this.shouldCalculateDistance(query.sortBy, query.latitude, query.longitude)) {
+      processedItems =await this.calculateDistances(processedItems, Number(query.latitude), Number(query.longitude));
     }
 
-    const sortBy = SortByOption[query.sortBy as keyof typeof SortByOption];
-    if (!sortBy) {
-      throw new Error(`Invalid sortBy option: ${query.sortBy}`);
-    }
+    return this.sortItems(processedItems, query.sortBy, query.order);
+  }
 
-    if (query.order !== 'asc' && query.order !== 'desc') {
-      throw new Error(`Invalid order: ${query.order}`);
-    }
 
-    if (isNaN(query.limit) || query.limit <= 0) {
-      throw new Error(`Invalid limit: ${query.limit}`);
-    }
+  async calculateDistances(items: ProductView[], userLatitude: number, userLongitude: number): Promise<ProductView[]> {
+    const calculatedItems = await Promise.all(items.map(async item => {
+      if (item.locationX && item.locationY) {
+        try {
+          const distance = await this.redisGeo.calculateDistance(
+            userLatitude,
+            userLongitude,
+            Number(item.locationY),
+            Number(item.locationX)
+          );
+          const score = this.calculateRecommendationScore({ ...item, distance });
+          return { ...item, distance, distanceDiscountScore: score };
+        } catch (error) {
+          // 거리 계산 실패 시 기본값 사용
+          return { ...item, distance: Infinity, distanceDiscountScore: 0 };
+        }
+      }
+      return item;
+    }));
 
-    return {
-      category,
-      sortBy,
-      order: query.order,
-      limit: query.limit,
-      latitude: query.latitude,
-      longitude: query.longitude,
-      exclusiveStartKey: query.exclusiveStartKey,
-    };
+    return calculatedItems;
+  }
+
+  private shouldCalculateDistance(sortBy: SortByOption, latitude?: string, longitude?: string): boolean {
+    return (sortBy === SortByOption.Distance || sortBy === SortByOption.DistanceDiscountScore) && !!latitude && !!longitude;
+  }
+  
+  private calculateRecommendationScore(product: ProductView & { distance: number }): number {
+    const distanceScore = 1 / (1 + (product.distance || Infinity));
+    const discountScore = (product.discountRate || 0) / 100;
+    const score = (distanceScore + discountScore) / 2;
+    return Math.round(score * 100);
+  }
+
+  private sortItems(items: ProductView[], sortBy: SortByOption, order: 'asc' | 'desc'): ProductView[] {
+    return items.sort((a, b) => {
+      let comparison = 0;
+      switch (sortBy) {
+        case SortByOption.DiscountRate:
+          comparison = (b.discountRate || 0) - (a.discountRate || 0);
+          break;
+        case SortByOption.Distance:
+          comparison = (a.distance || Infinity) - (b.distance || Infinity);
+          break;
+        case SortByOption.DistanceDiscountScore:
+          comparison = (b.distanceDiscountScore || -Infinity) - (a.distanceDiscountScore || -Infinity);
+          break;
+      }
+      return order === 'asc' ? comparison : -comparison;
+    });
+  }
+
+  private paginateItems(items: ProductView[], limit: number, exclusiveStartKey?: string): { items: ProductView[], lastEvaluatedKey: any } {
+    let startIndex = 0;
+    if (exclusiveStartKey) {
+      const startKey = JSON.parse(decodeURIComponent(exclusiveStartKey));
+      startIndex = items.findIndex(item => item.productId === startKey.productId);
+      startIndex = startIndex === -1 ? 0 : startIndex + 1;
+    }
+  
+    const paginatedItems = items.slice(startIndex, startIndex + limit);
+    const lastEvaluatedKey = paginatedItems.length === limit ? { productId: paginatedItems[paginatedItems.length - 1].productId } : null;
+  
+    return { items: paginatedItems, lastEvaluatedKey };
   }
 
   private formatResult(

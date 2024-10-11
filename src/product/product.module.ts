@@ -28,7 +28,6 @@ import { NaverMapsClient } from "src/shared/infrastructure/database/navermap.con
 import { HttpModule } from "@nestjs/axios";
 import { GetNearestProductsHandler } from "./queries/handlers/get-nearest-products.handler";
 import { FindProductsByCategoryHandler } from "./queries/handlers/get-product-by-category.handler";
-import { SearchProductsHandler } from "./queries/handlers/get-search-products.handler";
 import { GetProductByDiscountRateHandler } from "./queries/handlers/get-products-by-discountRate.handler";
 import { UserLocation2Schema } from "src/location/location-view.schema";
 import { LocationModule } from "src/location/location.module";
@@ -36,6 +35,7 @@ import { LocationViewRepository } from "src/location/location-view.repository";
 import { ProductService } from "./product.service";
 import { Inventory } from "src/inventory/inventory.entity";
 import { InventoryModule } from "src/inventory/inventory.module";
+import { RedisGeo } from "./util/geoadd";
 
 const CommandHandlers = [
   CreateProductHandler,
@@ -115,9 +115,10 @@ const EventsHandlers = [
     HttpModule,
     GeocodingService,
     NaverMapsClient,
-    SearchProductsHandler,
+    //SearchProductsHandler,
     GetProductByDiscountRateHandler,
-    ProductService    
+    ProductService,
+    RedisGeo
     
   ],
   controllers: [ProductController,GeocodingController],

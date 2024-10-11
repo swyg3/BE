@@ -42,7 +42,7 @@ export class ProductViewRepository {
 
   constructor(
     @InjectModel("ProductView")
-    private readonly productViewModel: Model<
+    public readonly productViewModel: Model<
       ProductView,
       { productId: string }
     >,
@@ -251,93 +251,15 @@ export class ProductViewRepository {
     }
   }
 
-  
-  async findProductsByCategoryAndSort(param: {
-    category: Category;
-    sortBy: SortByOption;
-    order: 'asc' | 'desc';
-    limit: number;
-    exclusiveStartKey?: string;
-    latitude?: string;
-    longitude?: string;
-  }): Promise<{
-    items: ProductView[];
-    lastEvaluatedKey: any;
-  }> {
-    const { category, sortBy, order, limit, exclusiveStartKey, latitude, longitude } = param;
-    
-    let items = await this.fetchItemsByCategory(category);
-    
-    if (this.shouldCalculateDistance(sortBy, latitude, longitude)) {
-      items = await this.calculateDistancesForItems(items, latitude!, longitude!);
-    }
-    
-    items = this.sortItems(items, sortBy, order);
-    
-    return this.paginateItems(items, limit, exclusiveStartKey);
-  }
-
-  private async fetchItemsByCategory(category: Category): Promise<ProductView[]> {
+   
+   async fetchItemsByCategory(category: Category): Promise<ProductView[]> {
     if (category === Category.ALL) {
       return this.productViewModel.scan().exec();
     } else {
       return this.productViewModel.query('category').eq(category).exec();
     }
-  }
+ 
 
-  private shouldCalculateDistance(sortBy: SortByOption, latitude?: string, longitude?: string): boolean {
-    return (sortBy === SortByOption.Distance || sortBy === SortByOption.DistanceDiscountScore) && !!latitude && !!longitude;
-  }
-
-  private async calculateDistancesForItems(items: ProductView[], latitude: string, longitude: string): Promise<ProductView[]> {
-    const userLocation = this.createPolygonFromCoordinates(Number(latitude), Number(longitude));
-    return Promise.all(items.map(item => this.calculateDistanceForItem(item, userLocation)));
-  }
-
-  private async calculateDistanceForItem(item: ProductView, userLocation: any): Promise<ProductView> {
-    if (item.locationX && item.locationY) {
-      const itemLocation = this.createPolygonFromCoordinates(Number(item.locationX), Number(item.locationY));
-      const distance = DistanceCalculator.vincentyDistance(userLocation, itemLocation);
-      const score = this.calculateRecommendationScore({...item, distance});
-      
-      await this.updateItemWithDistanceAndScore(item.productId, distance, score);
-      return { ...item, distance, distanceDiscountScore: score };
-    }
-    return item;
-  }
-
-  private sortItems(items: ProductView[], sortBy: SortByOption, order: 'asc' | 'desc'): ProductView[] {
-    return items.sort((a, b) => {
-      let comparison = 0;
-      switch (sortBy) {
-        case SortByOption.DiscountRate:
-          comparison = (b.discountRate || 0) - (a.discountRate || 0);
-          break;
-        case SortByOption.Distance:
-          comparison = (a.distance || Infinity) - (b.distance || Infinity);
-          break;
-        case SortByOption.DistanceDiscountScore:
-          comparison = (b.distanceDiscountScore || -Infinity) - (a.distanceDiscountScore || -Infinity);
-          break;
-      }
-      return order === 'asc' ? comparison : -comparison;
-    });
-  }
-
-  private paginateItems(items: ProductView[], limit: number, exclusiveStartKey?: string): { items: ProductView[], lastEvaluatedKey: any } {
-    let startIndex = 0;
-    if (exclusiveStartKey) {
-      const startKey = JSON.parse(decodeURIComponent(exclusiveStartKey));
-      startIndex = items.findIndex(item => item.productId === startKey.productId);
-      startIndex = startIndex === -1 ? 0 : startIndex + 1;
-    }
-  
-    const paginatedItems = items.slice(startIndex, startIndex + limit);
-    const lastEvaluatedKey = paginatedItems.length === limit ? { productId: paginatedItems[paginatedItems.length - 1].productId } : null;
-  
-    return { items: paginatedItems, lastEvaluatedKey };
-  }
-  
   // async searchProducts(param: {
   //   searchTerm: string;
   //   sortBy: SortByOption;
@@ -453,25 +375,9 @@ export class ProductViewRepository {
   //   };
   // }
 
-  private calculateRecommendationScore(product: ProductView): number {
-    const distanceScore = 1 / (1 + (product.distance || Infinity));
-    const discountScore = (product.discountRate || 0) / 100;
-    const score = (distanceScore + discountScore) / 2;
-    return Math.round(score * 100); // 100을 곱하여 더 의미 있는 범위의 정수로 변환
-  }
-
-  private  createPolygonFromCoordinates(latitude: number, longitude: number): Polygon {
-    return {
-      type: 'Polygon',
-      coordinates: [[[longitude, latitude], [longitude, latitude], [longitude, latitude], [longitude, latitude]]]
-    };
-  }
   
-  private  async updateItemWithDistanceAndScore(productId: string, distance: number, score: number) {
-    await this.productViewModel.update({ productId }, { distance, distanceDiscountScore: score });
-  }
-
   
  
 }
 
+}
