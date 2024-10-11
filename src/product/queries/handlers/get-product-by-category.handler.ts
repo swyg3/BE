@@ -44,14 +44,19 @@ export class FindProductsByCategoryHandler implements IQueryHandler<FindProducts
     let processedItems = items;
 
     if (this.shouldCalculateDistance(query.sortBy, query.latitude, query.longitude)) {
-      processedItems =await this.calculateDistances(processedItems, Number(query.latitude), Number(query.longitude));
+      processedItems =await this.calculateDistances(processedItems, Number(query.latitude), Number(query.longitude),query.sortBy);
     }
 
     return this.sortItems(processedItems, query.sortBy, query.order);
   }
 
 
-  async calculateDistances(items: ProductView[], userLatitude: number, userLongitude: number): Promise<ProductView[]> {
+  async calculateDistances(
+    items: ProductView[], 
+    userLatitude: number, 
+    userLongitude: number, 
+    sortBy: SortByOption
+  ): Promise<ProductView[]> {
     const calculatedItems = await Promise.all(items.map(async item => {
       if (item.locationX && item.locationY) {
         try {
@@ -61,11 +66,18 @@ export class FindProductsByCategoryHandler implements IQueryHandler<FindProducts
             Number(item.locationY),
             Number(item.locationX)
           );
-          const score = this.calculateRecommendationScore({ ...item, distance });
-          return { ...item, distance, distanceDiscountScore: score };
+          if (sortBy === SortByOption.DistanceDiscountScore) {
+            const score = this.calculateRecommendationScore({ ...item, distance });
+            return { ...item, distance, distanceDiscountScore: score };
+          } else {
+            return { ...item, distance };
+          }
         } catch (error) {
-          // 거리 계산 실패 시 기본값 사용
-          return { ...item, distance: Infinity, distanceDiscountScore: 0 };
+          if (sortBy === SortByOption.DistanceDiscountScore) {
+            return { ...item, distance: Infinity, distanceDiscountScore: 0 };
+          } else {
+            return { ...item, distance: Infinity };
+          }
         }
       }
       return item;

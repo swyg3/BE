@@ -215,29 +215,29 @@ export class ProductController {
     };
   }
 
-  @ApiOperation({ summary: "상품 할인률 순 조회" })
-  @ApiResponse({ status: 200, description: "상품 할인률 순 조회 성공" })
-  @Get("discountrate")
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  async getProductsByDiscountRate(
-    @Query() queryDto: GetProductByDiscountRateInputDto,
-  ) {
-    const { order, limit, exclusiveStartKey, previousPageKey } = queryDto;
-    const query = new GetProductByDiscountRateQuery(order, limit, exclusiveStartKey, previousPageKey);
-    const result = await this.queryBus.execute(query);
+  // @ApiOperation({ summary: "상품 할인률 순 조회" })
+  // @ApiResponse({ status: 200, description: "상품 할인률 순 조회 성공" })
+  // @Get("discountrate")
+  // @ApiBearerAuth()
+  // @UseGuards(JwtAuthGuard)
+  // @ApiBearerAuth()
+  // async getProductsByDiscountRate(
+  //   @Query() queryDto: GetProductByDiscountRateInputDto,
+  // ) {
+  //   const { order, limit, exclusiveStartKey, previousPageKey } = queryDto;
+  //   const query = new GetProductByDiscountRateQuery(order, limit, exclusiveStartKey, previousPageKey);
+  //   const result = await this.queryBus.execute(query);
 
-    return {
-      success: true,
-      message: '해당 상품리스트 조회를 성공했습니다.',
-      data: result.items,
-      lastEvaluatedUrl: result.lastEvaluatedUrl,
-      firstEvaluatedUrl: result.firstEvaluatedUrl,
-      prevPageUrl: result.prevPageUrl,
-      count: result.count
-    };
-  }
+  //   return {
+  //     success: true,
+  //     message: '해당 상품리스트 조회를 성공했습니다.',
+  //     data: result.items,
+  //     lastEvaluatedUrl: result.lastEvaluatedUrl,
+  //     firstEvaluatedUrl: result.firstEvaluatedUrl,
+  //     prevPageUrl: result.prevPageUrl,
+  //     count: result.count
+  //   };
+  // }
 
   @Get('category')
   @ApiBearerAuth()
