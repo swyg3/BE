@@ -72,9 +72,7 @@ export class Product {
   @Column({ type: 'float', nullable: true })
   distanceDiscountScore: number;
 
-  @OneToOne(() => Inventory, inventory => inventory.product, { cascade: true })
-  inventory: Inventory;
-  
+
   @CreateDateColumn({
     type: "timestamp",
     name: "created_at",
