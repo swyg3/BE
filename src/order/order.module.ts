@@ -15,6 +15,9 @@ import { Order } from './entities/order.entity';
 import { CreateOrderEventHandler } from './events/handlers/create-order.event-handler';
 import { DeleteOrderEventHandler } from './events/handlers/delete-order.event-handler';
 import { OrderController } from './order.controller';
+import { GetOrderByIdQuery } from './queries/get-order-by-id.query';
+import { GetOrderQuery } from './queries/get-order.query';
+import { GetOrderByIdQueryHandler } from './queries/handlers/get-order-by-id.query-handler';
 import { GetOrderQueryHandler } from './queries/handlers/get-order.query-handler';
 import { OrderViewSchema } from './schemas/order-view.schema';
 
@@ -28,6 +31,6 @@ import { OrderViewSchema } from './schemas/order-view.schema';
     EventSourcingModule,
   ],
   controllers: [OrderController],
-  providers: [CreateOrderCommandHandler, GetOrderQueryHandler, CreateOrderEventHandler, DeleteOrderEventHandler, DeleteOrderCommandHandler, GetProductByIdQuery, GetOrderItemQuery, GetOrderItemQueryHandler]
+  providers: [CreateOrderCommandHandler, GetOrderQueryHandler, CreateOrderEventHandler, DeleteOrderEventHandler, DeleteOrderCommandHandler, GetProductByIdQuery, GetOrderItemQuery, GetOrderItemQueryHandler, GetOrderByIdQuery, GetOrderByIdQueryHandler, GetOrderQueryHandler, GetOrderQuery]
 })
 export class OrderModule {}

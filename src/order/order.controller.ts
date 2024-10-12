@@ -28,6 +28,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { CreateOrderCommand } from "./commands/create-order.command";
 import { DeleteOrderCommand } from "./commands/delete-order.command";
 import { CreateOrderDto } from "./dtos/create-order.dto";
+import { GetOrderByIdQuery } from "./queries/get-order-by-id.query";
 import { GetOrderQuery } from "./queries/get-order.query";
 
 @ApiTags("Orders")
@@ -450,16 +451,12 @@ export class OrderController {
     @Get(':id')
     async getOrderRecipts(@GetUser() user: JwtPayload, @Param('id') id: string) {
         try {
-            // 주문 상세 내역 조회
-            const orders = await this.queryBus.execute(new GetOrderQuery(user.userId));
-            this.logger.log('user.userId의 주문 목록 조회:', JSON.stringify(orders));
-
-            // 주문 목록에서 주문 번호
-            const orderId = orders[0].id;
-            this.logger.log('user.userId의 주문 번호:', JSON.stringify(orderId));
+            // 주문 번호로 주문 내역 조회
+            const orders = await this.queryBus.execute(new GetOrderByIdQuery(id));
+            this.logger.log('user.userId의 해당 주문 번호의 주문 내역 조회:', JSON.stringify(orders));
 
             // 주문 번호로 주문 아이템 ID 조회
-            const orderProductIds = await this.queryBus.execute(new GetOrderItemQuery(orderId));
+            const orderProductIds = await this.queryBus.execute(new GetOrderItemQuery(id));
             this.logger.log('user.userId의 주문 아이템 id 조회:', JSON.stringify(orderProductIds));
             
             // 각 주문 아이템 id로 아이템 정보 조회
