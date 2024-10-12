@@ -311,32 +311,41 @@ export class OrderController {
             const orders = await this.queryBus.execute(new GetOrderQuery(user.userId));
             this.logger.log('user.userId의 주문 목록 조회:', JSON.stringify(orders));
 
-            // 주문 목록에서 주문 번호
-            const orderId = orders[0].id;
-            this.logger.log('user.userId의 주문 번호:', JSON.stringify(orderId));
+            // 주문 목록에서 모든 주문 번호 가져오기
+            const orderIds = orders.map(order => order.id);
+            this.logger.log('user.userId의 모든 주문 번호:', JSON.stringify(orderIds));
 
-            // 주문 번호로 주문 아이템 ID 조회
-            const orderProductIds = await this.queryBus.execute(new GetOrderItemQuery(orderId));
-            this.logger.log('user.userId의 주문 아이템 id 조회:', JSON.stringify(orderProductIds));
-            
-            // 각 주문 아이템 id로 아이템 정보 조회
-            const orderItemsInfo = await this.queryBus.execute(new GetProductByIdQuery(orderProductIds[0]));
-            this.logger.log('user.userId의 주문 아이템 id로 아이템 정보 조회:', JSON.stringify(orderItemsInfo));
+            // 모든 주문의 주문 아이템을 저장할 배열
+            const allOrderItemsInfo = [];
 
-        return {
+            // 각 주문에 대한 아이템 조회
+            for (const orderId of orderIds) {
+                // 각 주문의 주문 아이템 ID 조회
+                const orderProductIds = await this.queryBus.execute(new GetOrderItemQuery(orderId));
+                this.logger.log('user.userId의 주문 아이템 id 조회:', JSON.stringify(orderProductIds));
+
+                // 각 주문 아이템 ID로 아이템 정보 조회
+                const orderItemsInfo = await this.queryBus.execute(new GetProductByIdQuery(orderProductIds[0]));
+                this.logger.log('user.userId의 주문 아이템 id로 아이템 정보 조회:', JSON.stringify(orderItemsInfo));
+
+                // 아이템 정보를 결과 배열에 추가
+                allOrderItemsInfo.push(orderItemsInfo);
+            }
+
+            return {
                 success: true,
                 orders: orders,
-                orderItemsInfo: orderItemsInfo,
-                };
-            } catch (error) {
-                this.logger.error(
-                    `Error fetching orders for user ${user.userId}: ${error.message}`,
-                );
-                throw new HttpException(
-                    "Failed to fetch orders",
-                    HttpStatus.INTERNAL_SERVER_ERROR,
-                );
-            }
+                orderItemsInfo: allOrderItemsInfo,
+            };
+        } catch (error) {
+            this.logger.error(
+                `Error fetching orders for user ${user.userId}: ${error.message}`,
+            );
+            throw new HttpException(
+                "Failed to fetch orders",
+                HttpStatus.INTERNAL_SERVER_ERROR,
+            );
+        }
     }
 
     // 해당 주문 번호의 상세 내역
