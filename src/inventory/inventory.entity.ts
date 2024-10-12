@@ -22,10 +22,6 @@ export class Inventory {
   @Column({ type: "date", name: "expiration_date", nullable: true })
   expirationDate: Date;
 
-  @OneToOne(() => Product, product => product.inventory)
-  @JoinColumn({ name: "product_id" })
-  product: Product;
-
   @UpdateDateColumn({
     type: "timestamp",
     name: "updated_at",
