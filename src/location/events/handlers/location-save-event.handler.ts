@@ -1,7 +1,7 @@
 import { EventsHandler, IEventHandler } from "@nestjs/cqrs";
 import { Logger } from "@nestjs/common";
 import { UserLocationSavedEvent } from "../impl/location-save-event";
-import { LocationView2, LocationViewRepository } from "src/location/location-view.repository";
+import { LocationView2, LocationViewRepository } from "src/location/repositories/location-view.repository";
 
 @EventsHandler(UserLocationSavedEvent)
 export class UserLocationSavedHandler

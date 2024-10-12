@@ -35,7 +35,11 @@ import { FindProductsByCategoryQuery } from "./queries/impl/get-product-by-categ
 import { SearchProductsQuery } from "./queries/impl/get-search-products";
 import { JwtPayload } from "src/shared/interfaces/jwt-payload.interface";
 import { GetUser } from "src/shared/decorators/get-user.decorator";
-import { LocationViewRepository } from "src/location/location-view.repository";
+import { LocationView2, LocationViewRepository } from "src/location/repositories/location-view.repository";
+import { Category } from "./product.category";
+import { SortByOption } from "./repositories/product-view.repository";
+import { ProductService, FindProductsParams, ProductQueryResult } from './product.service';
+import { GetCategoryQueryOutputDto } from "./dtos/get-category-out-dto";
 
 
 @ApiTags("Products")
@@ -47,7 +51,8 @@ export class ProductController {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
-    private readonly locationViewRepository: LocationViewRepository
+    private readonly locationViewRepository: LocationViewRepository,
+
   ) { }
 
 
@@ -210,64 +215,73 @@ export class ProductController {
     };
   }
 
-  @ApiOperation({ summary: "상품 할인률 순 조회" })
-  @ApiResponse({ status: 200, description: "상품 할인률 순 조회 성공" })
-  @Get("discountrate")
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  async getProductsByDiscountRate(
-    @Query() queryDto: GetProductByDiscountRateInputDto,
-  ) {
-    const { order, limit, exclusiveStartKey, previousPageKey } = queryDto;
-    const query = new GetProductByDiscountRateQuery(order, limit, exclusiveStartKey, previousPageKey);
-    const result = await this.queryBus.execute(query);
+  // @ApiOperation({ summary: "상품 할인률 순 조회" })
+  // @ApiResponse({ status: 200, description: "상품 할인률 순 조회 성공" })
+  // @Get("discountrate")
+  // @ApiBearerAuth()
+  // @UseGuards(JwtAuthGuard)
+  // @ApiBearerAuth()
+  // async getProductsByDiscountRate(
+  //   @Query() queryDto: GetProductByDiscountRateInputDto,
+  // ) {
+  //   const { order, limit, exclusiveStartKey, previousPageKey } = queryDto;
+  //   const query = new GetProductByDiscountRateQuery(order, limit, exclusiveStartKey, previousPageKey);
+  //   const result = await this.queryBus.execute(query);
 
-    return {
-      success: true,
-      message: '해당 상품리스트 조회를 성공했습니다.',
-      data: result.items,
-      lastEvaluatedUrl: result.lastEvaluatedUrl,
-      firstEvaluatedUrl: result.firstEvaluatedUrl,
-      prevPageUrl: result.prevPageUrl,
-      count: result.count
-    };
-  }
+  //   return {
+  //     success: true,
+  //     message: '해당 상품리스트 조회를 성공했습니다.',
+  //     data: result.items,
+  //     lastEvaluatedUrl: result.lastEvaluatedUrl,
+  //     firstEvaluatedUrl: result.firstEvaluatedUrl,
+  //     prevPageUrl: result.prevPageUrl,
+  //     count: result.count
+  //   };
+  // }
 
   @Get('category')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: '카테고리별 제품 조회', description: '지정된 카테고리의 제품을 조회하고 정렬합니다.' })
-  @ApiResponse({ status: 200, description: '성공적으로 제품 목록을 반환함', type: [Object] })
+  @ApiResponse({ status: 200, description: '성공적으로 제품 목록을 반환함', type: GetCategoryQueryOutputDto })
   async findProductsByCategoryAndSort(
     @GetUser() user: JwtPayload,
     @Query() findProductsByCategoryDto: FindProductsByCategoryDto,
-  ) {
+  ): Promise<GetCategoryQueryOutputDto> {
     const { category, sortBy, order, limit, exclusiveStartKey, previousPageKey } = findProductsByCategoryDto;
-    
-    // isCurrent를 true로 설정하여 현재 위치 정보를 가져옵니다.
+
+    // 현재 위치 정보를 가져옵니다.
     const currentLocation = await this.locationViewRepository.findCurrentLocation(user.userId);
     if (!currentLocation) {
       throw new NotFoundException('현재 위치 정보가 설정되어 있지 않습니다.');
     }
-    // 비구조화 할당을 통해 latitude와 longitude를 추출
     const { latitude, longitude } = currentLocation;
 
-    const query = new FindProductsByCategoryQuery(category, sortBy, order, limit, 
-      latitude, longitude, exclusiveStartKey, previousPageKey);
+    const query = new FindProductsByCategoryQuery(
+      category,
+      sortBy,
+      order,
+      Number(limit),
+      latitude,
+      longitude,
+      exclusiveStartKey,
+      previousPageKey
+    );
 
     const result = await this.queryBus.execute(query);
 
     return {
       success: true,
       message: '해당 상품 리스트 조회를 성공했습니다.',
-      data: result.items,
+      items: result.items,
       lastEvaluatedUrl: result.lastEvaluatedUrl,
       firstEvaluatedUrl: result.firstEvaluatedUrl,
       prevPageUrl: result.prevPageUrl,
       count: result.count,
     };
   }
+
+
 
 
   @Get('search')
@@ -313,27 +327,30 @@ export class ProductController {
     };
   }
 
-  // 위치허용 API
-  @Get('nearest')
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: '가까운 상품 조회', description: '메인화면에서 사용자 위치 기반으로 가까운 상품을 조회합니다.' })
-  @ApiResponse({ status: 200, description: '가까운 상품 조회 성공' })
-  @ApiQuery({ name: 'lat', type: Number, description: '위도' })
-  @ApiQuery({ name: 'lon', type: Number, description: '경도' })
-  async getNearestProducts(
-    @GetUser() user: JwtPayload,  
-  ): Promise<any[]> {
-    // 현재 위치 정보를 가져옵니다.
-    const currentLocation = await this.locationViewRepository.findCurrentLocation(user.userId);
-    if (!currentLocation) {
-      throw new NotFoundException('현재 위치 정보가 설정되어 있지 않습니다.');
-    }
-
-    // 현재 위치를 사용하여 가까운 상품을 조회하는 쿼리를 생성합니다.
-    const query = new GetNearestProductsQuery(currentLocation.latitude, currentLocation.longitude);
-    return this.queryBus.execute(query);
-  }
-
-
+  // @Get('category')
+  // @ApiOperation({ summary: 'Find products by category and sort' })
+  // @ApiResponse({ status: 200, description: 'Return a list of products.' })
+  // @ApiResponse({ status: 400, description: 'Bad Request.' })
+  // async findProductsByCategoryAndSort(
+  //   @Query('category') category: Category,
+  //   @Query('sortBy') sortBy: SortByOption,
+  //   @Query('order') order: 'asc' | 'desc',
+  //   @Query('limit') limit: number,
+  //   @Query('exclusiveStartKey') exclusiveStartKey?: string,
+  //   @Query('previousPageKey') previousPageKey?: string,
+  //   @Query('latitude') latitude?: string,
+  //   @Query('longitude') longitude?: string,
+  // ): Promise<ProductQueryResult> {
+  //   const params: FindProductsParams = {
+  //     category,
+  //     sortBy,
+  //     order,
+  //     limit,
+  //     exclusiveStartKey,
+  //     previousPageKey,
+  //     latitude,
+  //     longitude,
+  //   };
+  //   return this.productService.findProductsByCategoryAndSort(params);
+  // }
 }

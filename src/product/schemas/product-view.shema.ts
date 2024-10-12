@@ -117,6 +117,10 @@ export const ProductSchema = new Schema(
       type: Number,
       required: false,
       default: 0,
+    },
+    inventoryUpdatedAt: {
+      type: Date,
+      required: false,
     }
   },
   {

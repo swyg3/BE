@@ -1,7 +1,7 @@
 import { CommandHandler, EventBus, ICommandHandler } from '@nestjs/cqrs';
 import { SaveAddressCommand } from '../impl/save-address.command';
-import { UserLocationRepository } from 'src/location/location.repository';
-import { UserLocation2 } from 'src/location/location.entity';
+import { UserLocationRepository } from 'src/location/repositories/location.repository';
+import { UserLocation2 } from 'src/location/entities/location.entity';
 import { NaverMapsClient } from 'src/shared/infrastructure/database/navermap.config';
 import { UserLocationSavedEvent } from 'src/location/events/impl/location-save-event';
 import { Logger } from '@nestjs/common';

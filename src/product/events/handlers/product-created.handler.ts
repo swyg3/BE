@@ -35,7 +35,8 @@ export class ProductCreatedHandler
         locationX: event.data.locationX.toString(),
         locationY: event.data.locationY.toString(),
         distance: 0, // 초기 거리값은 0으로 설정
-        distanceDiscountScore: 0
+        distanceDiscountScore: 0,
+        inventoryUpdatedAt: new Date(), // 추가: inventoryUpdatedAt 설정
       };
 
       await this.productViewRepository.create(productView);

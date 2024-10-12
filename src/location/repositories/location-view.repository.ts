@@ -38,6 +38,8 @@ export class LocationViewRepository {
         latitude: locationView.latitude.toString(),
         longitude: locationView.longitude.toString(),
         roadAddress: encodeURIComponent(locationView.roadAddress), // roadAddress 인코딩
+        searchTerm: encodeURIComponent(locationView.searchTerm)
+
       });
 
       this.logger.log(`LocationView 생성 성공: ${item.locationId}`);
@@ -165,37 +167,40 @@ export class LocationViewRepository {
     }
   }
 
-  async updateCurrentLocation(userId: string, newCurrentLocationId: string): Promise<LocationView2[]> {
+  async updateCurrentLocation(userId: string, newCurrentLocationId: string): Promise<LocationView2> {
     this.logger.log(`Updating current location for user: ${userId}`);
-  
+
     try {
-        // 1. 사용자의 모든 위치를 조회
-        const userLocations = await this.locationViewModel.query('userId').eq(userId).exec();
-        this.logger.debug(`Found ${userLocations.length} locations for user ${userId}`);
-    
-        // 2. 배치 업데이트 항목 준비
-        let batchUpdates = userLocations.map(location => ({
-            ...location, // 기존 location 객체의 모든 필드를 그대로 복사
-            isCurrent: location.locationId === newCurrentLocationId,
-            updatedAt: new Date(), // ISO 문자열로 변환
-        }));
+      // 1. 사용자의 모든 위치를 조회
+      const userLocations = await this.locationViewModel.query('userId').eq(userId).exec();
+      this.logger.debug(`Found ${userLocations.length} locations for user ${userId}`);
 
-        // 3. 배치 작업 실행
-        const BATCH_SIZE = 25; // DynamoDB의 배치 작업 제한
-        for (let i = 0; i < batchUpdates.length; i += BATCH_SIZE) {
-            const batch = batchUpdates.slice(i, i + BATCH_SIZE);
-            await this.locationViewModel.batchPut(batch);
-        }
-    
-        // 4. 클라이언트 측에서 정렬
-        batchUpdates.sort((a, b) => (b.isCurrent === a.isCurrent) ? 0 : b.isCurrent ? 1 : -1);
+      // 2. 배치 업데이트 항목 준비
+      let batchUpdates = userLocations.map(location => ({
+        ...location,
+        isCurrent: location.locationId === newCurrentLocationId,
+        updatedAt: new Date(),
+      }));
 
-        this.logger.log(`Successfully updated current location for user: ${userId}`);
-        
-        return batchUpdates;
+      // 3. 배치 작업 실행
+      const BATCH_SIZE = 25;
+      for (let i = 0; i < batchUpdates.length; i += BATCH_SIZE) {
+        const batch = batchUpdates.slice(i, i + BATCH_SIZE);
+        await this.locationViewModel.batchPut(batch);
+      }
+
+      // 4. isCurrent가 true인 항목만 찾아서 반환
+      const currentLocation = batchUpdates.find(location => location.isCurrent);
+
+      if (!currentLocation) {
+        throw new Error(`No current location found for user: ${userId}`);
+      }
+
+      this.logger.log(`Successfully updated current location for user: ${userId}`);
+      return currentLocation;
     } catch (error) {
-        this.logger.error(`Failed to update current location for user: ${userId}`, error.stack);
-        throw error;
+      this.logger.error(`Failed to update current location for user: ${userId}`, error.stack);
+      throw error;
     }
-}
+  }
 }

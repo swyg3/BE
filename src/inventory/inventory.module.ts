@@ -22,5 +22,6 @@ const EventsHandlers = [];
     EventSourcingModule,
   ],
   providers: [...CommandHandlers, ...EventsHandlers, InventoryRepository],
+  exports: [InventoryRepository], 
 })
 export class InventoryModule {}
