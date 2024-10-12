@@ -9,6 +9,7 @@ export class CreateOrderCommand {
         public readonly pickupTime: Date,
         public readonly paymentMethod: string,
         public readonly status: string,
-        public readonly items: OrderItemDto[]
+        public readonly items: OrderItemDto[],
+        public readonly memo: string[],
     ) {}
 }

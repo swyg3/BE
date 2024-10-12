@@ -10,12 +10,13 @@ export class GetOrderItemQueryHandler implements IQueryHandler<GetOrderItemQuery
         private readonly orderItemsViewModel: Model<OrderItemsView, { id: string }> // Model 정의 수정
     ) {}
 
-    async execute(query: GetOrderItemQuery): Promise<OrderItemsView[]> {
+    async execute(query: GetOrderItemQuery): Promise<string[]> {
         const result = await this.orderItemsViewModel.query("orderId")
             .using("OrderIdIndex")
             .eq(query.orderId)
             .exec();
-
-        return result;
+        
+        const productIds = result.map(item => item.productId);
+        return productIds;
     }
 }

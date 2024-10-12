@@ -22,6 +22,7 @@ export class CreateOrderEvent implements BaseEvent {
             pickupTime: Date,
             createdAt: Date,
             updatedAt: Date,
+            memo: string[],
         },
         public readonly version: number,
     ) {}
