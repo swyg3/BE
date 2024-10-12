@@ -25,6 +25,7 @@ export class CreateOrderAggregate extends AggregateRoot {
         pickupTime: Date,
         createdAt: Date,
         updatedAt: Date,
+        memo: string[],
     ) {
         this.version++;
         const event = new CreateOrderEvent(
@@ -40,6 +41,7 @@ export class CreateOrderAggregate extends AggregateRoot {
                 pickupTime,
                 createdAt,
                 updatedAt,
+                memo,
             },
             this.version,
         );

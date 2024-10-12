@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsArray, IsDate, IsNotEmpty, IsNumber, IsString, ValidateNested } from "class-validator";
+import { IsArray, IsDate, IsNotEmpty, IsNumber, IsOptional, IsString, ValidateNested } from "class-validator";
 import { OrderItemDto } from 'src/order-items/dtos/order-items.dto';
 
 export class CreateOrderDto {
@@ -28,4 +28,9 @@ export class CreateOrderDto {
     @ValidateNested({ each: true })
     @Type(() => OrderItemDto)
     items: OrderItemDto[];
+
+    @IsOptional()
+    @IsArray()
+    @IsString({ each: true })
+    memo: string[];
 }

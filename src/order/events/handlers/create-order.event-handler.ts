@@ -14,6 +14,7 @@ export interface OrderView {
     createdAt: Date;
     updatedAt: Date;
     totalPrice: number;
+    memo: string[];
 }
 
 export interface OrderItemsView {
@@ -51,6 +52,7 @@ export class CreateOrderEventHandler implements IEventHandler<CreateOrderEvent> 
             paymentMethod: event.data.paymentMethod,
             createdAt: new Date(),
             updatedAt: new Date(),
+            memo: event.data.memo,
         };
 
         // DynamoDB에 주문 저장
