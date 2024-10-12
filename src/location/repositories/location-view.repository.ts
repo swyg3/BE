@@ -38,6 +38,8 @@ export class LocationViewRepository {
         latitude: locationView.latitude.toString(),
         longitude: locationView.longitude.toString(),
         roadAddress: encodeURIComponent(locationView.roadAddress), // roadAddress 인코딩
+        searchTerm: encodeURIComponent(locationView.searchTerm)
+
       });
 
       this.logger.log(`LocationView 생성 성공: ${item.locationId}`);
