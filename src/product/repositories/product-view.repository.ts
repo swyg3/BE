@@ -5,6 +5,7 @@ import { ConfigService } from "@nestjs/config/dist/config.service";
 import { DistanceCalculator } from "../util/distance-calculator";
 import { Polygon } from "typeorm";
 import { Category } from "../product.category";
+import { RedisGeo } from "../util/geoadd";
 
 export enum SortByOption {
   DiscountRate = 'discountRate',
@@ -46,7 +47,8 @@ export class ProductViewRepository {
       ProductView,
       { productId: string }
     >,
-    private readonly configService: ConfigService
+    private readonly configService: ConfigService,
+    private readonly redisGeo: RedisGeo,
   ) { }
 
   // 상품 생성
@@ -263,33 +265,115 @@ export class ProductViewRepository {
     return this.productViewModel;
   }
 
-  async fetchItemsBySearchTerm(
-  searchTerm: string,
-  limit: number,
-  exclusiveStartKey?: Record<string, any>
-): Promise<{ items: ProductView[], lastEvaluatedKey: Record<string, any> | undefined }> {
-  const lowercaseSearchTerm = searchTerm.toLowerCase().trim();
+ 
+  async fetchItemsBySearchTerm({
+    searchTerm,
+    sortBy,
+    order,
+    limit,
+    exclusiveStartKey,
+    latitude,
+    longitude
+  }: {
+    searchTerm: string;
+    sortBy: SortByOption;
+    order: 'asc' | 'desc';
+    limit: number;
+    exclusiveStartKey?: Record<string, any>;
+    latitude?: string;
+    longitude?: string;
+  }): Promise<{ items: ProductView[]; lastEvaluatedKey: any }> {
+    const lowercaseSearchTerm = searchTerm.toLowerCase().trim();
   
-  try {
-    let query = this.productViewModel.query('GSI_KEY').eq('PRODUCT')
-      .and().where('name').contains(lowercaseSearchTerm)
-      .limit(Number(limit));
-    
+    let query = this.productViewModel.query('name').contains(lowercaseSearchTerm);
+  
+    // Use the appropriate index based on the sortBy option
+    switch (sortBy) {
+      case SortByOption.DiscountRate:
+        query = query.using('NameDiscountRateIndex');
+        break;
+      case SortByOption.Distance:
+        query = query.using('NameDistanceIndex');
+        break;
+      case SortByOption.DistanceDiscountScore:
+        query = query.using('NameDistanceDiscountIndex');
+        break;
+      default:
+        query = query.using('GSI_KEY_Index');
+    }
+  
+    // Apply sorting
+    query = query.sort(order === 'desc' ? SortOrder.descending : SortOrder.ascending);
+  
+    // Apply pagination
+    query = query.limit(limit);
     if (exclusiveStartKey) {
       query = query.startAt(exclusiveStartKey);
     }
-    
+  
     const result = await query.exec();
-    
+    let items = result as ProductView[];
+  
+    // Calculate distances if needed
+    if ((sortBy === SortByOption.Distance || sortBy === SortByOption.DistanceDiscountScore) && latitude && longitude) {
+      items = await this.calculateDistances(items, parseFloat(latitude), parseFloat(longitude));
+    }
+  
+    // Apply in-memory sorting if needed
+    if (sortBy === SortByOption.Distance || sortBy === SortByOption.DistanceDiscountScore) {
+      items = this.sortItems(items, sortBy, order);
+    }
+  
     return {
-      items: result as ProductView[],
+      items,
       lastEvaluatedKey: result.lastKey
     };
-  } catch (error) {
-    console.error('Error fetching items by search term:', error);
-    throw error;
   }
-}
+  
+  private async calculateDistances(items: ProductView[], userLatitude: number, userLongitude: number): Promise<ProductView[]> {
+    // Implement distance calculation using Redis GEO
+    // This is a placeholder implementation
+    return Promise.all(items.map(async item => {
+      if (item.locationX && item.locationY) {
+        try {
+          const distance = await this.redisGeo.calculateDistance(
+            userLatitude,
+            userLongitude,
+            Number(item.locationY),
+            Number(item.locationX)
+          );
+          return { ...item, distance };
+        } catch (error) {
+          return { ...item, distance: Infinity };
+        }
+      }
+      return item;
+    }));
+  }
+  
+  private sortItems(items: ProductView[], sortBy: SortByOption, order: 'asc' | 'desc'): ProductView[] {
+    return items.sort((a, b) => {
+      let comparison = 0;
+      switch (sortBy) {
+        case SortByOption.Distance:
+          comparison = (a.distance || Infinity) - (b.distance || Infinity);
+          break;
+        case SortByOption.DistanceDiscountScore:
+          const scoreA = this.calculateRecommendationScore(a);
+          const scoreB = this.calculateRecommendationScore(b);
+          comparison = scoreB - scoreA;
+          break;
+      }
+      return order === 'desc' ? -comparison : comparison;
+    });
+  }
+  
+  private calculateRecommendationScore(product: ProductView): number {
+    const distanceScore = 1 / (1 + (product.distance || Infinity));
+    const discountScore = (product.discountRate || 0) / 100;
+    const score = (distanceScore + discountScore) / 2;
+    return Math.round(score * 100);
+  }
 
   //   searchTerm: string;
   //   sortBy: SortByOption;
