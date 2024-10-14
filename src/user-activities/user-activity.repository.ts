@@ -1,7 +1,7 @@
 
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Raw, Repository } from 'typeorm';
 import { Event } from "../shared/infrastructure/event-sourcing";
 
 @Injectable()
@@ -14,9 +14,9 @@ export class UserActivityRepository {
   async getUserOrderCount(userId: string): Promise<number> {
     return this.eventRepository.count({
       where: {
-        aggregateId: userId,
-        aggregateType: 'user',
         eventType: 'OrderCreated',
+        aggregateType: 'Order',
+        eventData: Raw(alias => `${alias}->>'userId' = :userId`, { userId })
       },
     });
   }

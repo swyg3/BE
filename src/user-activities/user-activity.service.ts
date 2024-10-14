@@ -1,18 +1,26 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { UserActivityRepository } from "./user-activity.repository";
 
 @Injectable()
 export class UserActivityService {
+  private readonly logger = new Logger(UserActivityService.name);
+  
   constructor(
     private readonly userActivityRepository: UserActivityRepository
   ) {}
 
   async getUserLevelAndTitle(userId: string) {
-    const orderCount = await this.userActivityRepository.getUserOrderCount(userId);
-    const level = this.calculateLevel(orderCount);
-    const title = this.calculateTitle(level);
+    try {
+      const orderCount = await this.userActivityRepository.getUserOrderCount(userId);
+      const level = this.calculateLevel(orderCount);
+      const title = this.calculateTitle(level);
 
-    return { userId, orderCount, level, title };
+      this.logger.log(`User ${userId} has ${orderCount} orders, level ${level}, title "${title}"`);
+      return { userId, orderCount, level, title };
+    } catch (error) {
+      this.logger.error(`Failed to get user level and title for user ${userId}: ${error.message}`);
+      throw new Error('Failed to get user level and title');
+    }
   }
 
   private calculateLevel(orderCount: number): number {
