@@ -306,7 +306,7 @@ export class ProductViewRepository {
     query = query.sort(order === 'desc' ? SortOrder.descending : SortOrder.ascending);
   
     // Apply pagination
-    query = query.limit(limit);
+    query = query.limit(Number(limit));
     if (exclusiveStartKey) {
       query = query.startAt(exclusiveStartKey);
     }
