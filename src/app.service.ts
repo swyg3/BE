@@ -1,9 +1,9 @@
 import { Injectable } from "@nestjs/common";
-import { CustomMetricsService } from "./metrics/custom-metrics.service";
+import { PrometheusService } from "./metrics/prometheus.service";
 
 @Injectable()
 export class AppService {
-  constructor(private customMetricsService: CustomMetricsService) {}
+  constructor(private prometheusService: PrometheusService) {}
 
   getHello(): string {
     return "Hello World!";
@@ -26,7 +26,7 @@ export class AppService {
     const endTime = Date.now();
     const duration = endTime - startTime;
 
-    this.customMetricsService.observeHeavyWorkDuration(duration / 1000);
+    this.prometheusService.observeHeavyWorkDuration(duration / 1000);
 
     return {
       result: `Heavy work completed. Result: ${result}`,

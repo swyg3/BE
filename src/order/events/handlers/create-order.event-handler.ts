@@ -3,6 +3,7 @@ import { EventsHandler, IEventHandler } from "@nestjs/cqrs";
 import { InjectModel, Model } from "nestjs-dynamoose";
 import { v4 as uuidv4 } from 'uuid';
 import { CreateOrderEvent } from "../create-order.event";
+import { EventBusService } from "src/shared/infrastructure/event-sourcing/event-bus.service";
 
 export interface OrderView {
     id: string;
@@ -35,10 +36,14 @@ export class CreateOrderEventHandler implements IEventHandler<CreateOrderEvent> 
         private readonly orderViewModel: Model<OrderView, { id: string }>,
         @InjectModel("OrderItemsView")
         private readonly orderItemsViewModel: Model<OrderItemsView, { id: string }>,
+        private readonly eventBusService: EventBusService
     ) {}
 
     async handle(event: CreateOrderEvent) {
         this.logger.log(`주문 생성중!!`);
+
+        // PostgreSQL에 이벤트 저장
+        await this.eventBusService.publishAndSave(event);
 
         const pickupTime = new Date(event.data.pickupTime);
 
