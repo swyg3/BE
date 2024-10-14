@@ -58,10 +58,9 @@ export class OrderController {
             paymentMethod: "CASH",
             status: "PENDING",
             items: [
-                { productId: "22a1b7b1-546d-4f1e-95b4-21b3583a7ef9", quantity: 2, price: 50 },
                 { productId: "3d32b618-7c61-4016-8517-0eee204de8c5", quantity: 1, price: 50 },
             ],
-            memo: ["메모1", "메모2"],
+            memo: [true, true, true],
             },
             summary: "유효한 주문 생성 정보",
         },
@@ -104,8 +103,8 @@ export class OrderController {
                         },
                         memo: {
                             type: "array",
-                            items: { type: "string" },
-                            example: ["메모1", "메모2"],
+                            items: { type: "boolean" },
+                            example: [true, true, true],
                         },
                         items: {
                             type: "array",
@@ -181,6 +180,11 @@ export class OrderController {
                 memo,
             ),
         );
+
+        return {
+            success: true,
+            data: result,
+        };
     } catch (error) {
     this.logger.error(`Error creating order: ${error.message}`);
     throw new HttpException(
@@ -215,8 +219,8 @@ export class OrderController {
                             paymentMethod: { type: "string", example: "CASH" },
                             memo: {
                                 type: "array",
-                                items: { type: "string" },
-                                example: ["메모1", "메모2"],
+                                items: { type: "boolean" },
+                                example: [true, true, true],
                             },
                             userId: { type: "string", example: "63f030cb-977a-4ae2-94c9-5fba1c3180e4" },
                             status: { type: "string", example: "PENDING" },
@@ -260,7 +264,7 @@ export class OrderController {
                         pickupTime: "2024-09-10 03:00:00",
                         totalPrice: 100,
                         paymentMethod: "CASH",
-                        memo: ["메모1", "메모2"],
+                        memo: [true, true, true],
                         id: "59bf69d3-10d7-4043-964d-e69f78d4b0b3",
                         userId: "63f030cb-977a-4ae2-94c9-5fba1c3180e4",
                         status: "PENDING",
@@ -370,8 +374,8 @@ export class OrderController {
                             paymentMethod: { type: "string", example: "CASH" },
                             memo: {
                                 type: "array",
-                                items: { type: "string" },
-                                example: ["메모1", "메모2"],
+                                items: { type: "boolean" },
+                                example: [true, true, true],
                             },
                             userId: { type: "string", example: "63f030cb-977a-4ae2-94c9-5fba1c3180e4" },
                             status: { type: "string", example: "PENDING" },
@@ -415,7 +419,7 @@ export class OrderController {
                         pickupTime: "2024-09-10 03:00:00",
                         totalPrice: 100,
                         paymentMethod: "CASH",
-                        memo: ["메모1", "메모2"],
+                        memo: [true, true, true],
                         id: "59bf69d3-10d7-4043-964d-e69f78d4b0b3",
                         userId: "63f030cb-977a-4ae2-94c9-5fba1c3180e4",
                         status: "PENDING",
