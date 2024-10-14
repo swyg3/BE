@@ -9,6 +9,7 @@ import {
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { Event } from "../shared/infrastructure/event-sourcing";
 import { MetricsRepository } from "./metrics.repository";
+import { PrometheusService } from "./prometheus.service";
 
 @Module({
   imports: [PrometheusModule.register(),TypeOrmModule.forFeature([Event])],
@@ -33,6 +34,6 @@ import { MetricsRepository } from "./metrics.repository";
       buckets: [1, 2, 5, 10, 20, 30],
     }),
   ],
-  exports: [MetricsService],
+  exports: [MetricsService, PrometheusService],
 })
 export class MetricsModule {}

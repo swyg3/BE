@@ -1,23 +1,20 @@
 import { Controller, Get, Query } from "@nestjs/common";
-import { PrometheusController } from "@willsoto/nestjs-prometheus";
 import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { MetricsService } from "./metrics.service";
-import { CustomResponse } from "../shared/interfaces/api-response.interface";
+import { PrometheusService } from "./prometheus.service";
 
 @ApiTags("Metrics")
 @Controller("metrics")
-export class MetricsController extends PrometheusController {
+export class MetricsController {
   constructor(
     private readonly metricsService: MetricsService,
-    ...args: ConstructorParameters<typeof PrometheusController>
-  ) {
-    super(...args);
-  }
+    private readonly prometheusService: PrometheusService
+  ) {}
 
   @Get('daily-active-users')
   @ApiOperation({ summary: 'Get daily active users' })
   @ApiResponse({ status: 200, description: 'Daily active users count' })
-  async getDailyActiveUsers(@Query('date') date: string): Promise<CustomResponse> {
+  async getDailyActiveUsers(@Query('date') date: string) {
     const data = await this.metricsService.getDailyActiveUsers(date);
     return { success: true, data };
   }
@@ -29,7 +26,7 @@ export class MetricsController extends PrometheusController {
     @Query('productId') productId: string,
     @Query('start') start: string,
     @Query('end') end: string,
-  ): Promise<CustomResponse> {
+  ) {
     const data = await this.metricsService.getProductViews(productId, start, end);
     return { success: true, data };
   }
@@ -40,7 +37,7 @@ export class MetricsController extends PrometheusController {
   async getOrderCompletionRate(
     @Query('start') start: string,
     @Query('end') end: string,
-  ): Promise<CustomResponse> {
+  ) {
     const data = await this.metricsService.getOrderCompletionRate(start, end);
     return { success: true, data };
   }
@@ -51,7 +48,7 @@ export class MetricsController extends PrometheusController {
   async getUserJourney(
     @Query('start') start: string,
     @Query('end') end: string,
-  ): Promise<CustomResponse> {
+  ) {
     const data = await this.metricsService.getUserJourney(start, end);
     return { success: true, data };
   }
@@ -59,7 +56,7 @@ export class MetricsController extends PrometheusController {
   @Get('churn-rate')
   @ApiOperation({ summary: 'Get churn rate' })
   @ApiResponse({ status: 200, description: 'Churn rate' })
-  async getChurnRate(@Query('period') period: 'daily' | 'weekly' | 'monthly'): Promise<CustomResponse> {
+  async getChurnRate(@Query('period') period: 'daily' | 'weekly' | 'monthly') {
     const data = await this.metricsService.getChurnRate(period);
     return { success: true, data };
   }
