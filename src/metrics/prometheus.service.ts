@@ -3,8 +3,8 @@ import { InjectMetric } from "@willsoto/nestjs-prometheus";
 import { Counter, Histogram } from "prom-client";
 
 @Injectable()
-export class CustomMetricsService {
-  private readonly logger = new Logger(CustomMetricsService.name);
+export class PrometheusService {
+  private readonly logger = new Logger(PrometheusService.name);
 
   constructor(
     @InjectMetric("http_requests_total")
@@ -12,7 +12,7 @@ export class CustomMetricsService {
     @InjectMetric("http_request_duration_seconds")
     private httpRequestDurationHistogram: Histogram<string>,
     @InjectMetric("heavy_work_duration")
-    private heavyWorkDurationHistogram: Histogram<string>,
+    private heavyWorkDurationHistogram: Histogram<string>
   ) {}
 
   incrementHttpRequests(method: string, path: string, statusCode: number) {
