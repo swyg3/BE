@@ -16,7 +16,7 @@ export class UserActivityRepository {
       where: {
         aggregateId: userId,
         aggregateType: 'user',
-        eventType: 'CreateOrderEvent',
+        eventType: 'OrderCreated',
       },
     });
   }
