@@ -258,9 +258,39 @@ export class ProductViewRepository {
     } else {
       return this.productViewModel.query('category').eq(category).exec();
     }
- 
+  }
+  getModel() {
+    return this.productViewModel;
+  }
 
-  // async searchProducts(param: {
+  async fetchItemsBySearchTerm(
+  searchTerm: string,
+  limit: number,
+  exclusiveStartKey?: Record<string, any>
+): Promise<{ items: ProductView[], lastEvaluatedKey: Record<string, any> | undefined }> {
+  const lowercaseSearchTerm = searchTerm.toLowerCase().trim();
+  
+  try {
+    let query = this.productViewModel.query('GSI_KEY').eq('PRODUCT')
+      .and().where('name').contains(lowercaseSearchTerm)
+      .limit(limit);
+    
+    if (exclusiveStartKey) {
+      query = query.startAt(exclusiveStartKey);
+    }
+    
+    const result = await query.exec();
+    
+    return {
+      items: result as ProductView[],
+      lastEvaluatedKey: result.lastKey
+    };
+  } catch (error) {
+    console.error('Error fetching items by search term:', error);
+    throw error;
+  }
+}
+
   //   searchTerm: string;
   //   sortBy: SortByOption;
   //   order: 'asc' | 'desc';
@@ -380,4 +410,3 @@ export class ProductViewRepository {
  
 }
 
-}
