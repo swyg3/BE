@@ -17,6 +17,6 @@ export class GetLatestNotificationsHandler
     query: GetLatestNotificationsQuery,
   ): Promise<NotificationView[]> {
     const { userId } = query;
-    return this.notificationViewRepository.findLatestByUserId(userId, 5);
+    return this.notificationViewRepository.findLatestByUserId(userId, 10);
   }
 }
