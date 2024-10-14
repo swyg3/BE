@@ -42,9 +42,6 @@ export class CreateOrderEventHandler implements IEventHandler<CreateOrderEvent> 
     async handle(event: CreateOrderEvent) {
         this.logger.log(`주문 생성중!!`);
 
-        // PostgreSQL에 이벤트 저장
-        // await this.eventBusService.publishAndSave(event);
-
         const pickupTime = new Date(event.data.pickupTime);
 
         const newOrder: OrderView = {
