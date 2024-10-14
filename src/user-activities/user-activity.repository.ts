@@ -18,13 +18,10 @@ export class UserActivityRepository {
     .where('"eventType" = :eventType', { eventType: 'OrderCreated' })
     .andWhere('"aggregateType" = :aggregateType', { aggregateType: 'Order' })
     .andWhere('"eventData"::jsonb->>\'userId\' = :userId', { userId });
-    // 로깅을 위해 SQL 쿼리와 파라미터 출력
-    this.logger.debug(`Executed SQL: ${queryBuilder.getQuery()}`);
-    this.logger.debug(`Parameters: ${JSON.stringify(queryBuilder.getParameters())}`);
 
     try {
       const count = await queryBuilder.getCount();
-      this.logger.debug(`Order count for user ${userId}: ${count}`);
+      this.logger.log(`Order count for user ${userId}: ${count}`);
       return count;
     } catch (error) {
       this.logger.error(`Error getting order count for user ${userId}: ${error.message}`);
