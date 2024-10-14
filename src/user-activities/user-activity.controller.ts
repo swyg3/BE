@@ -29,9 +29,11 @@ export class UserActivityController {
       }
     }
   })
+  @ApiResponse({ status: 400, description: '잘못된 요청' })
+  @ApiResponse({ status: 500, description: '서버 오류' })
   async getUserLevelAndTitle(@Param('userId') userId: string) {
-    const result = await this.userActivityService.getUserLevelAndTitle(userId);
-    return { success: true, data: result };
+      const result = await this.userActivityService.getUserLevelAndTitle(userId);
+      return { success: true, data: result };
   }
 
   @Get('history/:userId')
