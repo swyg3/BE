@@ -26,9 +26,6 @@ export class Order {
     @Column({ type: 'timestamp', name: 'created_at', default: () => 'CURRENT_TIMESTAMP' })
     createdAt: Date;
 
-    @Column({ type: 'simple-array', name: 'memo', nullable: true, transformer: {
-        to: (value: boolean[]): string => value ? value.map(v => (v ? '1' : '0')).join(',') : '',
-        from: (value: string): boolean[] => value.split(',').map(v => v === '1'),
-    }, })
+    @Column({ type: 'boolean', array: true, name: 'memo', nullable: true })
     memo: boolean[];
 }

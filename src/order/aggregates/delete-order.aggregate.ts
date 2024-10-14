@@ -26,6 +26,7 @@ export class DeleteOrderAggregate extends AggregateRoot {
         pickupTime: Date,
         createdAt: Date,
         updatedAt: Date,
+        memo: boolean[],
     ) {
         this.version++;
         const event = new DeleteOrderEvent(
@@ -41,6 +42,7 @@ export class DeleteOrderAggregate extends AggregateRoot {
                 pickupTime,
                 createdAt,
                 updatedAt,
+                memo,
             },
             this.version,
         );
