@@ -273,7 +273,7 @@ export class ProductViewRepository {
   try {
     let query = this.productViewModel.query('GSI_KEY').eq('PRODUCT')
       .and().where('name').contains(lowercaseSearchTerm)
-      .limit(limit);
+      .limit(Number(limit));
     
     if (exclusiveStartKey) {
       query = query.startAt(exclusiveStartKey);
