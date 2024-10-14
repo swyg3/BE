@@ -1,9 +1,11 @@
+import { Product } from "src/product/entities/product.entity";
 import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
-  CreateDateColumn,
   UpdateDateColumn,
+  OneToOne,
+  JoinColumn,
 } from "typeorm";
 
 @Entity("inventory")

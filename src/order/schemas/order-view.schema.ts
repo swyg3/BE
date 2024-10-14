@@ -32,6 +32,14 @@ export const OrderViewSchema = new Schema(
             type: String,
             required: true,
         },
+        totalPrice: {
+            type: Number,
+            required: true,
+        },
+        memo: {
+            type: Array,
+            schema: [String],
+        },
     },
     {
         timestamps: {
