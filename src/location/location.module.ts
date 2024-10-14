@@ -15,10 +15,16 @@ import { SaveAddressHandler } from './commands/handlers/save-address.handler';
 import { CurrentLocationSetHandler } from './events/handlers/current-location-set.handler';
 import { UpdateCurrentLocationHandler } from './commands/handlers/set-current-location.handler';
 import { LocationResultCache } from './caches/location-cache';
+import { FirstAddressInsertCommandHandler } from './commands/handlers/first-address-insert.handler';
+import { UserRepository } from 'src/users/repositories/user.repository';
+import { EventBusService } from 'src/shared/infrastructure/event-sourcing/event-bus.service';
+import { NaverMapsClient } from 'src/shared/infrastructure/database/navermap.config';
+import { UsersModule } from 'src/users/users.module';
 
 const CommandHandlers = [
   SaveAddressHandler,
-  UpdateCurrentLocationHandler
+  UpdateCurrentLocationHandler,
+  FirstAddressInsertCommandHandler
 ];
 const EventsHandlers = [
   UserLocationSavedHandler,
@@ -33,6 +39,7 @@ const QuerysHandlers = [
   imports: [
     forwardRef(() => ProductModule),
     CqrsModule,
+    UsersModule,
     TypeOrmModule.forFeature([UserLocation2]),
     DynamooseModule.forFeature([
       { name: "LocationView2", schema: UserLocation2Schema },
@@ -44,12 +51,17 @@ const QuerysHandlers = [
     UserLocationRepository,
     LocationViewRepository,
     LocationResultCache,
+    UserRepository,
+    EventBusService,
+    NaverMapsClient,
     ...CommandHandlers,
     ...EventsHandlers,
     ...QuerysHandlers,
   ],
   exports: [
     UserLocationRepository,
-    LocationViewRepository],
+    LocationViewRepository,
+    UserRepository,
+  ],
 })
 export class LocationModule { }

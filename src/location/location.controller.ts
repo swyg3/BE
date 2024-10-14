@@ -14,6 +14,7 @@ import { SaveAddressCommand } from './commands/impl/save-address.command';
 import { GetAllAddressesQuery } from './queries/impl/get-all-addresses.query';
 import { SetCurrentLocationCommand } from './commands/impl/set-current-location.command';
 import { LocationResultCache } from './caches/location-cache';
+import { FirstAddressInsertCommand } from './commands/impl/first-address-insert-command';
 
 @ApiTags('locations')
 @Controller('locations')
@@ -26,20 +27,22 @@ export class LocationController {
     @Inject(LocationResultCache) private cache: LocationResultCache,
   ) {}
 
-  @Put('current/insert')
-  @ApiOperation({ summary: '사용자 진입시 현재 위치 설정' })
-  @ApiResponse({ status: 200, description: '현재 위치 설정 성공' })
+  @Put('first/address/insert')
+  @ApiOperation({ summary: '사용자 GPS 동의 및 현재 위치 업데이트' })
+  @ApiResponse({ status: 200, description: 'GPS 동의 및 현재 위치 업데이트 성공' })
   @ApiResponse({ status: 400, description: '잘못된 요청' })
-  async createCurrentLocation(
+  async updateLocationConsent(
     @GetUser() user: JwtPayload,
     @Body() locationDataDto: LocationDataDto,
   ) {
-    const { longitude, latitude } = locationDataDto;
+    const { longitude, latitude, agree } = locationDataDto;
+    
+    // GPS 동의 및 위치 업데이트 명령 실행
     return this.commandBus.execute(
-      new AddCurrentLocationCommand(user.userId, longitude, latitude, true, true)
+      new FirstAddressInsertCommand(user.userId, longitude, latitude, agree)
     );
+  
   }
-
   // @Get('current')
   // @ApiOperation({ summary: '현재 선택된 위치 조회' })
   // @ApiResponse({ 
