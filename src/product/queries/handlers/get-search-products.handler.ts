@@ -1,10 +1,10 @@
 import { IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 import { Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { ProductView, ProductViewRepository, SortByOption } from "src/product/repositories/product-view.repository";
-import { RedisGeo } from "src/product/util/geoadd";
 import { SearchProductsQuery } from "../impl/get-search-products";
 import { SearchProductsQueryOutputDto } from "src/product/dtos/get-search-out.dto";
+import { ProductView, ProductViewRepository, SortByOption } from "src/product/repositories/product-view.repository";
+import { RedisGeo } from "src/product/util/geoadd";
 
 @QueryHandler(SearchProductsQuery)
 export class SearchProductsHandler implements IQueryHandler<SearchProductsQuery> {
@@ -17,33 +17,30 @@ export class SearchProductsHandler implements IQueryHandler<SearchProductsQuery>
 
   async execute(query: SearchProductsQuery): Promise<SearchProductsQueryOutputDto> {
     this.logger.log(`Executing search products query with parameters: ${JSON.stringify(query)}`);
-    const { searchTerm, sortBy, order, limit, exclusiveStartKey, latitude, longitude } = query;
+    const { searchTerm } = query;
 
     if (!searchTerm) {
       throw new Error("searchTerm is required.");
     }
 
     // 검색어로 아이템 조회
-    const { items, lastEvaluatedKey } = await this.productViewRepository.fetchItemsBySearchTerm({
-      searchTerm,
-      sortBy,
-      order,
-      limit,
-      exclusiveStartKey: exclusiveStartKey ? JSON.parse(decodeURIComponent(exclusiveStartKey)) : undefined,
-      latitude,
-      longitude
-    });
+    const items = await this.productViewRepository.fetchItemsBySearchTerm(searchTerm);
     
     const processedItems = await this.processItems(items, query);
-    const formattedResult = this.formatResult({ items: processedItems, lastEvaluatedKey }, query);
+    const paginatedResult = this.paginateItems(processedItems, query.limit, query.exclusiveStartKey);
+    const formattedResult = this.formatResult(paginatedResult, query);
 
     this.logger.log(`Query result: ${formattedResult.count} items found`);
 
     return formattedResult;
   }
 
-
-  private async processItems(items: ProductView[], query: SearchProductsQuery): Promise<ProductView[]> {
+  private async processItems(items: ProductView[], query: {
+    sortBy: SortByOption;
+    order: 'asc' | 'desc';
+    latitude?: string;
+    longitude?: string;
+  }): Promise<ProductView[]> {
     let processedItems = items;
 
     if (this.shouldCalculateDistance(query.sortBy, query.latitude, query.longitude)) {
@@ -53,7 +50,7 @@ export class SearchProductsHandler implements IQueryHandler<SearchProductsQuery>
     return this.sortItems(processedItems, query.sortBy, query.order);
   }
 
-  private async calculateDistances(
+  async calculateDistances(
     items: ProductView[], 
     userLatitude: number, 
     userLongitude: number, 
@@ -137,7 +134,7 @@ export class SearchProductsHandler implements IQueryHandler<SearchProductsQuery>
   ): SearchProductsQueryOutputDto {
     const { searchTerm, sortBy, order, limit, latitude, longitude, previousPageKey } = query;
     const { items, lastEvaluatedKey } = result;
-  
+
     const appUrl = this.configService.get<string>('APP_URL');
     const createUrlWithKey = (key: Record<string, any> | null, prevKey: string | null = null) => {
       if (!key || !appUrl) return null;
@@ -154,17 +151,17 @@ export class SearchProductsHandler implements IQueryHandler<SearchProductsQuery>
       }
       return baseUrl.toString();
     };
-  
+
     const firstEvaluatedKey = items.length > 0 ? { productId: items[0].productId } : null;
     const firstEvaluatedUrl = createUrlWithKey(firstEvaluatedKey, previousPageKey);
     const lastEvaluatedUrl = lastEvaluatedKey ? createUrlWithKey(lastEvaluatedKey, JSON.stringify(firstEvaluatedKey)) : null;
-  
+
     let prevPageUrl: string | null = null;
     if (previousPageKey) {
       const prevKey = JSON.parse(decodeURIComponent(previousPageKey));
       prevPageUrl = createUrlWithKey(prevKey, null);
     }
-  
+
     return {
       success: true,
       message: '검색된 상품 리스트 조회를 성공했습니다.',
