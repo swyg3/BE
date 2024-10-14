@@ -15,10 +15,9 @@ export class UserActivityRepository {
 
   async getUserOrderCount(userId: string): Promise<number> {
     const queryBuilder = this.eventRepository.createQueryBuilder('event')
-      .where('event.eventType = :eventType', { eventType: 'OrderCreated' })
-      .andWhere('event.aggregateType = :aggregateType', { aggregateType: 'Order' })
-      .andWhere('event.eventData->>\'userId\' = :userId', { userId });
-
+    .where('"eventType" = :eventType', { eventType: 'OrderCreated' })
+    .andWhere('"aggregateType" = :aggregateType', { aggregateType: 'Order' })
+    .andWhere('"eventData"::jsonb->>\'userId\' = :userId', { userId });
     // 로깅을 위해 SQL 쿼리와 파라미터 출력
     this.logger.debug(`Executed SQL: ${queryBuilder.getQuery()}`);
     this.logger.debug(`Parameters: ${JSON.stringify(queryBuilder.getParameters())}`);
