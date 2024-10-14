@@ -1,9 +1,24 @@
 import { Injectable } from "@nestjs/common";
 import { MetricsRepository } from "./metrics.repository";
+import { PrometheusService } from "./prometheus.service";
 
 @Injectable()
 export class MetricsService {
-  constructor(private readonly metricsRepository: MetricsRepository) {}
+  constructor(private readonly metricsRepository: MetricsRepository,
+    private readonly prometheusService: PrometheusService
+  ) {}
+
+  incrementHttpRequests(method: string, path: string, statusCode: number) {
+    this.prometheusService.incrementHttpRequests(method, path, statusCode);
+  }
+
+  observeHttpRequestDuration(method: string, path: string, statusCode: number, duration: number) {
+    this.prometheusService.observeHttpRequestDuration(method, path, statusCode, duration);
+  }
+
+  observeHeavyWorkDuration(duration: number) {
+    this.prometheusService.observeHeavyWorkDuration(duration);
+  }
 
   async getDailyActiveUsers(date: string) {
     return this.metricsRepository.getDailyActiveUsers(date);

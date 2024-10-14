@@ -1,52 +1,26 @@
-import {
-  Injectable,
-  NestInterceptor,
-  ExecutionContext,
-  CallHandler,
-} from "@nestjs/common";
-import { Observable, tap } from "rxjs";
-import { MetricsService } from "./metrics.service";
+import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@nestjs/common';
+import { Observable } from 'rxjs';
+import { tap } from 'rxjs/operators';
+import { MetricsService } from './metrics.service';
 
 @Injectable()
 export class MetricsInterceptor implements NestInterceptor {
-  constructor(private customMetricsService: MetricsService) {}
+  constructor(private metricsService: MetricsService) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
-    const request = context.switchToHttp().getRequest();
-    const { method, path } = request;
-    const start = Date.now();
+    const now = Date.now();
+    const req = context.switchToHttp().getRequest();
+    const method = req.method;
+    const url = req.url;
 
     return next.handle().pipe(
-      tap({
-        next: () => {
-          const response = context.switchToHttp().getResponse();
-          const duration = (Date.now() - start) / 1000;
-          this.customMetricsService.incrementHttpRequests(
-            method,
-            path,
-            response.statusCode,
-          );
-          this.customMetricsService.observeHttpRequestDuration(
-            method,
-            path,
-            response.statusCode,
-            duration,
-          );
-        },
-        error: (error) => {
-          const duration = (Date.now() - start) / 1000;
-          this.customMetricsService.incrementHttpRequests(
-            method,
-            path,
-            error.status || 500,
-          );
-          this.customMetricsService.observeHttpRequestDuration(
-            method,
-            path,
-            error.status || 500,
-            duration,
-          );
-        },
+      tap(() => {
+        const res = context.switchToHttp().getResponse();
+        const statusCode = res.statusCode;
+        const duration = Date.now() - now;
+
+        this.metricsService.incrementHttpRequests(method, url, statusCode);
+        this.metricsService.observeHttpRequestDuration(method, url, statusCode, duration);
       }),
     );
   }

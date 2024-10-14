@@ -12,9 +12,15 @@ import { MetricsRepository } from "./metrics.repository";
 import { PrometheusService } from "./prometheus.service";
 
 @Module({
-  imports: [PrometheusModule.register(),TypeOrmModule.forFeature([Event])],
+  imports: [PrometheusModule.register({
+    defaultMetrics: {
+      enabled: true,
+    },
+  }),
+  TypeOrmModule.forFeature([Event])],
   controllers: [MetricsController],
   providers: [
+    PrometheusService,
     MetricsService,
     MetricsRepository,
     makeCounterProvider({

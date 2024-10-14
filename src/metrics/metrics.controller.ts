@@ -15,8 +15,7 @@ export class MetricsController {
   @ApiOperation({ summary: 'Get daily active users' })
   @ApiResponse({ status: 200, description: 'Daily active users count' })
   async getDailyActiveUsers(@Query('date') date: string) {
-    const data = await this.metricsService.getDailyActiveUsers(date);
-    return { success: true, data };
+    return this.metricsService.getDailyActiveUsers(date);
   }
 
   @Get('product-views')
@@ -59,5 +58,11 @@ export class MetricsController {
   async getChurnRate(@Query('period') period: 'daily' | 'weekly' | 'monthly') {
     const data = await this.metricsService.getChurnRate(period);
     return { success: true, data };
+  }
+
+  @Get('increment-requests')
+  incrementRequests() {
+    this.metricsService.incrementHttpRequests('GET', '/metrics/increment-requests', 200);
+    return 'Incremented';
   }
 }
