@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsArray, IsDate, IsNotEmpty, IsNumber, IsOptional, IsString, ValidateNested } from "class-validator";
+import { IsArray, IsBoolean, IsDate, IsNotEmpty, IsNumber, IsOptional, IsString, ValidateNested } from "class-validator";
 import { OrderItemDto } from 'src/order-items/dtos/order-items.dto';
 
 export class CreateOrderDto {
@@ -31,6 +31,6 @@ export class CreateOrderDto {
 
     @IsOptional()
     @IsArray()
-    @IsString({ each: true })
-    memo: string[];
+    @IsBoolean()
+    memo: boolean[];
 }

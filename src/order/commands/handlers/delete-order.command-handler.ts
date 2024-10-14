@@ -89,6 +89,7 @@ export class DeleteOrderCommandHandler implements ICommandHandler<DeleteOrderCom
                         pickupTime: order.pickupTime,
                         createdAt: order.createdAt,
                         updatedAt: new Date(),
+                        memo: order.memo,
                     },
                     1
                 );
