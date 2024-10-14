@@ -17,26 +17,31 @@ export class SearchProductsHandler implements IQueryHandler<SearchProductsQuery>
 
   async execute(query: SearchProductsQuery): Promise<SearchProductsQueryOutputDto> {
     this.logger.log(`Executing search products query with parameters: ${JSON.stringify(query)}`);
-  const { searchTerm, limit, exclusiveStartKey } = query;
+    const { searchTerm, sortBy, order, limit, exclusiveStartKey, latitude, longitude } = query;
 
-  if (!searchTerm) {
-    throw new Error("searchTerm is required.");
+    if (!searchTerm) {
+      throw new Error("searchTerm is required.");
+    }
+
+    // 검색어로 아이템 조회
+    const { items, lastEvaluatedKey } = await this.productViewRepository.fetchItemsBySearchTerm({
+      searchTerm,
+      sortBy,
+      order,
+      limit,
+      exclusiveStartKey: exclusiveStartKey ? JSON.parse(decodeURIComponent(exclusiveStartKey)) : undefined,
+      latitude,
+      longitude
+    });
+    
+    const processedItems = await this.processItems(items, query);
+    const formattedResult = this.formatResult({ items: processedItems, lastEvaluatedKey }, query);
+
+    this.logger.log(`Query result: ${formattedResult.count} items found`);
+
+    return formattedResult;
   }
 
-  // 검색어로 아이템 조회
-  const { items, lastEvaluatedKey } = await this.productViewRepository.fetchItemsBySearchTerm(
-    searchTerm,
-    limit,
-    exclusiveStartKey ? JSON.parse(decodeURIComponent(exclusiveStartKey)) : undefined
-  );
-  
-  const processedItems = await this.processItems(items, query);
-  const formattedResult = this.formatResult({ items: processedItems, lastEvaluatedKey }, query);
-
-  this.logger.log(`Query result: ${formattedResult.count} items found`);
-
-  return formattedResult;
-  }
 
   private async processItems(items: ProductView[], query: SearchProductsQuery): Promise<ProductView[]> {
     let processedItems = items;
