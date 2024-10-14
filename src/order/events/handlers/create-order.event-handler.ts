@@ -15,7 +15,7 @@ export interface OrderView {
     createdAt: Date;
     updatedAt: Date;
     totalPrice: number;
-    memo: string[];
+    memo: boolean[];
 }
 
 export interface OrderItemsView {

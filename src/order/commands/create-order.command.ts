@@ -10,6 +10,6 @@ export class CreateOrderCommand {
         public readonly paymentMethod: string,
         public readonly status: string,
         public readonly items: OrderItemDto[],
-        public readonly memo: string[],
+        public readonly memo: boolean[],
     ) {}
 }

@@ -5,6 +5,7 @@ import { ConfigService } from "@nestjs/config/dist/config.service";
 import { DistanceCalculator } from "../util/distance-calculator";
 import { Polygon } from "typeorm";
 import { Category } from "../product.category";
+import { RedisGeo } from "../util/geoadd";
 
 export enum SortByOption {
   DiscountRate = 'discountRate',
@@ -46,7 +47,8 @@ export class ProductViewRepository {
       ProductView,
       { productId: string }
     >,
-    private readonly configService: ConfigService
+    private readonly configService: ConfigService,
+    private readonly redisGeo: RedisGeo,
   ) { }
 
   // 상품 생성
@@ -258,10 +260,26 @@ export class ProductViewRepository {
     } else {
       return this.productViewModel.query('category').eq(category).exec();
     }
+  }
+  getModel() {
+    return this.productViewModel;
+  }
+  async fetchItemsBySearchTerm(searchTerm: string): Promise<ProductView[]> {
+    const lowercaseSearchTerm = searchTerm.toLowerCase().trim();
+  
+    // Scan operation
+    const scan = this.productViewModel.scan('GSI_KEY').eq('PRODUCT');
+    
+    // Apply name filter
+    scan.and().where('name').contains(lowercaseSearchTerm);
+  
+    scan.limit(100); // Set a higher limit for initial scan
+    const items: ProductView[] = await scan.exec();
+  
+    return items;
+  }
  
-
   // async searchProducts(param: {
-  //   searchTerm: string;
   //   sortBy: SortByOption;
   //   order: 'asc' | 'desc';
   //   limit: number;
@@ -300,8 +318,7 @@ export class ProductViewRepository {
 
   //   // 거리 관련 정렬일 경우 거리 계산
   //   if ((sortBy === SortByOption.Distance || sortBy === SortByOption.DistanceDiscountScore) && latitude && longitude) {
-  //     const userLocation = this.createPolygonFromCoordinates(Number(latitude), Number(longitude));
-  //     items = await this.calculateDistances(items, userLocation);
+  //     items = await this.redisGeo.calculateDistance(items, userLocation);
   //   }
 
   //   // 정렬 적용
@@ -377,7 +394,5 @@ export class ProductViewRepository {
 
   
   
- 
 }
 
-}
