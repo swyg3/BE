@@ -285,28 +285,28 @@ export class ProductViewRepository {
   }): Promise<{ items: ProductView[]; lastEvaluatedKey: any }> {
     const lowercaseSearchTerm = searchTerm.toLowerCase().trim();
   
-    let query = this.productViewModel.query('name').contains(lowercaseSearchTerm);
+    let query;
   
-    // Use the appropriate index based on the sortBy option
+    // Use the appropriate index and key condition based on the sortBy option
     switch (sortBy) {
       case SortByOption.DiscountRate:
-        query = query.using('NameDiscountRateIndex');
+        query = this.productViewModel.query('GSI_KEY').eq('PRODUCT').where('name').contains(lowercaseSearchTerm).using('NameDiscountRateIndex');
         break;
       case SortByOption.Distance:
-        query = query.using('NameDistanceIndex');
+        query = this.productViewModel.query('GSI_KEY').eq('PRODUCT').where('name').contains(lowercaseSearchTerm).using('NameDistanceIndex');
         break;
       case SortByOption.DistanceDiscountScore:
-        query = query.using('NameDistanceDiscountIndex');
+        query = this.productViewModel.query('GSI_KEY').eq('PRODUCT').where('name').contains(lowercaseSearchTerm).using('NameDistanceDiscountIndex');
         break;
       default:
-        query = query.using('GSI_KEY_Index');
+        query = this.productViewModel.query('GSI_KEY').eq('PRODUCT').where('name').contains(lowercaseSearchTerm);
     }
   
     // Apply sorting
     query = query.sort(order === 'desc' ? SortOrder.descending : SortOrder.ascending);
   
     // Apply pagination
-    query = query.limit(Number(limit));
+    query = query.limit(limit);
     if (exclusiveStartKey) {
       query = query.startAt(exclusiveStartKey);
     }
