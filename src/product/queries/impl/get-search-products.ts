@@ -1,7 +1,9 @@
+import { SortByOption } from "src/product/repositories/product-view.repository";
+
 export class SearchProductsQuery {
   constructor(
     public readonly searchTerm: string,
-    public readonly sortBy: string,
+    public readonly sortBy: SortByOption,
     public readonly order: 'asc' | 'desc',
     public readonly limit: number,
     public readonly latitude:string,
