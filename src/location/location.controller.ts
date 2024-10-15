@@ -14,6 +14,8 @@ import { SaveAddressCommand } from './commands/impl/save-address.command';
 import { GetAllAddressesQuery } from './queries/impl/get-all-addresses.query';
 import { SetCurrentLocationCommand } from './commands/impl/set-current-location.command';
 import { LocationResultCache } from './caches/location-cache';
+import { FirstAddressInsertCommand } from './commands/impl/first-address-insert-command';
+import { LocationView2 } from './repositories/location-view.repository';
 
 @ApiTags('locations')
 @Controller('locations')
@@ -24,35 +26,81 @@ export class LocationController {
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
     @Inject(LocationResultCache) private cache: LocationResultCache,
-  ) {}
+  ) { }
 
-  @Put('current/insert')
-  @ApiOperation({ summary: '사용자 진입시 현재 위치 설정' })
-  @ApiResponse({ status: 200, description: '현재 위치 설정 성공' })
-  @ApiResponse({ status: 400, description: '잘못된 요청' })
-  async createCurrentLocation(
-    @GetUser() user: JwtPayload,
-    @Body() locationDataDto: LocationDataDto,
-  ) {
-    const { longitude, latitude } = locationDataDto;
-    return this.commandBus.execute(
-      new AddCurrentLocationCommand(user.userId, longitude, latitude, true, true)
-    );
+@Put('first/address/insert')
+@ApiOperation({ summary: '사용자 GPS 동의 및 현재 위치 업데이트' })
+@ApiResponse({ status: 200, description: 'GPS 동의 및 현재 위치 업데이트 성공',
+  content: {
+    'application/json': {
+      example: {
+        id: '123e4567-e89b-12d3-a456-426614174000',
+        roadAddress: { type: 'string', example: '%EC%84%9C%EC%9A%B8%ED%8A%B9%EB%B3%84%EC%8B%9C%20%EA%B0%95%EB%82%A8%EA%B5%AC%20%ED%85%8C%ED%97%A4%EB%9E%80%EB%A1%9C%20123'}, 
+        searchTerm: { type: 'string', example: '%EC%84%9C%EC%B0%95%EB%82%A8%EA%B5%AC%20%ED%85%8C%ED%97%A4%EB%9E%80%EB%A1%9C%20123' }
+      }
+    }
   }
+ })
+@ApiResponse({ status: 400, description: '잘못된 요청' })
+@ApiBody({ type: LocationDataDto })
+async updateLocationConsent(
+  @GetUser() user: JwtPayload,
+  @Body() locationDataDto: LocationDataDto,
+) {
+  const { longitude, latitude, agree } = locationDataDto;
+
+  // GPS 동의 및 위치 업데이트 명령 실행
+  const command = new FirstAddressInsertCommand(user.userId, longitude, latitude, agree);
+  const result = await this.commandBus.execute(command);
+
+  // 캐시 키 생성 (사용자 ID와 결과를 조합)
+  const cacheKey = `location:${user.userId}`;
+
+  // 캐시에서 결과 조회
+  const cacheResult = await this.waitForCacheResult(cacheKey);
+
+  if (cacheResult === null) {
+    throw new Error('위치 업데이트 중 오류가 발생했습니다.');
+  }
+
+  return {
+    id: cacheResult.locationId,
+    roadAddress: encodeURIComponent(cacheResult.roadAddress),
+    searchTerm: encodeURIComponent(cacheResult.searchTerm),
+  };
+}
+
+private async waitForCacheResult(cacheKey: string): Promise<LocationView2 | null> {
+  let attempts = 0;
+  const maxAttempts = 20; // 최대 10초 대기
+  const delay = 500; // 밀리초
+
+  while (attempts < maxAttempts) {
+    const result = this.cache.get(cacheKey);
+    if (result !== undefined) {
+      this.cache.delete(cacheKey);
+      return result;
+    }
+    await new Promise(resolve => setTimeout(resolve, delay));
+    attempts++;
+  }
+
+  return null;
+}
 
   // @Get('current')
   // @ApiOperation({ summary: '현재 선택된 위치 조회' })
   // @ApiResponse({ 
   //   status: 200, 
   //   description: '현재 위치 조회 성공',
-  
+
   // })
   // @ApiResponse({ status: 404, description: '현재 위치가 설정되어 있지 않음' })
   // async getCurrentLocation(@GetUser() user: JwtPayload) {
   //   return this.queryBus.execute(new GetCurrentLocationQuery(user.userId));
   // }
 
- 
+
   // @Get('all')
   // @ApiOperation({ summary: '사용자의 모든 저장된 위치 조회' })
   // @ApiResponse({ 
@@ -72,7 +120,7 @@ export class LocationController {
       address: {
         summary: '주소 예시',
         value: {
-          searchTerm:"테헤란로",
+          searchTerm: "테헤란로",
           roadAddress: '서울특별시 강남구 테헤란로 152',
         }
       }
@@ -85,17 +133,17 @@ export class LocationController {
     content: {
       'application/json': {
         example: {
-  
-            "userId": "448e7d77-95b2-4159-b43a-f10d0939a8f4",
-            "searchTerm": "테헤란로",
-            "roadAddress": "서울특별시 강남구 테헤란로 152",
-            "latitude": "37.5000263",
-            "longitude": "127.0365456",
-            "isCurrent": false,
-            "isAgreed": true,
-            "updatedAt": "2024-10-04T12:30:54.542Z",
-            "id": "5c19af6a-20ac-42c6-8cce-0eb5ad756dfe"
-        
+
+          "userId": "448e7d77-95b2-4159-b43a-f10d0939a8f4",
+          "searchTerm": "테헤란로",
+          "roadAddress": "서울특별시 강남구 테헤란로 152",
+          "latitude": "37.5000263",
+          "longitude": "127.0365456",
+          "isCurrent": false,
+          "isAgreed": true,
+          "updatedAt": "2024-10-04T12:30:54.542Z",
+          "id": "5c19af6a-20ac-42c6-8cce-0eb5ad756dfe"
+
         }
       }
     }
@@ -108,7 +156,7 @@ export class LocationController {
   async saveAddress(@GetUser() user: JwtPayload, @Body() addressDto: AddressDto) {
     return this.commandBus.execute(new SaveAddressCommand(user.userId, addressDto));
   }
-  
+
   @Get('address/getall')
   @ApiOperation({ summary: '모든 주소 목록 조회' })
   @ApiResponse({ status: 200, description: '주소 목록 조회 성공', type: [AddressDto] })
@@ -138,8 +186,8 @@ export class LocationController {
     content: {
       'application/json': {
         example: {
-         id: '123e4567-e89b-12d3-a456-426614174000',
-         roadAddress: { type: 'string', example: '%EC%84%9C%EC%9A%B8%ED%8A%B9%EB%B3%84%EC%8B%9C%20%EA%B0%95%EB%82%A8%EA%B5%AC%20%ED%85%8C%ED%97%A4%EB%9E%80%EB%A1%9C%20123' }
+          id: '123e4567-e89b-12d3-a456-426614174000',
+          roadAddress: { type: 'string', example: '%EC%84%9C%EC%9A%B8%ED%8A%B9%EB%B3%84%EC%8B%9C%20%EA%B0%95%EB%82%A8%EA%B5%AC%20%ED%85%8C%ED%97%A4%EB%9E%80%EB%A1%9C%20123' }
         }
       }
     }

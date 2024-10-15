@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { forwardRef, Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { UsersController } from "./users.controller";
 import { User } from "./entities/user.entity";
@@ -14,6 +14,7 @@ import { DynamooseModule } from "nestjs-dynamoose";
 import { UserSchema } from "./schemas/user-view.schema";
 import { UserViewRepository } from "./repositories/user-view.repository";
 import { NotificationModule } from "src/shared/notification-service/notification.module";
+import { LocationModule } from "src/location/location.module";
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { NotificationModule } from "src/shared/notification-service/notification
     NotificationModule,
     TypeOrmModule.forFeature([User]),
     DynamooseModule.forFeature([{ name: "UserView", schema: UserSchema }]),
+    forwardRef(() => LocationModule),
   ],
   controllers: [UsersController],
   providers: [
@@ -33,6 +35,6 @@ import { NotificationModule } from "src/shared/notification-service/notification
     UserRepository,
     PasswordService,
   ],
-  exports: [UserRepository, UserViewRepository],
+  exports: [UserRepository, UserViewRepository,TypeOrmModule],
 })
 export class UsersModule {}

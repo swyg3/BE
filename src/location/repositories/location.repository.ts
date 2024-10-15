@@ -104,6 +104,7 @@ export class UserLocationRepository {
 
     return await this.repository.save(userLocation);
   }
+ 
 
   async setCurrentLocation({
     userId,

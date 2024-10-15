@@ -70,6 +70,7 @@ export class UserRepository {
   async updateUserLocation(userId: string, agree: boolean): Promise<void> {
     await this.userRepository.update(userId, { agreeReceiveLocation: agree });
   }
+  
 
   async softDelete(userId: string): Promise<void> {
     const result = await this.userRepository.update(

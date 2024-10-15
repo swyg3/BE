@@ -37,6 +37,7 @@ import { Inventory } from "src/inventory/inventory.entity";
 import { InventoryModule } from "src/inventory/inventory.module";
 import { RedisGeo } from "./util/geoadd";
 import { SearchProductsHandler } from "./queries/handlers/get-search-products.handler";
+import { UsersModule } from "src/users/users.module";
 
 const CommandHandlers = [
   CreateProductHandler,
@@ -50,6 +51,7 @@ const EventsHandlers = [
 
 @Module({
   imports: [
+    forwardRef(() => LocationModule),
     CqrsModule,
     EventSourcingModule,
     RedisModule,
@@ -64,7 +66,6 @@ const EventsHandlers = [
       }
     ]),
     SellersModule,
-    forwardRef(() => LocationModule),
     InventoryModule, 
     HttpModule,
     MulterModule.register({
