@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Raw, Repository } from 'typeorm';
 import { Event } from "../shared/infrastructure/event-sourcing";
+import { Product } from 'src/product/entities/product.entity';
 
 @Injectable()
 export class UserActivityRepository {
@@ -11,20 +12,33 @@ export class UserActivityRepository {
   constructor(
     @InjectRepository(Event)
     private eventRepository: Repository<Event>,
+    @InjectRepository(Product)
+    private productRepository: Repository<Product>,
   ) {}
 
-  async getUserOrderCount(userId: string): Promise<number> {
+  async getUserOrders(userId: string): Promise<Event[]> {
     const queryBuilder = this.eventRepository.createQueryBuilder('event')
-    .where('"eventType" = :eventType', { eventType: 'OrderCreated' })
-    .andWhere('"aggregateType" = :aggregateType', { aggregateType: 'Order' })
-    .andWhere('"eventData"::jsonb->>\'userId\' = :userId', { userId });
+      .where('"eventType" = :eventType', { eventType: 'OrderCreated' })
+      .andWhere('"aggregateType" = :aggregateType', { aggregateType: 'Order' })
+      .andWhere('"eventData"::jsonb->>\'userId\' = :userId', { userId });
 
     try {
-      const count = await queryBuilder.getCount();
-      this.logger.log(`Order count for user ${userId}: ${count}`);
-      return count;
+      const orders = await queryBuilder.getMany();
+      this.logger.log(`Retrieved ${orders.length} orders for user ${userId}`);
+      return orders;
     } catch (error) {
-      this.logger.error(`Error getting order count for user ${userId}: ${error.message}`);
+      this.logger.error(`Error getting orders for user ${userId}: ${error.message}`);
+      throw error;
+    }
+  }
+
+  async getProductsById(productIds: string[]): Promise<Product[]> {
+    try {
+      const products = await this.productRepository.findByIds(productIds);
+      this.logger.log(`Retrieved ${products.length} products`);
+      return products;
+    } catch (error) {
+      this.logger.error(`Error getting products: ${error.message}`);
       throw error;
     }
   }
