@@ -24,11 +24,14 @@ import { EventSourcingModule } from 'src/shared/infrastructure/event-sourcing/ev
 import { HttpModule } from '@nestjs/axios';
 import { ConfigModule } from '@nestjs/config';
 import { LocationResultCache2 } from './caches/location-cache2';
+import { SearchLocationSavedHandler } from './events/handlers/search-location-save.handler';
+import { LocationSearchCache } from './caches/location-cache.search';
 
 const CommandHandlers = [
   SaveAddressHandler,
   UpdateCurrentLocationHandler,
-  FirstAddressInsertCommandHandler
+  SearchLocationSavedHandler,
+  FirstAddressInsertCommandHandler,
 ];
 const EventsHandlers = [
   UserLocationSavedHandler,
@@ -59,6 +62,7 @@ const QuerysHandlers = [
     LocationViewRepository,
     LocationResultCache,
     LocationResultCache2,
+    LocationSearchCache,
     NaverMapsClient,
     ...CommandHandlers,
     ...EventsHandlers,

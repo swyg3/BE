@@ -4,17 +4,19 @@ import { Logger } from "@nestjs/common";
 import { LocationView2, LocationViewRepository } from "src/location/repositories/location-view.repository";
 import { LocationResultCache } from "src/location/caches/location-cache";
 import { LocationResultCache2 } from "src/location/caches/location-cache2";
+import { SearchLocationSavedEvent } from "../impl/search-location-saved-event";
+import { LocationSearchCache } from "src/location/caches/location-cache.search";
 
-@EventsHandler(UserLocationSavedEvent)
-export class UserLocationSavedHandler implements IEventHandler<UserLocationSavedEvent> {
-  private readonly logger = new Logger(UserLocationSavedHandler.name);
+@EventsHandler(SearchLocationSavedEvent)
+export class SearchLocationSavedHandler implements IEventHandler<SearchLocationSavedEvent> {
+  private readonly logger = new Logger(SearchLocationSavedHandler.name);
 
   constructor(
     private readonly locationViewRepository: LocationViewRepository,
-    private readonly cache: LocationResultCache2
+    private readonly searchcache: LocationSearchCache,
   ) { }
 
-  async handle(event: UserLocationSavedEvent) {
+  async handle(event: SearchLocationSavedEvent) {
     this.logger.log(`UserLocationSavedEvent 처리중: ${event.aggregateId}`);
     const cacheKey = this.generateCacheKey(event.data.userId);
 
@@ -30,15 +32,21 @@ export class UserLocationSavedHandler implements IEventHandler<UserLocationSaved
         isAgreed: event.data.isAgreed,
         updatedAt: event.data.updatedAt || new Date(),
       };
-      // 순차적으로 데이터베이스 작업 수행
-      await this.locationViewRepository.setAllLocationsToFalse(event.data.userId);
+      
       const createdLocation = await this.locationViewRepository.create(locationView);
 
-      await this.safeSetCache(cacheKey, createdLocation);
-
+      await this.searchcache.set(cacheKey, createdLocation, 300);
+      const cachedValue = await this.searchcache.get(cacheKey);
+      
+      if (cachedValue) {
+        this.logger.log(`캐시 설정 성공: ${cacheKey}`);
+      } else {
+        this.logger.warn(`캐시 설정 실패: ${cacheKey}`);
+      }
 
       this.logger.log(`UserLocationView 등록 성공: ${event.aggregateId}`);
     } catch (error) {
+        this.searchcache.set(cacheKey, null, 60);
       this.logger.error(
         `UserLocationView 등록 실패: ${event.aggregateId}, ${error.message}`,
         error.stack,
@@ -53,7 +61,7 @@ export class UserLocationSavedHandler implements IEventHandler<UserLocationSaved
 
   private async safeSetCache(key: string, value: any): Promise<void> {
     try {
-      await this.cache.set(key, value, 60);
+      await this.searchcache.set(key, value,  300);
     } catch (cacheError) {
       this.logger.error(`캐시 설정 실패: ${key}, ${cacheError.message}`, cacheError.stack);
       // 캐시 설정 실패를 무시하고 계속 진행
