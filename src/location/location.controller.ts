@@ -1,14 +1,11 @@
-import { Controller, Get, Put, Body, Param, UseGuards, NotFoundException, BadRequestException, Post, Query, Patch, Inject } from '@nestjs/common';
+import { Controller, Get, Put, Body, Param, UseGuards, Post, Query, Patch, Inject } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody, ApiResponse } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { JwtPayload } from 'src/shared/interfaces/jwt-payload.interface';
 import { GetUser } from 'src/shared/decorators/get-user.decorator';
-import { GetUserLocationsQuery } from './queries/impl/get-userlocation-all.query';
-import { AddCurrentLocationCommand } from './commands/impl/add-current-location.command';
 import { LocationDataDto } from './dto/locationdata.dto';
 import { GetCurrentLocationQuery } from './queries/impl/get-userlocation-iscurrent.query';
-import { UserLocationDto } from './dto/userlocation.dto';
 import { AddressDto } from './dto/address.dto';
 import { SaveAddressCommand } from './commands/impl/save-address.command';
 import { GetAllAddressesQuery } from './queries/impl/get-all-addresses.query';
@@ -88,29 +85,6 @@ private async waitForCacheResult(cacheKey: string): Promise<LocationView2 | null
   return null;
 }
 
-  // @Get('current')
-  // @ApiOperation({ summary: '현재 선택된 위치 조회' })
-  // @ApiResponse({ 
-  //   status: 200, 
-  //   description: '현재 위치 조회 성공',
-
-  // })
-  // @ApiResponse({ status: 404, description: '현재 위치가 설정되어 있지 않음' })
-  // async getCurrentLocation(@GetUser() user: JwtPayload) {
-  //   return this.queryBus.execute(new GetCurrentLocationQuery(user.userId));
-  // }
-
-
-  // @Get('all')
-  // @ApiOperation({ summary: '사용자의 모든 저장된 위치 조회' })
-  // @ApiResponse({ 
-  //   status: 200, 
-  //   description: '모든 저장된 위치 조회 성공',
-  //   type: [UserLocationDto],
-  // })
-  // async getUserLocations(@GetUser() user: JwtPayload) {
-  //   return this.queryBus.execute(new GetUserLocationsQuery(user.userId));
-  // }
   @Post('address/insert')
   @ApiOperation({ summary: '검색 주소 저장' })
   @ApiBody({
