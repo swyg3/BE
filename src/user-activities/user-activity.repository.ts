@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Raw, Repository } from 'typeorm';
 import { Event } from "../shared/infrastructure/event-sourcing";
 import { Product } from 'src/product/entities/product.entity';
+import { User } from 'src/users/entities/user.entity';
 
 @Injectable()
 export class UserActivityRepository {
@@ -14,6 +15,8 @@ export class UserActivityRepository {
     private eventRepository: Repository<Event>,
     @InjectRepository(Product)
     private productRepository: Repository<Product>,
+    @InjectRepository(User)
+    private userRepository: Repository<User>
   ) {}
 
   async getUserOrders(userId: string): Promise<Event[]> {
@@ -39,6 +42,29 @@ export class UserActivityRepository {
       return products;
     } catch (error) {
       this.logger.error(`Error getting products: ${error.message}`);
+      throw error;
+    }
+  }
+
+  async getUserInfo(userId: string): Promise<Partial<User> | null> {
+    try {
+      const user = await this.userRepository.findOne({
+        where: { id: userId }
+      });
+      if (!user) {
+        this.logger.warn(`User not found: ${userId}`);
+        return null;
+      }
+      
+      return {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        createdAt: user.createdAt
+      };
+    } catch (error) {
+      this.logger.error(`Error fetching user info for user ${userId}: ${error.message}`);
       throw error;
     }
   }
@@ -70,5 +96,12 @@ export class UserActivityRepository {
       .andWhere('event.eventType = :ecoType', { ecoType: 'EcoImpactRecorded' })
       .select('SUM(event.eventData->>.co2Saved)', 'totalCO2Saved')
       .getRawOne();
+  }
+
+  async getProductCount(): Promise<number> {
+    return this.productRepository.createQueryBuilder('product')
+      .select('COUNT(product.id)', 'count')
+      .getRawOne()
+      .then(result => Number(result.count));
   }
 }
