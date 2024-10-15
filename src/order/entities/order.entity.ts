@@ -5,7 +5,7 @@ export class Order {
     @PrimaryColumn('uuid')
     id: string;
     
-    @Column({ type: 'varchar', name: 'user_id', nullable: false })
+    @Column({ type: 'varchar', name: 'userId', nullable: false })
     userId: string;
 
     @Column({ type: 'bigint', name: 'total_amount', nullable: false })
