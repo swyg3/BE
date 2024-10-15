@@ -1,4 +1,4 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { UserActivityRepository } from "./user-activity.repository";
 import { Event as CustomEvent } from '../shared/infrastructure/event-sourcing/event.entity';
 import { Product } from "src/product/entities/product.entity";
@@ -13,6 +13,12 @@ export class UserActivityService {
 
   async getUserLevelAndTitle(userId: string) {
     try {
+      const userInfo = await this.userActivityRepository.getUserInfo(userId);
+      
+      if (!userInfo) {
+        throw new NotFoundException(`User with ID ${userId} not found`);
+      }
+      
       const orders = await this.userActivityRepository.getUserOrders(userId);
       const { productIds, orderCount, orderItems } = this.processOrders(orders);
       
@@ -24,7 +30,17 @@ export class UserActivityService {
       const title = this.calculateTitle(level);
 
       this.logger.log(`User ${userId} has ${orderCount} orders, level ${level}, title "${title}", total savings ${totalSavings}`);
-      return { userId, orderCount, level, title, totalSavings };
+      return {
+        userId: userInfo.id,
+        name: userInfo.name,
+        email: userInfo.email,
+        phoneNumber: userInfo.phoneNumber,
+        registeredAt: userInfo.createdAt,
+        orderCount,
+        level,
+        title,
+        totalSavings
+      };
     } catch (error) {
       this.logger.error(`Failed to get user level and title for user ${userId}: ${error.message}`);
       throw new Error('Failed to get user level and title');

@@ -21,15 +21,20 @@ export class UserActivityController {
           type: 'object',
           properties: {
             userId: { type: 'string', description: '사용자 ID' },
+            name: { type: 'string', description: '사용자 이름' },
+            email: { type: 'string', description: '사용자 이메일' },
+            phoneNumber: { type: 'string', description: '사용자 전화번호' },
+            registeredAt: { type: 'string', format: 'date-time', description: '회원가입 날짜' },
             orderCount: { type: 'number', description: '주문 횟수' },
             level: { type: 'number', description: '사용자 레벨' },
-            title: { type: 'string', description: '사용자 타이틀' }
+            title: { type: 'string', description: '사용자 타이틀' },
+            totalSavings: { type: 'number', description: '총 절약 금액' }
           }
         }
       }
     }
   })
-  @ApiResponse({ status: 400, description: '잘못된 요청' })
+  @ApiResponse({ status: 404, description: '사용자를 찾을 수 없음' })
   @ApiResponse({ status: 500, description: '서버 오류' })
   async getUserLevelAndTitle(@Param('userId') userId: string) {
       const result = await this.userActivityService.getUserLevelAndTitle(userId);
