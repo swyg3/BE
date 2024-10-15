@@ -28,10 +28,21 @@ export class LocationController {
     @Inject(LocationResultCache) private cache: LocationResultCache,
   ) { }
 
-  @Put('first/address/insert')
+@Put('first/address/insert')
 @ApiOperation({ summary: '사용자 GPS 동의 및 현재 위치 업데이트' })
-@ApiResponse({ status: 200, description: 'GPS 동의 및 현재 위치 업데이트 성공' })
+@ApiResponse({ status: 200, description: 'GPS 동의 및 현재 위치 업데이트 성공',
+  content: {
+    'application/json': {
+      example: {
+        id: '123e4567-e89b-12d3-a456-426614174000',
+        roadAddress: { type: 'string', example: '%EC%84%9C%EC%9A%B8%ED%8A%B9%EB%B3%84%EC%8B%9C%20%EA%B0%95%EB%82%A8%EA%B5%AC%20%ED%85%8C%ED%97%A4%EB%9E%80%EB%A1%9C%20123'}, 
+        searchTerm: { type: 'string', example: '%EC%84%9C%EC%B0%95%EB%82%A8%EA%B5%AC%20%ED%85%8C%ED%97%A4%EB%9E%80%EB%A1%9C%20123' }
+      }
+    }
+  }
+ })
 @ApiResponse({ status: 400, description: '잘못된 요청' })
+@ApiBody({ type: LocationDataDto })
 async updateLocationConsent(
   @GetUser() user: JwtPayload,
   @Body() locationDataDto: LocationDataDto,
