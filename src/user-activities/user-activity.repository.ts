@@ -97,4 +97,11 @@ export class UserActivityRepository {
       .select('SUM(event.eventData->>.co2Saved)', 'totalCO2Saved')
       .getRawOne();
   }
+
+  async getProductCount(): Promise<number> {
+    return this.productRepository.createQueryBuilder('product')
+      .select('COUNT(product.id)', 'count')
+      .getRawOne()
+      .then(result => Number(result.count));
+  }
 }

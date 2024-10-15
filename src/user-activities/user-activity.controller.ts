@@ -70,4 +70,27 @@ export class UserActivityController {
   async getUserEcoImpact(@Param('userId') userId: string) {
     return this.userActivityService.getUserEcoImpact(userId);
   }
+
+  @Get('product-count')
+  @ApiOperation({ summary: '전체 상품 개수 조회' })
+  @ApiResponse({ 
+    status: 200, 
+    description: '전체 상품 개수', 
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', description: '요청 성공 여부' },
+        data: { 
+          type: 'object',
+          properties: {
+            count: { type: 'number', description: '전체 상품 개수' }
+          }
+        }
+      }
+    }
+  })
+  async getProductCount() {
+    const count = await this.userActivityService.getProductCount();
+    return { success: true, data: { count } };
+  }
 }

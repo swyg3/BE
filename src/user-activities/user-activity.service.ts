@@ -8,7 +8,7 @@ export class UserActivityService {
   private readonly logger = new Logger(UserActivityService.name);
   
   constructor(
-    private readonly userActivityRepository: UserActivityRepository
+    private readonly userActivityRepository: UserActivityRepository,
   ) {}
 
   async getUserLevelAndTitle(userId: string) {
@@ -110,5 +110,16 @@ export class UserActivityService {
 
   async getUserEcoImpact(userId: string) {
     return this.userActivityRepository.getUserEcoImpact(userId);
+  }
+
+  async getProductCount(): Promise<number> {
+    try {
+      const count = await this.userActivityRepository.getProductCount();
+      this.logger.log(`Total product count: ${count}`);
+      return count;
+    } catch (error) {
+      this.logger.error(`Failed to get product count: ${error.message}`);
+      throw new Error('Failed to get product count');
+    }
   }
 }
