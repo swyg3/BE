@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Body, Param, UseGuards, Post, Query, Patch, Inject, HttpStatus, HttpException } from '@nestjs/common';
+import { Controller, Get, Put, Body, Param, UseGuards, Post, Query, Patch, Inject, HttpStatus, HttpException, Logger } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody, ApiResponse } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -14,17 +14,21 @@ import { LocationResultCache } from './caches/location-cache';
 import { FirstAddressInsertCommand } from './commands/impl/first-address-insert-command';
 import { LocationView2 } from './repositories/location-view.repository';
 import { LocationResultCache2 } from './caches/location-cache2';
+import { LocationSearchCache } from './caches/location-cache.search';
 
 @ApiTags('locations')
 @Controller('locations')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class LocationController {
+  private readonly logger = new Logger(LocationController.name);
+
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
     @Inject(LocationResultCache) private cache: LocationResultCache,
     @Inject(LocationResultCache2) private cache2: LocationResultCache2,
+    private readonly searchcache: LocationSearchCache,
   ) { }
 
 @Put('first/address/insert')
@@ -133,7 +137,54 @@ private async waitForCacheResult(cacheKey: string): Promise<LocationView2 | null
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   async saveAddress(@GetUser() user: JwtPayload, @Body() addressDto: AddressDto) {
-    return this.commandBus.execute(new SaveAddressCommand(user.userId, addressDto));
+    const cacheKey = `location:${user.userId}`;
+  
+    try {
+      await this.commandBus.execute(new SaveAddressCommand(user.userId, addressDto));
+  
+      const result = await this.waitForCacheResult2(cacheKey);
+  
+      if (result === null) {
+        throw new Error('위치 업데이트 중 오류가 발생했습니다.');
+      }
+  
+      return {
+        userId: result.userId,
+        searchTerm: encodeURIComponent(result.searchTerm),
+        roadAddress: encodeURIComponent(result.roadAddress),
+        latitude: result.latitude,
+        longitude: result.longitude,
+        isCurrent: result.isCurrent,
+        isAgreed: result.isAgreed,
+        updatedAt: result.updatedAt,
+        id: result.locationId
+      };
+    } catch (error) {
+      this.logger.error(`주소 저장 실패: ${error.message}`, error.stack);
+      if (error.message === '업데이트 결과를 가져오는 데 실패했습니다.') {
+        throw new HttpException('요청 처리 시간이 초과되었습니다.', HttpStatus.REQUEST_TIMEOUT);
+      }
+      throw new HttpException('주소 저장 중 오류가 발생했습니다.', HttpStatus.INTERNAL_SERVER_ERROR);
+    } finally {
+      // 캐시 정리 등 필요한 정리 작업 수행
+      this.cache.delete(cacheKey);
+    }
+  }
+  
+  private async waitForCacheResult2(cacheKey: string): Promise<any | null> {
+    const maxAttempts = 30;
+    const interval = 500; // ms
+  
+    for (let i = 0; i < maxAttempts; i++) {
+      const result = this.searchcache.get(cacheKey);
+      this.logger.log(`캐시 조회 시도 ${i + 1}: ${cacheKey}, 결과: ${result ? '성공' : '실패'}`);
+      if (result !== undefined) {
+        return result;
+      }
+      await new Promise(resolve => setTimeout(resolve, interval));
+    }
+  
+    throw new Error('업데이트 결과를 가져오는 데 실패했습니다.');
   }
 
   @Get('address/getall')

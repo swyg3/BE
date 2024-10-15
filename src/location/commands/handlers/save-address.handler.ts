@@ -5,6 +5,7 @@ import { UserLocation2 } from 'src/location/entities/location.entity';
 import { NaverMapsClient } from 'src/shared/infrastructure/database/navermap.config';
 import { UserLocationSavedEvent } from 'src/location/events/impl/location-save-event';
 import { Logger } from '@nestjs/common';
+import { SearchLocationSavedEvent } from 'src/location/events/impl/search-location-saved-event';
 
 @CommandHandler(SaveAddressCommand)
 export class SaveAddressHandler implements ICommandHandler<SaveAddressCommand> {
@@ -35,7 +36,7 @@ export class SaveAddressHandler implements ICommandHandler<SaveAddressCommand> {
         const savedLocation = await this.locationRepository.save(newLocation);
 
         // 이벤트 발행
-        const event = new UserLocationSavedEvent(
+        const event = new SearchLocationSavedEvent(
             savedLocation.id,
             {
               userId: savedLocation.userId,
