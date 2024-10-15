@@ -1,18 +1,16 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { Type } from "class-transformer";
 import { IsEnum, IsInt, IsOptional, IsString, Min } from "class-validator";
+import { SortByOption } from "../repositories/product-view.repository";
 
 export class SearchProductsDto {
     @ApiProperty({ description: '검색어' })
     @IsString()
     searchTerm: string;
   
-    @ApiProperty({ 
-      enum: ['discountRate', 'distance', 'distanceDiscountScore'], 
-      description: '정렬 기준' 
-    })
-    @IsEnum(['discountRate', 'distance', 'distanceDiscountScore'])
-    sortBy: 'discountRate' | 'distance' | 'distanceDiscountScore';
+    @ApiProperty({ enum: SortByOption, description: '정렬 기준' })
+    @IsEnum(SortByOption)
+    sortBy: SortByOption;
   
     @ApiProperty({ enum: ['asc', 'desc'], description: '정렬 순서' })
     @IsEnum(['asc', 'desc'])

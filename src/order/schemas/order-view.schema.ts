@@ -38,7 +38,7 @@ export const OrderViewSchema = new Schema(
         },
         memo: {
             type: Array,
-            schema: [String],
+            schema: [Boolean],
         },
     },
     {

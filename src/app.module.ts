@@ -22,6 +22,7 @@ import { CqrsModule } from "@nestjs/cqrs";
 import { LocationModule } from './location/location.module';
 import { OrderItemsModule } from "./order-items/order-items.module";
 import { OrderModule } from "./order/order.module";
+import { UserActivitiesModule } from "./user-activities/user-activity.module";
 
 @Module({
   imports: [
@@ -59,6 +60,7 @@ import { OrderModule } from "./order/order.module";
       serveRoot: "/public",
     }),
     MetricsModule,
+    UserActivitiesModule,
     AuthModule,
     UsersModule,
     SellersModule,

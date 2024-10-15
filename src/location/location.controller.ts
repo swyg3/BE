@@ -26,19 +26,19 @@ export class LocationController {
     @Inject(LocationResultCache) private cache: LocationResultCache,
   ) {}
 
-  // @Put('current/insert')
-  // @ApiOperation({ summary: '사용자 진입시 현재 위치 설정' })
-  // @ApiResponse({ status: 200, description: '현재 위치 설정 성공' })
-  // @ApiResponse({ status: 400, description: '잘못된 요청' })
-  // async createCurrentLocation(
-  //   @GetUser() user: JwtPayload,
-  //   @Body() locationDataDto: LocationDataDto,
-  // ) {
-  //   const { longitude, latitude } = locationDataDto;
-  //   return this.commandBus.execute(
-  //     new AddCurrentLocationCommand(user.userId, longitude, latitude, true, true)
-  //   );
-  // }
+  @Put('current/insert')
+  @ApiOperation({ summary: '사용자 진입시 현재 위치 설정' })
+  @ApiResponse({ status: 200, description: '현재 위치 설정 성공' })
+  @ApiResponse({ status: 400, description: '잘못된 요청' })
+  async createCurrentLocation(
+    @GetUser() user: JwtPayload,
+    @Body() locationDataDto: LocationDataDto,
+  ) {
+    const { longitude, latitude } = locationDataDto;
+    return this.commandBus.execute(
+      new AddCurrentLocationCommand(user.userId, longitude, latitude, true, true)
+    );
+  }
 
   // @Get('current')
   // @ApiOperation({ summary: '현재 선택된 위치 조회' })

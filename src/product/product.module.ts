@@ -36,6 +36,7 @@ import { ProductService } from "./product.service";
 import { Inventory } from "src/inventory/inventory.entity";
 import { InventoryModule } from "src/inventory/inventory.module";
 import { RedisGeo } from "./util/geoadd";
+import { SearchProductsHandler } from "./queries/handlers/get-search-products.handler";
 
 const CommandHandlers = [
   CreateProductHandler,
@@ -115,7 +116,7 @@ const EventsHandlers = [
     HttpModule,
     GeocodingService,
     NaverMapsClient,
-    //SearchProductsHandler,
+    SearchProductsHandler,
     GetProductByDiscountRateHandler,
     ProductService,
     RedisGeo

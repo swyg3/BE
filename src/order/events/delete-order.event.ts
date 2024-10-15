@@ -23,6 +23,7 @@ export class DeleteOrderEvent implements BaseEvent {
             pickupTime: Date,
             createdAt: Date,
             updatedAt: Date,
+            memo: boolean[],
         },
         public readonly version: number,
     ) {}
