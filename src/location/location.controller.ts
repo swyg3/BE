@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Body, Param, UseGuards, Post, Query, Patch, Inject } from '@nestjs/common';
+import { Controller, Get, Put, Body, Param, UseGuards, Post, Query, Patch, Inject, HttpStatus, HttpException } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody, ApiResponse } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -46,40 +46,42 @@ async updateLocationConsent(
 ) {
   const { longitude, latitude, agree } = locationDataDto;
 
-  // GPS 동의 및 위치 업데이트 명령 실행
-  const command = new FirstAddressInsertCommand(user.userId, longitude, latitude, agree);
-  const result = await this.commandBus.execute(command);
-
-  // 캐시 키 생성 (사용자 ID와 결과를 조합)
+  // 캐시 키 생성
   const cacheKey = `location:${user.userId}`;
 
-  // 캐시에서 결과 조회
-  const cacheResult = await this.waitForCacheResult(cacheKey);
+  try {
+    // GPS 동의 및 위치 업데이트 명령 실행
+    const command = new FirstAddressInsertCommand(user.userId, longitude, latitude, agree);
+    await this.commandBus.execute(command);
 
-  if (cacheResult === null) {
-    throw new Error('위치 업데이트 중 오류가 발생했습니다.');
+    // 캐시에서 결과 조회
+    const cacheResult = await this.waitForCacheResult(cacheKey);
+
+    if (cacheResult === null) {
+      throw new Error('캐시 업데이트 시간 초과');
+    }
+
+    return {
+      id: cacheResult.locationId,
+      roadAddress: encodeURIComponent(cacheResult.roadAddress),
+      searchTerm: encodeURIComponent(cacheResult.searchTerm),
+    };
+  } catch (error) {
+    throw new HttpException('위치 업데이트 중 오류가 발생했습니다.', HttpStatus.INTERNAL_SERVER_ERROR);
   }
-
-  return {
-    id: cacheResult.locationId,
-    roadAddress: encodeURIComponent(cacheResult.roadAddress),
-    searchTerm: encodeURIComponent(cacheResult.searchTerm),
-  };
 }
 
 private async waitForCacheResult(cacheKey: string): Promise<LocationView2 | null> {
-  let attempts = 0;
-  const maxAttempts = 20; // 최대 10초 대기
+  const maxAttempts = 20;
   const delay = 500; // 밀리초
 
-  while (attempts < maxAttempts) {
+  for (let attempts = 0; attempts < maxAttempts; attempts++) {
     const result = this.cache.get(cacheKey);
     if (result !== undefined) {
-      this.cache.delete(cacheKey);
+      // 캐시 결과를 찾았지만 삭제하지 않음
       return result;
     }
     await new Promise(resolve => setTimeout(resolve, delay));
-    attempts++;
   }
 
   return null;
