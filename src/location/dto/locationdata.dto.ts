@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean, IsNotEmpty, IsNumber } from "class-validator";
+import { IsBoolean, IsNotEmpty, IsNumber, IsString } from "class-validator";
 
 export class LocationDataDto {
   @ApiProperty({
@@ -7,7 +7,7 @@ export class LocationDataDto {
     description: '경도 (문자열 형태의 숫자)',
     type: String,
   })
-  @IsNumber()
+  @IsString()
   @IsNotEmpty()
   longitude: string;
 
@@ -16,7 +16,7 @@ export class LocationDataDto {
     description: '위도 (문자열 형태의 숫자)',
     type: String,
   })
-  @IsNumber()
+  @IsString()
   @IsNotEmpty()
   latitude: string;
 
