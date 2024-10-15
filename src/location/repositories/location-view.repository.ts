@@ -56,7 +56,7 @@ export class LocationViewRepository {
 
 
   //모두 X로 만드는 함수
-  private async setAllLocationsToFalse(userId: string): Promise<void> {
+  public async setAllLocationsToFalse(userId: string): Promise<void> {
     if (!userId) {
       this.logger.warn('유효하지 않은 userId로 setAllLocationsToFalse 호출됨');
       return;
