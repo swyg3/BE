@@ -5,7 +5,7 @@ export class Order {
     @PrimaryColumn('uuid')
     id: string;
     
-    @Column({ type: 'varchar', name: 'user_id', nullable: false })
+    @Column({ type: 'varchar', name: 'userId', nullable: false })
     userId: string;
 
     @Column({ type: 'bigint', name: 'total_amount', nullable: false })
@@ -26,6 +26,6 @@ export class Order {
     @Column({ type: 'timestamp', name: 'created_at', default: () => 'CURRENT_TIMESTAMP' })
     createdAt: Date;
 
-    @Column({ type: 'simple-array', name: 'memo', nullable: true })
-    memo: string[];
+    @Column({ type: 'boolean', array: true, name: 'memo', nullable: true })
+    memo: boolean[];
 }

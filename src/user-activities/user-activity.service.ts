@@ -1,26 +1,83 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { UserActivityRepository } from "./user-activity.repository";
+import { Event as CustomEvent } from '../shared/infrastructure/event-sourcing/event.entity';
+import { Product } from "src/product/entities/product.entity";
 
 @Injectable()
 export class UserActivityService {
   private readonly logger = new Logger(UserActivityService.name);
   
   constructor(
-    private readonly userActivityRepository: UserActivityRepository
+    private readonly userActivityRepository: UserActivityRepository,
   ) {}
 
   async getUserLevelAndTitle(userId: string) {
     try {
-      const orderCount = await this.userActivityRepository.getUserOrderCount(userId);
+      const userInfo = await this.userActivityRepository.getUserInfo(userId);
+      
+      if (!userInfo) {
+        throw new NotFoundException(`User with ID ${userId} not found`);
+      }
+      
+      const orders = await this.userActivityRepository.getUserOrders(userId);
+      const { productIds, orderCount, orderItems } = this.processOrders(orders);
+      
+      const products = await this.userActivityRepository.getProductsById(Array.from(productIds));
+      const productMap = new Map(products.map(p => [p.id, p]));
+      
+      const totalSavings = this.calculateTotalSavings(orderItems, productMap);
       const level = this.calculateLevel(orderCount);
       const title = this.calculateTitle(level);
 
-      this.logger.log(`User ${userId} has ${orderCount} orders, level ${level}, title "${title}"`);
-      return { userId, orderCount, level, title };
+      this.logger.log(`User ${userId} has ${orderCount} orders, level ${level}, title "${title}", total savings ${totalSavings}`);
+      return {
+        userId: userInfo.id,
+        name: userInfo.name,
+        email: userInfo.email,
+        phoneNumber: userInfo.phoneNumber,
+        registeredAt: userInfo.createdAt,
+        orderCount,
+        level,
+        title,
+        totalSavings
+      };
     } catch (error) {
       this.logger.error(`Failed to get user level and title for user ${userId}: ${error.message}`);
       throw new Error('Failed to get user level and title');
     }
+  }
+
+  private processOrders(orders: CustomEvent[]): { productIds: Set<string>, orderCount: number, orderItems: Map<string, number> } {
+    const productIds = new Set<string>();
+    const orderItems = new Map<string, number>();
+    let orderCount = orders.length;
+
+    for (const order of orders) {
+      const items = (order.eventData as any).items || [];
+      for (const item of items) {
+        if (item.productId && item.quantity) {
+          productIds.add(item.productId);
+          const currentQuantity = orderItems.get(item.productId) || 0;
+          orderItems.set(item.productId, currentQuantity + item.quantity);
+        }
+      }
+    }
+
+    return { productIds, orderCount, orderItems };
+  }
+
+  private calculateTotalSavings(orderItems: Map<string, number>, productMap: Map<string, Product>): number {
+    let totalSavings = 0;
+
+    for (const [productId, quantity] of orderItems) {
+      const product = productMap.get(productId);
+      if (product) {
+        const saving = product.originalPrice - product.discountedPrice;
+        totalSavings += saving * quantity;
+      }
+    }
+
+    return totalSavings;
   }
 
   private calculateLevel(orderCount: number): number {
@@ -53,5 +110,16 @@ export class UserActivityService {
 
   async getUserEcoImpact(userId: string) {
     return this.userActivityRepository.getUserEcoImpact(userId);
+  }
+
+  async getProductCount(): Promise<number> {
+    try {
+      const count = await this.userActivityRepository.getProductCount();
+      this.logger.log(`Total product count: ${count}`);
+      return count;
+    } catch (error) {
+      this.logger.error(`Failed to get product count: ${error.message}`);
+      throw new Error('Failed to get product count');
+    }
   }
 }
