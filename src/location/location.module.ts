@@ -23,6 +23,7 @@ import { UsersModule } from 'src/users/users.module';
 import { EventSourcingModule } from 'src/shared/infrastructure/event-sourcing/event-sourcing.module';
 import { HttpModule } from '@nestjs/axios';
 import { ConfigModule } from '@nestjs/config';
+import { LocationResultCache2 } from './caches/location-cache2';
 
 const CommandHandlers = [
   SaveAddressHandler,
@@ -57,6 +58,7 @@ const QuerysHandlers = [
     UserLocationRepository,
     LocationViewRepository,
     LocationResultCache,
+    LocationResultCache2,
     NaverMapsClient,
     ...CommandHandlers,
     ...EventsHandlers,

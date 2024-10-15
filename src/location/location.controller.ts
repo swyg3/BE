@@ -13,6 +13,7 @@ import { SetCurrentLocationCommand } from './commands/impl/set-current-location.
 import { LocationResultCache } from './caches/location-cache';
 import { FirstAddressInsertCommand } from './commands/impl/first-address-insert-command';
 import { LocationView2 } from './repositories/location-view.repository';
+import { LocationResultCache2 } from './caches/location-cache2';
 
 @ApiTags('locations')
 @Controller('locations')
@@ -23,6 +24,7 @@ export class LocationController {
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
     @Inject(LocationResultCache) private cache: LocationResultCache,
+    @Inject(LocationResultCache2) private cache2: LocationResultCache2,
   ) { }
 
 @Put('first/address/insert')
@@ -45,8 +47,6 @@ async updateLocationConsent(
   @Body() locationDataDto: LocationDataDto,
 ) {
   const { longitude, latitude, agree } = locationDataDto;
-
-  // 캐시 키 생성
   const cacheKey = `location:${user.userId}`;
 
   try {
@@ -57,7 +57,7 @@ async updateLocationConsent(
     // 캐시에서 결과 조회
     const cacheResult = await this.waitForCacheResult(cacheKey);
 
-    if (cacheResult === null) {
+    if (!cacheResult) {
       throw new Error('캐시 업데이트 시간 초과');
     }
 
@@ -67,18 +67,20 @@ async updateLocationConsent(
       searchTerm: encodeURIComponent(cacheResult.searchTerm),
     };
   } catch (error) {
+    if (error.message === '캐시 업데이트 시간 초과') {
+      throw new HttpException('위치 정보 업데이트 지연', HttpStatus.REQUEST_TIMEOUT);
+    }
     throw new HttpException('위치 업데이트 중 오류가 발생했습니다.', HttpStatus.INTERNAL_SERVER_ERROR);
   }
 }
 
 private async waitForCacheResult(cacheKey: string): Promise<LocationView2 | null> {
-  const maxAttempts = 20;
+  const maxAttempts = 20; 
   const delay = 500; // 밀리초
 
   for (let attempts = 0; attempts < maxAttempts; attempts++) {
-    const result = this.cache.get(cacheKey);
+    const result = this.cache2.get(cacheKey);
     if (result !== undefined) {
-      // 캐시 결과를 찾았지만 삭제하지 않음
       return result;
     }
     await new Promise(resolve => setTimeout(resolve, delay));
@@ -86,6 +88,7 @@ private async waitForCacheResult(cacheKey: string): Promise<LocationView2 | null
 
   return null;
 }
+
 
   @Post('address/insert')
   @ApiOperation({ summary: '검색 주소 저장' })
