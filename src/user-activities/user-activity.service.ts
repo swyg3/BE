@@ -1,5 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { UserActivityRepository } from "./user-activity.repository";
+import { Event as CustomEvent } from '../shared/infrastructure/event-sourcing/event.entity';
+import { Product } from "src/product/entities/product.entity";
 
 @Injectable()
 export class UserActivityService {
@@ -11,16 +13,55 @@ export class UserActivityService {
 
   async getUserLevelAndTitle(userId: string) {
     try {
-      const orderCount = await this.userActivityRepository.getUserOrderCount(userId);
+      const orders = await this.userActivityRepository.getUserOrders(userId);
+      const { productIds, orderCount, orderItems } = this.processOrders(orders);
+      
+      const products = await this.userActivityRepository.getProductsById(Array.from(productIds));
+      const productMap = new Map(products.map(p => [p.id, p]));
+      
+      const totalSavings = this.calculateTotalSavings(orderItems, productMap);
       const level = this.calculateLevel(orderCount);
       const title = this.calculateTitle(level);
 
-      this.logger.log(`User ${userId} has ${orderCount} orders, level ${level}, title "${title}"`);
-      return { userId, orderCount, level, title };
+      this.logger.log(`User ${userId} has ${orderCount} orders, level ${level}, title "${title}", total savings ${totalSavings}`);
+      return { userId, orderCount, level, title, totalSavings };
     } catch (error) {
       this.logger.error(`Failed to get user level and title for user ${userId}: ${error.message}`);
       throw new Error('Failed to get user level and title');
     }
+  }
+
+  private processOrders(orders: CustomEvent[]): { productIds: Set<string>, orderCount: number, orderItems: Map<string, number> } {
+    const productIds = new Set<string>();
+    const orderItems = new Map<string, number>();
+    let orderCount = orders.length;
+
+    for (const order of orders) {
+      const items = (order.eventData as any).items || [];
+      for (const item of items) {
+        if (item.productId && item.quantity) {
+          productIds.add(item.productId);
+          const currentQuantity = orderItems.get(item.productId) || 0;
+          orderItems.set(item.productId, currentQuantity + item.quantity);
+        }
+      }
+    }
+
+    return { productIds, orderCount, orderItems };
+  }
+
+  private calculateTotalSavings(orderItems: Map<string, number>, productMap: Map<string, Product>): number {
+    let totalSavings = 0;
+
+    for (const [productId, quantity] of orderItems) {
+      const product = productMap.get(productId);
+      if (product) {
+        const saving = product.originalPrice - product.discountedPrice;
+        totalSavings += saving * quantity;
+      }
+    }
+
+    return totalSavings;
   }
 
   private calculateLevel(orderCount: number): number {
