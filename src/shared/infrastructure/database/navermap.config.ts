@@ -64,7 +64,7 @@ export class NaverMapsClient {
   
   async getReverseGeocode(latitude: string, longitude: string): Promise<string> {
     this.logger.log(`getReverseGeocode called with lat: ${latitude}, lon: ${longitude}`);
-    const coords = `${latitude},${longitude}`;
+    const coords = `${longitude},${latitude}`;
     
     const url = `${this.reverseGeocodeApiUrl}`;
     const params = new URLSearchParams({

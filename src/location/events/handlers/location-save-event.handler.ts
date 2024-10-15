@@ -29,7 +29,7 @@ export class UserLocationSavedHandler implements IEventHandler<UserLocationSaved
         isAgreed: event.data.isAgreed,
         updatedAt: event.data.updatedAt || new Date(),
       };
-
+      await this.locationViewRepository.setAllLocationsToFalse(event.data.userId);
       await this.locationViewRepository.create(locationView);
       this.cache.set(cacheKey, locationView);
 
