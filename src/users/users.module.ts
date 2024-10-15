@@ -35,6 +35,6 @@ import { LocationModule } from "src/location/location.module";
     UserRepository,
     PasswordService,
   ],
-  exports: [UserRepository, UserViewRepository],
+  exports: [UserRepository, UserViewRepository,TypeOrmModule],
 })
 export class UsersModule {}

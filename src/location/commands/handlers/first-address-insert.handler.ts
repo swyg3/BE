@@ -7,7 +7,7 @@ import { EventBusService } from "src/shared/infrastructure/event-sourcing/event-
 import { NaverMapsClient } from "src/shared/infrastructure/database/navermap.config";
 import { UserLocation2 } from "src/location/entities/location.entity";
 import { UserLocationSavedEvent } from "src/location/events/impl/location-save-event";
-import { Logger } from "@nestjs/common";
+import { forwardRef, Inject, Logger } from "@nestjs/common";
 
 @CommandHandler(FirstAddressInsertCommand)
 export class FirstAddressInsertCommandHandler implements ICommandHandler<FirstAddressInsertCommand> {
@@ -15,6 +15,7 @@ export class FirstAddressInsertCommandHandler implements ICommandHandler<FirstAd
 
     constructor(
         private readonly locationRepository: UserLocationRepository,
+        @Inject(forwardRef(() => UserRepository))
         private readonly userRepository: UserRepository,
         private readonly eventBusService: EventBusService,
         private readonly naverMapsClient: NaverMapsClient
@@ -24,6 +25,7 @@ export class FirstAddressInsertCommandHandler implements ICommandHandler<FirstAd
         const { userId, longitude, latitude, agree } = command;
 
         try {
+            
             // 사용자의 agreeReceiveLocation 업데이트
             await this.userRepository.updateUserLocation(userId, agree);
 
@@ -56,7 +58,7 @@ export class FirstAddressInsertCommandHandler implements ICommandHandler<FirstAd
                 newLocation.roadAddress = roadAddress;
                 newLocation.latitude = latitude;
                 newLocation.longitude = longitude;
-                newLocation.isCurrent = false;
+                newLocation.isCurrent = true;
                 newLocation.isAgreed = true;
                 newLocation.updatedAt = new Date();
 

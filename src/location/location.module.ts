@@ -20,6 +20,9 @@ import { UserRepository } from 'src/users/repositories/user.repository';
 import { EventBusService } from 'src/shared/infrastructure/event-sourcing/event-bus.service';
 import { NaverMapsClient } from 'src/shared/infrastructure/database/navermap.config';
 import { UsersModule } from 'src/users/users.module';
+import { EventSourcingModule } from 'src/shared/infrastructure/event-sourcing/event-sourcing.module';
+import { HttpModule } from '@nestjs/axios';
+import { ConfigModule } from '@nestjs/config';
 
 const CommandHandlers = [
   SaveAddressHandler,
@@ -38,8 +41,11 @@ const QuerysHandlers = [
 @Module({
   imports: [
     forwardRef(() => ProductModule),
+    forwardRef(() => UsersModule),
+    EventSourcingModule,
     CqrsModule,
-    UsersModule,
+    HttpModule,
+    ConfigModule,
     TypeOrmModule.forFeature([UserLocation2]),
     DynamooseModule.forFeature([
       { name: "LocationView2", schema: UserLocation2Schema },
@@ -51,8 +57,6 @@ const QuerysHandlers = [
     UserLocationRepository,
     LocationViewRepository,
     LocationResultCache,
-    UserRepository,
-    EventBusService,
     NaverMapsClient,
     ...CommandHandlers,
     ...EventsHandlers,
@@ -61,7 +65,6 @@ const QuerysHandlers = [
   exports: [
     UserLocationRepository,
     LocationViewRepository,
-    UserRepository,
   ],
 })
 export class LocationModule { }
