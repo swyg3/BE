@@ -19,18 +19,19 @@ export class UserActivityRepository {
     private userRepository: Repository<User>
   ) {}
 
-  async getUserOrders(userId: string): Promise<Event[]> {
+  async getUserOrderEvents(userId: string): Promise<Event[]> {
     const queryBuilder = this.eventRepository.createQueryBuilder('event')
-      .where('"eventType" = :eventType', { eventType: 'OrderCreated' })
+      .where('"eventType" IN (:...eventTypes)', { eventTypes: ['OrderCreated', 'OrderDeleted'] })
       .andWhere('"aggregateType" = :aggregateType', { aggregateType: 'Order' })
-      .andWhere('"eventData"::jsonb->>\'userId\' = :userId', { userId });
-
+      .andWhere('"eventData"::jsonb->>\'userId\' = :userId', { userId })
+      .orderBy('"createdAt"', 'ASC');
+  
     try {
-      const orders = await queryBuilder.getMany();
-      this.logger.log(`Retrieved ${orders.length} orders for user ${userId}`);
-      return orders;
+      const events = await queryBuilder.getMany();
+      this.logger.log(`Retrieved ${events.length} order events for user ${userId}`);
+      return events;
     } catch (error) {
-      this.logger.error(`Error getting orders for user ${userId}: ${error.message}`);
+      this.logger.error(`Error getting order events for user ${userId}: ${error.message}`);
       throw error;
     }
   }
