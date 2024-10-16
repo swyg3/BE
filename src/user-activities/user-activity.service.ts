@@ -19,8 +19,8 @@ export class UserActivityService {
         throw new NotFoundException(`User with ID ${userId} not found`);
       }
       
-      const orders = await this.userActivityRepository.getUserOrders(userId);
-      const { productIds, orderCount, orderItems } = this.processOrders(orders);
+      const orderEvents = await this.userActivityRepository.getUserOrderEvents(userId);
+      const { productIds, orderCount, orderItems } = this.processOrderEvents(orderEvents);
       
       const products = await this.userActivityRepository.getProductsById(Array.from(productIds));
       const productMap = new Map(products.map(p => [p.id, p]));
@@ -29,7 +29,7 @@ export class UserActivityService {
       const level = this.calculateLevel(orderCount);
       const title = this.calculateTitle(level);
 
-      this.logger.log(`User ${userId} has ${orderCount} orders, level ${level}, title "${title}", total savings ${totalSavings}`);
+      this.logger.log(`User ${userId} has ${orderCount} valid orders, level ${level}, title "${title}", total savings ${totalSavings}`);
       return {
         userId: userInfo.id,
         name: userInfo.name,
@@ -47,23 +47,41 @@ export class UserActivityService {
     }
   }
 
-  private processOrders(orders: CustomEvent[]): { productIds: Set<string>, orderCount: number, orderItems: Map<string, number> } {
+  
+  private processOrderEvents(events: CustomEvent[]): { productIds: Set<string>, orderCount: number, orderItems: Map<string, number> } {
     const productIds = new Set<string>();
     const orderItems = new Map<string, number>();
-    let orderCount = orders.length;
+    const activeOrders = new Set<string>();
 
-    for (const order of orders) {
-      const items = (order.eventData as any).items || [];
-      for (const item of items) {
-        if (item.productId && item.quantity) {
-          productIds.add(item.productId);
-          const currentQuantity = orderItems.get(item.productId) || 0;
-          orderItems.set(item.productId, currentQuantity + item.quantity);
+    for (const event of events) {
+      const eventData = event.eventData as any;
+      if (event.eventType === 'OrderCreated') {
+        activeOrders.add(eventData.id);
+        for (const item of eventData.items || []) {
+          if (item.productId && item.quantity) {
+            productIds.add(item.productId);
+            const currentQuantity = orderItems.get(item.productId) || 0;
+            orderItems.set(item.productId, currentQuantity + item.quantity);
+          }
+        }
+      } else if (event.eventType === 'OrderDeleted') {
+        activeOrders.delete(eventData.id);
+        for (const item of eventData.items || []) {
+          if (item.productId && item.quantity) {
+            const currentQuantity = orderItems.get(item.productId) || 0;
+            const newQuantity = Math.max(0, currentQuantity - item.quantity);
+            if (newQuantity === 0) {
+              orderItems.delete(item.productId);
+              productIds.delete(item.productId);
+            } else {
+              orderItems.set(item.productId, newQuantity);
+            }
+          }
         }
       }
     }
 
-    return { productIds, orderCount, orderItems };
+    return { productIds, orderCount: activeOrders.size, orderItems };
   }
 
   private calculateTotalSavings(orderItems: Map<string, number>, productMap: Map<string, Product>): number {
