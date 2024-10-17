@@ -42,8 +42,25 @@ export class DeleteOrderCommandHandler implements ICommandHandler<DeleteOrderCom
                 for (const item of orderItems) {
                     const inventory = await transactionalEntityManager.findOne(Inventory, { where: { productId: item.productId } });
 
+                    if (!inventory) {
+                        throw new Error(`Inventory for product ${item.productId} not found.`);
+                    }
+
+                    // bigint로 안전하게 계산
+                    const currentQuantity = BigInt(inventory.quantity);
+                    const addQuantity = BigInt(item.quantity);
+                    const newQuantity = currentQuantity + addQuantity;
+
+                    // 결과가 Number.MAX_SAFE_INTEGER를 초과하는지 확인
+                    if (newQuantity > BigInt(Number.MAX_SAFE_INTEGER)) {
+                        throw new Error(`Inventory quantity for product ${item.productId} exceeds maximum safe integer value`);
+                    }
+
+                    // bigint를 number로 변환하여 저장
+                    inventory.quantity = Number(newQuantity);
+
                     // 주문한 수량만큼 재고 추가
-                    inventory.quantity += item.quantity;
+                    // inventory.quantity += item.quantity;
 
                     // 재고 업데이트
                     const updatedInventory = await transactionalEntityManager.save(inventory);
@@ -66,8 +83,11 @@ export class DeleteOrderCommandHandler implements ICommandHandler<DeleteOrderCom
                 }
 
                 // 3. 주문 및 주문 아이템 삭제
-                await this.orderRepository.delete({ id });
-                await this.orderItemsRepository.delete({ orderId: id });
+                await transactionalEntityManager.remove(order);
+                await transactionalEntityManager.remove(orderItems);
+
+                //await this.orderRepository.delete({ id });
+                //await this.orderItemsRepository.delete({ orderId: id });
 
                 // 4. 주문 삭제 이벤트 생성
                 const event = new DeleteOrderEvent(
@@ -97,6 +117,9 @@ export class DeleteOrderCommandHandler implements ICommandHandler<DeleteOrderCom
                 // 5. 주문 삭제 이벤트 발행
                 await this.eventBusService.publishAndSave(event);
                 this.logger.log(`Order deletion event published: ${JSON.stringify(event)}`);
+
+
+                return { success: true, message: `Order ${id} successfully deleted` };
             });
         } catch (error) {
             this.logger.error(`Failed to delete order: ${error.message}`);
