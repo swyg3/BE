@@ -75,8 +75,8 @@ export class CreateOrderCommandHandler implements ICommandHandler<CreateOrderCom
                     if (inventory.quantity < item.quantity) {
                         throw new ConflictException(`재고가 부족합니다: ${item.productId}`);
                     }
-    
-                    inventory.quantity -= item.quantity;
+                    inventory.quantity = Number(inventory.quantity) - Number(item.quantity);
+
                     const updatedInventory = await transactionalEntityManager.save(inventory);
                     this.logger.log(`Updated Inventory for product: ${item.productId}, remaining quantity: ${inventory.quantity}`);
     
