@@ -40,6 +40,7 @@ import { Category } from "./product.category";
 import { SortByOption } from "./repositories/product-view.repository";
 import { ProductService, FindProductsParams, ProductQueryResult } from './product.service';
 import { GetCategoryQueryOutputDto } from "./dtos/get-category-out-dto";
+import { GetOrderSellerProductsQuery } from "./queries/impl/get -order-sellers-products.query";
 
 
 @ApiTags("Products")
@@ -326,31 +327,13 @@ export class ProductController {
       count: result.count,
     };
   }
+//orderitems에서 productid를 뽑아
+//거기서 sellerid를 찾아
+//sellerid의 가게를 createdat기준으로 나열 
 
-  // @Get('category')
-  // @ApiOperation({ summary: 'Find products by category and sort' })
-  // @ApiResponse({ status: 200, description: 'Return a list of products.' })
-  // @ApiResponse({ status: 400, description: 'Bad Request.' })
-  // async findProductsByCategoryAndSort(
-  //   @Query('category') category: Category,
-  //   @Query('sortBy') sortBy: SortByOption,
-  //   @Query('order') order: 'asc' | 'desc',
-  //   @Query('limit') limit: number,
-  //   @Query('exclusiveStartKey') exclusiveStartKey?: string,
-  //   @Query('previousPageKey') previousPageKey?: string,
-  //   @Query('latitude') latitude?: string,
-  //   @Query('longitude') longitude?: string,
-  // ): Promise<ProductQueryResult> {
-  //   const params: FindProductsParams = {
-  //     category,
-  //     sortBy,
-  //     order,
-  //     limit,
-  //     exclusiveStartKey,
-  //     previousPageKey,
-  //     latitude,
-  //     longitude,
-  //   };
-  //   return this.productService.findProductsByCategoryAndSort(params);
-  // }
+@Get('seller/:orderId')
+  async getSellerProducts(@Param('orderId') orderId: string): Promise<CustomResponse[]> {
+    const query = new GetOrderSellerProductsQuery(orderId);
+    return this.queryBus.execute(query);
+  }
 }

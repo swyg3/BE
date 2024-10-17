@@ -43,7 +43,9 @@ export class DeleteOrderCommandHandler implements ICommandHandler<DeleteOrderCom
                     const inventory = await transactionalEntityManager.findOne(Inventory, { where: { productId: item.productId } });
 
                     // 주문한 수량만큼 재고 추가
-                    inventory.quantity += item.quantity;
+                    inventory.quantity = Number(inventory.quantity) + Number(item.quantity);
+                    this.logger.log(`Restored Inventory for product: ${inventory.quantity}, item.quantity: ${item.quantity}`);
+
 
                     // 재고 업데이트
                     const updatedInventory = await transactionalEntityManager.save(inventory);
