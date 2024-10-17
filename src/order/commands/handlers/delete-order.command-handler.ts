@@ -46,10 +46,16 @@ export class DeleteOrderCommandHandler implements ICommandHandler<DeleteOrderCom
                         throw new Error(`Inventory for product ${item.productId} not found.`);
                     }
 
+                    this.logger.log(`Product ID: ${item.productId}`);
+                    this.logger.log(`Current inventory quantity: ${inventory.quantity}`);
+                    this.logger.log(`Order item quantity: ${item.quantity}`);
+
                     // bigint로 안전하게 계산
                     const currentQuantity = BigInt(inventory.quantity);
                     const addQuantity = BigInt(item.quantity);
                     const newQuantity = currentQuantity + addQuantity;
+
+                    this.logger.log(`New calculated quantity: ${newQuantity.toString()}`);
 
                     // 결과가 Number.MAX_SAFE_INTEGER를 초과하는지 확인
                     if (newQuantity > BigInt(Number.MAX_SAFE_INTEGER)) {
