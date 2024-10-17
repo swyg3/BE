@@ -38,6 +38,10 @@ import { InventoryModule } from "src/inventory/inventory.module";
 import { RedisGeo } from "./util/geoadd";
 import { SearchProductsHandler } from "./queries/handlers/get-search-products.handler";
 import { UsersModule } from "src/users/users.module";
+import { OrderItemsModule } from "src/order-items/order-items.module";
+import { OrderItemsViewSchema } from "src/order-items/schemas/order-items-view.schema";
+import { OrderItemsViewRepository } from "src/order-items/order-items.view.repository";
+import { GetOrderSellerProductsQueryHandler } from "./queries/handlers/get -order-sellers-products.handler";
 
 const CommandHandlers = [
   CreateProductHandler,
@@ -60,11 +64,9 @@ const EventsHandlers = [
       { name: "ProductView", schema: ProductSchema },
     ]),
     DynamooseModule.forFeature([
-      { 
-        name: 'LocationView2',
-        schema: UserLocation2Schema,
-      }
-    ]),
+      { name: 'LocationView2',schema: UserLocation2Schema,}]),
+    DynamooseModule.forFeature([
+      { name: "OrderItemsView", schema: OrderItemsViewSchema }]),
     SellersModule,
     InventoryModule, 
     HttpModule,
@@ -110,6 +112,7 @@ const EventsHandlers = [
     SellerRepository,
     ProductViewRepository,
     LocationViewRepository,
+    OrderItemsViewRepository,
     GetProductByIdHandler,
     FindProductsByCategoryHandler,
     GetNearestProductsHandler,
@@ -119,6 +122,7 @@ const EventsHandlers = [
     NaverMapsClient,
     SearchProductsHandler,
     GetProductByDiscountRateHandler,
+    GetOrderSellerProductsQueryHandler,
     ProductService,
     RedisGeo
     

@@ -9,6 +9,7 @@ import { EventSourcingModule } from "src/shared/infrastructure/event-sourcing";
 import { OrderItems } from "./entities/order-items.entity";
 import { GetOrderItemQueryHandler } from "./queries/handlers/get-order-item.query-handler";
 import { OrderItemsViewSchema } from "./schemas/order-items-view.schema";
+import { OrderItemsViewRepository } from "./order-items.view.repository";
 
 @Module({
   imports: [
@@ -21,6 +22,9 @@ import { OrderItemsViewSchema } from "./schemas/order-items-view.schema";
   ],
   providers: [
     GetOrderItemQueryHandler,
-  ],
+    OrderItemsViewRepository
+  ],  
+  exports: [OrderItemsViewRepository],
+
 })
 export class OrderItemsModule {}

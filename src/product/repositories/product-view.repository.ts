@@ -15,7 +15,7 @@ export enum SortByOption {
 
 export interface ProductView {
   productId: string;
-  GSI_KEY: string; 
+  GSI_KEY: string;
   sellerId: string;
   category: string;
   name: string;
@@ -32,7 +32,7 @@ export interface ProductView {
   locationY: string;
   distance: number;
   distanceDiscountScore: number;
-  inventoryUpdatedAt:Date;
+  inventoryUpdatedAt: Date;
 }
 
 
@@ -48,8 +48,18 @@ export class ProductViewRepository {
       { productId: string }
     >,
     private readonly configService: ConfigService,
-    private readonly redisGeo: RedisGeo,
   ) { }
+  
+  
+
+  
+
+  async updateAvailableStock(
+    productId: string,
+    quantity: number
+  ): Promise<ProductView | null> {
+    return await this.update(productId, { availableStock: quantity });
+  }
 
   // 상품 생성
   async create(productView: ProductView): Promise<ProductView> {
@@ -253,8 +263,8 @@ export class ProductViewRepository {
     }
   }
 
-   
-   async fetchItemsByCategory(category: Category): Promise<ProductView[]> {
+
+  async fetchItemsByCategory(category: Category): Promise<ProductView[]> {
     if (category === Category.ALL) {
       return this.productViewModel.scan().exec();
     } else {
@@ -266,19 +276,57 @@ export class ProductViewRepository {
   }
   async fetchItemsBySearchTerm(searchTerm: string): Promise<ProductView[]> {
     const lowercaseSearchTerm = searchTerm.toLowerCase().trim();
-  
+
     // Scan operation
     const scan = this.productViewModel.scan('GSI_KEY').eq('PRODUCT');
-    
+
     // Apply name filter
     scan.and().where('name').contains(lowercaseSearchTerm);
-  
+
     scan.limit(100); // Set a higher limit for initial scan
     const items: ProductView[] = await scan.exec();
-  
+
     return items;
   }
- 
+  async getRandomProducts(limit: number): Promise<ProductView[]> {
+    // DynamoDB에서 무작위 항목을 가져오는 것은 효율적이지 않으므로,
+    // 여기서는 간단히 모든 항목을 가져온 후 무작위로 선택합니다.
+    const allProducts = await this.productViewModel.scan().exec();
+    const shuffled = this.shuffleArray(allProducts);
+    return shuffled.slice(0, limit);
+}
+
+private shuffleArray<T>(array: T[]): T[] {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
+  async findSellerIdsByProductIds(productIds: string[]): Promise<string[]> {
+    // BatchGet을 사용하여 여러 productId에 대한 정보를 한 번에 조회
+    const results = await this.productViewModel.batchGet(productIds.map(productId => ({ productId })));
+        
+    // 중복을 제거하고 sellerId만 추출
+    const sellerIds = [...new Set(results.map(item => item.sellerId))];
+    
+    return sellerIds;
+}
+
+async findProductsBySellerId(sellerId: string): Promise<ProductView[]> {
+    // SellerIdIndex를 사용하여 특정 판매자의 모든 상품을 조회
+    const result = await this.productViewModel.query('sellerId')
+        .using('SellerIdIndex')
+        .eq(sellerId)
+        .exec();
+
+    // createdAt 기준으로 내림차순 정렬 (최신 상품이 먼저 오도록)
+    return result.sort((a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+}
+
   // async searchProducts(param: {
   //   sortBy: SortByOption;
   //   order: 'asc' | 'desc';
@@ -295,7 +343,7 @@ export class ProductViewRepository {
   //   count: number
   // }> {
   //   const { searchTerm, sortBy, order, limit, exclusiveStartKey, previousPageKey, latitude, longitude } = param;
-    
+
   //   if (!searchTerm) {
   //     throw new Error("searchTerm is required.");
   //   }
@@ -304,7 +352,7 @@ export class ProductViewRepository {
 
   //   // Scan operation
   //   const scan = this.productViewModel.scan('GSI_KEY').eq('PRODUCT');
-    
+
   //   // Apply name filter
   //   scan.and().where('name').contains(lowercaseSearchTerm);
 
@@ -372,17 +420,17 @@ export class ProductViewRepository {
   //     }
   //     return baseUrl.toString();
   //   };
-  
+
   //   const firstEvaluatedKey = items.length > 0 ? { productId: items[0].productId } : null;
   //   const firstEvaluatedUrl = createUrlWithKey(firstEvaluatedKey, previousPageKey);
   //   const lastEvaluatedUrl = lastEvaluatedKey ? createUrlWithKey(lastEvaluatedKey, JSON.stringify(firstEvaluatedKey)) : null;
-  
+
   //   let prevPageUrl: string | null = null;
   //   if (previousPageKey) {
   //     const prevKey = JSON.parse(decodeURIComponent(previousPageKey));
   //     prevPageUrl = createUrlWithKey(prevKey, null);
   //   }
-  
+
   //   return {
   //     items,
   //     lastEvaluatedUrl,
@@ -392,7 +440,7 @@ export class ProductViewRepository {
   //   };
   // }
 
-  
-  
+
+
 }
 
