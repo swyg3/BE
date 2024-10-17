@@ -88,12 +88,12 @@ export class DeleteOrderCommandHandler implements ICommandHandler<DeleteOrderCom
                     this.logger.log(`Inventory update event published: ${JSON.stringify(inventoryUpdatedEvent)}`);
                 }
 
-                // 3. 주문 및 주문 아이템 삭제
-                await transactionalEntityManager.remove(order);
-                await transactionalEntityManager.remove(orderItems);
+                // // 3. 주문 및 주문 아이템 삭제
+                // await transactionalEntityManager.remove(order);
+                // await transactionalEntityManager.remove(orderItems);
 
-                //await this.orderRepository.delete({ id });
-                //await this.orderItemsRepository.delete({ orderId: id });
+                await this.orderRepository.delete({ id });
+                await this.orderItemsRepository.delete({ orderId: id });
 
                 // 4. 주문 삭제 이벤트 생성
                 const event = new DeleteOrderEvent(
