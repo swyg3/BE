@@ -7,11 +7,10 @@ import { Category } from "src/product/product.category";
 import { ProductView, ProductViewRepository, SortByOption } from "src/product/repositories/product-view.repository";
 import { RedisGeo } from "src/product/util/geoadd";
 
-
 @QueryHandler(FindProductsByCategoryQuery)
 export class FindProductsByCategoryHandler implements IQueryHandler<FindProductsByCategoryQuery> {
   constructor(
-    private readonly productViewRepository: ProductViewRepository,  // 레포지토리 주입
+    private readonly productViewRepository: ProductViewRepository,
     private readonly configService: ConfigService,
     private readonly redisGeo: RedisGeo,
     private readonly logger: Logger
@@ -19,12 +18,11 @@ export class FindProductsByCategoryHandler implements IQueryHandler<FindProducts
 
   async execute(query: FindProductsByCategoryQuery): Promise<GetCategoryQueryOutputDto> {
     this.logger.log(`Executing find products by category query with parameters: ${JSON.stringify(query)}`);
-    const category: Category = query.category; 
-    //카테고리 별로 아이템 뽑기
+    const category: Category = query.category;
     const items = await this.productViewRepository.fetchItemsByCategory(category);
     
-    const processedItems = this.processItems(items, query);
-    const paginatedResult = this.paginateItems(await processedItems, query.limit, query.exclusiveStartKey);
+    const processedItems = await this.processItems(items, query);
+    const paginatedResult = this.paginateItems(processedItems, query.limit, query.exclusiveStartKey);
     const formattedResult = this.formatResult(paginatedResult, query);
 
     this.logger.log(`Query result: ${formattedResult.count} items found`);
@@ -32,24 +30,22 @@ export class FindProductsByCategoryHandler implements IQueryHandler<FindProducts
     return formattedResult;
   }
 
- 
-
-
   private async processItems(items: ProductView[], query: {
     sortBy: SortByOption;
     order: 'asc' | 'desc';
     latitude?: string;
     longitude?: string;
   }): Promise<ProductView[]> {
-    let processedItems = items;
-
-    if (this.shouldCalculateDistance(query.sortBy, query.latitude, query.longitude)) {
-      processedItems =await this.calculateDistances(processedItems, Number(query.latitude), Number(query.longitude),query.sortBy);
-    }
+    // Always calculate distances
+    const processedItems = await this.calculateDistances(
+      items,
+      Number(query.latitude) || 0,
+      Number(query.longitude) || 0,
+      query.sortBy
+    );
 
     return this.sortItems(processedItems, query.sortBy, query.order);
   }
-
 
   async calculateDistances(
     items: ProductView[], 
@@ -66,28 +62,16 @@ export class FindProductsByCategoryHandler implements IQueryHandler<FindProducts
             Number(item.locationY),
             Number(item.locationX)
           );
-          if (sortBy === SortByOption.DistanceDiscountScore) {
-            const score = this.calculateRecommendationScore({ ...item, distance });
-            return { ...item, distance, distanceDiscountScore: score };
-          } else {
-            return { ...item, distance };
-          }
+          const score = this.calculateRecommendationScore({ ...item, distance });
+          return { ...item, distance, distanceDiscountScore: score };
         } catch (error) {
-          if (sortBy === SortByOption.DistanceDiscountScore) {
-            return { ...item, distance: Infinity, distanceDiscountScore: 0 };
-          } else {
-            return { ...item, distance: Infinity };
-          }
+          return { ...item, distance: Infinity, distanceDiscountScore: 0 };
         }
       }
-      return item;
+      return { ...item, distance: Infinity, distanceDiscountScore: 0 };
     }));
 
     return calculatedItems;
-  }
-
-  private shouldCalculateDistance(sortBy: SortByOption, latitude?: string, longitude?: string): boolean {
-    return (sortBy === SortByOption.Distance || sortBy === SortByOption.DistanceDiscountScore) && !!latitude && !!longitude;
   }
   
   private calculateRecommendationScore(product: ProductView & { distance: number }): number {
@@ -108,7 +92,7 @@ export class FindProductsByCategoryHandler implements IQueryHandler<FindProducts
           comparison = (a.distance || Infinity) - (b.distance || Infinity);
           break;
         case SortByOption.DistanceDiscountScore:
-          comparison = (b.distanceDiscountScore || -Infinity) - (a.distanceDiscountScore || -Infinity);
+          comparison = (b.distanceDiscountScore || 0) - (a.distanceDiscountScore || 0);
           break;
       }
       return order === 'desc' ? comparison : -comparison;
