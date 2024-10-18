@@ -41,18 +41,19 @@ export class GetProductByIdHandler
     };
   }
 
-    private sanitizeAddress(address: any): string {
-      if (typeof address === 'string') {
-        // 이미 문자열이면 그대로 반환
-        return address;
-      } else if (address && typeof address === 'object') {
-        // 객체인 경우, JSON 문자열로 변환
-        return JSON.stringify(address);
-      } else {
-        // 그 외의 경우, 빈 문자열 또는 기본값 반환
-        return '';
-      }
+  private sanitizeAddress(address: any): string {
+    if (typeof address === 'string') {
+      // 이미 문자열이면 그대로 반환
+      return address;
+    } else if (address && typeof address === 'object') {
+      // 객체인 경우, 주소 필드를 적절히 조합하여 문자열로 반환
+      // 예시: address 객체의 구조에 따라 적절히 수정하세요
+      return `${address.street}, ${address.city}, ${address.country}`;
+    } else {
+      // 그 외의 경우, 빈 문자열 또는 기본값 반환
+      return '';
     }
+  }
 
   }
 
