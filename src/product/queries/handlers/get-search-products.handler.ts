@@ -77,7 +77,7 @@ export class SearchProductsHandler implements IQueryHandler<SearchProductsQuery>
         if (item.locationX && item.locationY) {
           const distanceResult = distanceResults.find(r => r.id === item.productId);
           if (distanceResult) {
-            const distanceInKm = parseFloat(distanceResult.distance) / 1000;
+            const distanceInKm = parseFloat(distanceResult.distance) / 10;
             const score = this.calculateRecommendationScore({ ...item, distance: distanceInKm });
             calculatedItems.push({ 
               ...item, 
