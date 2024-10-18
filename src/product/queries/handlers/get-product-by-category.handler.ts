@@ -36,12 +36,10 @@ export class FindProductsByCategoryHandler implements IQueryHandler<FindProducts
     latitude?: string;
     longitude?: string;
   }): Promise<ProductView[]> {
-    // Always calculate distances
     const processedItems = await this.calculateDistances(
       items,
       Number(query.latitude) || 0,
-      Number(query.longitude) || 0,
-      query.sortBy
+      Number(query.longitude) || 0
     );
 
     return this.sortItems(processedItems, query.sortBy, query.order);
@@ -50,8 +48,7 @@ export class FindProductsByCategoryHandler implements IQueryHandler<FindProducts
   async calculateDistances(
     items: ProductView[],
     userLatitude: number,
-    userLongitude: number,
-    sortBy: SortByOption
+    userLongitude: number
   ): Promise<ProductView[]> {
     const batchSize = 50;
     const calculatedItems: ProductView[] = [];
@@ -77,11 +74,11 @@ export class FindProductsByCategoryHandler implements IQueryHandler<FindProducts
         if (item.locationX && item.locationY) {
           const distanceResult = distanceResults.find(r => r.id === item.productId);
           if (distanceResult) {
-            const distanceInKm = parseFloat(distanceResult.distance) / 10;
+            const distanceInKm = parseFloat(distanceResult.distance) / 1000;
             const score = this.calculateRecommendationScore({ ...item, distance: distanceInKm });
             calculatedItems.push({ 
               ...item, 
-              distance: distanceInKm === 0 ? 0.0001 : distanceInKm, // 0km를 0.0001km로 처리
+              distance: distanceInKm === 0 ? 0.0001 : distanceInKm,
               distanceDiscountScore: score 
             });
           } else {
@@ -96,7 +93,7 @@ export class FindProductsByCategoryHandler implements IQueryHandler<FindProducts
   
     return calculatedItems;
   }
-  
+
   private calculateRecommendationScore(product: ProductView & { distance: number }): number {
     const distanceScore = product.distance === 0 ? 1 : 1 / (1 + product.distance);
     const discountScore = (product.discountRate || 0) / 100;
@@ -111,16 +108,17 @@ export class FindProductsByCategoryHandler implements IQueryHandler<FindProducts
         case SortByOption.DiscountRate:
           comparison = (b.discountRate || 0) - (a.discountRate || 0);
           if (comparison === 0) {
-            // 할인율이 같을 경우 거리로 정렬
             comparison = (a.distance || Infinity) - (b.distance || Infinity);
           }
           break;
         case SortByOption.Distance:
-          comparison = (a.distance === 0 ? -Infinity : a.distance || Infinity) - 
-                       (b.distance === 0 ? -Infinity : b.distance || Infinity);
+          comparison = (a.distance || Infinity) - (b.distance || Infinity);
           break;
         case SortByOption.DistanceDiscountScore:
           comparison = (b.distanceDiscountScore || 0) - (a.distanceDiscountScore || 0);
+          if (comparison === 0) {
+            comparison = (a.distance || Infinity) - (b.distance || Infinity);
+          }
           break;
       }
       return order === 'desc' ? comparison : -comparison;
