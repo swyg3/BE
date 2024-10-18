@@ -1,4 +1,4 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { IsArray, IsBoolean, IsDate, IsNotEmpty, IsNumber, IsOptional, IsString, ValidateNested } from "class-validator";
 import { OrderItemDto } from 'src/order-items/dtos/order-items.dto';
 
@@ -14,6 +14,7 @@ export class CreateOrderDto {
     @IsNotEmpty()
     @IsDate()
     @Type(() => Date)
+    @Transform(({ value }) => new Date(value), { toClassOnly: true })
     pickupTime: Date;
 
     @IsNotEmpty()

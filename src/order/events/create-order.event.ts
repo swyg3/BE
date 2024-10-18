@@ -19,7 +19,7 @@ export class CreateOrderEvent implements BaseEvent {
                 quantity: number;
                 price: number;
             }[],
-            pickupTime: Date,
+            pickupTime: string,
             createdAt: Date,
             updatedAt: Date,
             memo: boolean[],
