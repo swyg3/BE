@@ -65,12 +65,13 @@ export class FindProductsByCategoryHandler implements IQueryHandler<FindProducts
           const score = this.calculateRecommendationScore({ ...item, distance });
           return { ...item, distance, distanceDiscountScore: score };
         } catch (error) {
+          this.logger.error(`Error calculating distance for item ${item.productId}: ${error.message}`);
           return { ...item, distance: Infinity, distanceDiscountScore: 0 };
         }
       }
       return { ...item, distance: Infinity, distanceDiscountScore: 0 };
     }));
-
+  
     return calculatedItems;
   }
   
@@ -94,6 +95,10 @@ export class FindProductsByCategoryHandler implements IQueryHandler<FindProducts
         case SortByOption.DistanceDiscountScore:
           comparison = (b.distanceDiscountScore || 0) - (a.distanceDiscountScore || 0);
           break;
+      }
+      if (comparison === 0) {
+        // 주 정렬 기준이 같을 경우, 거리를 부차적인 정렬 기준으로 사용
+        return (a.distance || Infinity) - (b.distance || Infinity);
       }
       return order === 'desc' ? comparison : -comparison;
     });
