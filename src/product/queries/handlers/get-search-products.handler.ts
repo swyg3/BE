@@ -80,9 +80,13 @@ export class SearchProductsHandler implements IQueryHandler<SearchProductsQuery>
         if (item.locationX && item.locationY) {
           const distanceResult = distanceResults.find(r => r.id === item.productId);
           if (distanceResult) {
-            const distanceInKm = parseFloat(distanceResult.distance) / 10; // 여기서 10으로 나눔
+            const distanceInKm = parseFloat(distanceResult.distance) / 10;
             const score = this.calculateRecommendationScore({ ...item, distance: distanceInKm });
-            calculatedItems.push({ ...item, distance: distanceInKm, distanceDiscountScore: score });
+            calculatedItems.push({ 
+              ...item, 
+              distance: distanceInKm === 0 ? 0.0001 : distanceInKm, // 0km를 0.0001km로 처리
+              distanceDiscountScore: score 
+            });
           } else {
             this.logger.warn(`No distance result for item ${item.productId}`);
             calculatedItems.push({ ...item, distance: Infinity, distanceDiscountScore: 0 });
@@ -95,9 +99,8 @@ export class SearchProductsHandler implements IQueryHandler<SearchProductsQuery>
   
     return calculatedItems;
   }
-  
   private calculateRecommendationScore(product: ProductView & { distance: number }): number {
-    const distanceScore = 1 / (1 + (product.distance || Infinity));
+    const distanceScore = product.distance === 0 ? 1 : 1 / (1 + product.distance);
     const discountScore = (product.discountRate || 0) / 100;
     const score = (distanceScore + discountScore) / 2;
     return Math.round(score * 100);
@@ -109,17 +112,18 @@ export class SearchProductsHandler implements IQueryHandler<SearchProductsQuery>
       switch (sortBy) {
         case SortByOption.DiscountRate:
           comparison = (b.discountRate || 0) - (a.discountRate || 0);
+          if (comparison === 0) {
+            // 할인율이 같을 경우 거리로 정렬
+            comparison = (a.distance || Infinity) - (b.distance || Infinity);
+          }
           break;
         case SortByOption.Distance:
-          comparison = (a.distance || Infinity) - (b.distance || Infinity);
+          comparison = (a.distance === 0 ? -Infinity : a.distance || Infinity) - 
+                       (b.distance === 0 ? -Infinity : b.distance || Infinity);
           break;
         case SortByOption.DistanceDiscountScore:
           comparison = (b.distanceDiscountScore || 0) - (a.distanceDiscountScore || 0);
           break;
-      }
-      if (comparison === 0) {
-        // 주 정렬 기준이 같을 경우, 거리를 부차적인 정렬 기준으로 사용
-        return (a.distance || Infinity) - (b.distance || Infinity);
       }
       return order === 'desc' ? comparison : -comparison;
     });
