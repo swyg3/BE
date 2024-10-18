@@ -16,23 +16,27 @@ export class RedisGeo {
       throw error;
     }
   }
-  async calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): Promise<number> {
+  async calculateDistance(
+    userLatitude: number,
+    userLongitude: number,
+    locations: { id: string; latitude: number; longitude: number; }[]
+  ): Promise<{ id: string; distance: string; }[]> {
     const tempKey = `temp:${Date.now()}`;
-    //this.logger.log(`Calculating distance between (${lat1}, ${lon1}) and (${lat2}, ${lon2})`);
     try {
-      const addResult1 = await this.redis.geoadd(tempKey, lon1, lat1, 'point1');
-      //this.logger.log(`Added point1: ${addResult1}`);
-      const addResult2 = await this.redis.geoadd(tempKey, lon2, lat2, 'point2');
-      //this.logger.log(`Added point2: ${addResult2}`);
+      await this.redis.geoadd(tempKey, userLongitude, userLatitude, 'user');
       
-      const distance = await this.redis.geodist(tempKey, 'point1', 'point2');
-      // this.logger.log(`Raw distance: ${distance}`);
-      const distanceInKm = parseFloat(distance)/10; 
-      return distanceInKm;
-  
-    } catch (error) {
-      this.logger.error(`Error calculating distance: ${error.message}`);
-      throw error;
+      const pipeline = this.redis.pipeline();
+      for (const location of locations) {
+        pipeline.geoadd(tempKey, location.longitude, location.latitude, location.id);
+        pipeline.geodist(tempKey, 'user', location.id); // 단위를 지정하지 않음
+      }
+      
+      const results = await pipeline.exec();
+      
+      return locations.map((location, index) => ({
+        id: location.id,
+        distance: results[index * 2 + 1][1] as string
+      }));
     } finally {
       await this.redis.del(tempKey);
     }
