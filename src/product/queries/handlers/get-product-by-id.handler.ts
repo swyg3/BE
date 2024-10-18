@@ -36,10 +36,23 @@ export class GetProductByIdHandler
 
       ...product,
       storeName: seller.storeName,
-      storeAddress: seller.storeAddress,
+      storeAddress: this.sanitizeAddress(seller.storeAddress),
       storeNumber: seller.storePhoneNumber,
     };
+  }
 
+    private sanitizeAddress(address: any): string {
+      if (typeof address === 'string') {
+        // 이미 문자열이면 그대로 반환
+        return address;
+      } else if (address && typeof address === 'object') {
+        // 객체인 경우, JSON 문자열로 변환
+        return JSON.stringify(address);
+      } else {
+        // 그 외의 경우, 빈 문자열 또는 기본값 반환
+        return '';
+      }
+    }
 
   }
-}
+

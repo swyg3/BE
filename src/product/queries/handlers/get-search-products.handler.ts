@@ -5,7 +5,6 @@ import { SearchProductsQuery } from "../impl/get-search-products";
 import { SearchProductsQueryOutputDto } from "src/product/dtos/get-search-out.dto";
 import { ProductView, ProductViewRepository, SortByOption } from "src/product/repositories/product-view.repository";
 import { RedisGeo } from "src/product/util/geoadd";
-
 @QueryHandler(SearchProductsQuery)
 export class SearchProductsHandler implements IQueryHandler<SearchProductsQuery> {
   constructor(
@@ -23,7 +22,6 @@ export class SearchProductsHandler implements IQueryHandler<SearchProductsQuery>
       throw new Error("searchTerm is required.");
     }
 
-    // 검색어로 아이템 조회
     const items = await this.productViewRepository.fetchItemsBySearchTerm(searchTerm);
     
     const processedItems = await this.processItems(items, query);
@@ -41,11 +39,13 @@ export class SearchProductsHandler implements IQueryHandler<SearchProductsQuery>
     latitude?: string;
     longitude?: string;
   }): Promise<ProductView[]> {
-    let processedItems = items;
-
-    if (this.shouldCalculateDistance(query.sortBy, query.latitude, query.longitude)) {
-      processedItems = await this.calculateDistances(processedItems, Number(query.latitude), Number(query.longitude), query.sortBy);
-    }
+    // Always calculate distances
+    const processedItems = await this.calculateDistances(
+      items,
+      Number(query.latitude) || 0,
+      Number(query.longitude) || 0,
+      query.sortBy
+    );
 
     return this.sortItems(processedItems, query.sortBy, query.order);
   }
@@ -65,28 +65,16 @@ export class SearchProductsHandler implements IQueryHandler<SearchProductsQuery>
             Number(item.locationY),
             Number(item.locationX)
           );
-          if (sortBy === SortByOption.DistanceDiscountScore) {
-            const score = this.calculateRecommendationScore({ ...item, distance });
-            return { ...item, distance, distanceDiscountScore: score };
-          } else {
-            return { ...item, distance };
-          }
+          const score = this.calculateRecommendationScore({ ...item, distance });
+          return { ...item, distance, distanceDiscountScore: score };
         } catch (error) {
-          if (sortBy === SortByOption.DistanceDiscountScore) {
-            return { ...item, distance: Infinity, distanceDiscountScore: 0 };
-          } else {
-            return { ...item, distance: Infinity };
-          }
+          return { ...item, distance: Infinity, distanceDiscountScore: 0 };
         }
       }
-      return item;
+      return { ...item, distance: Infinity, distanceDiscountScore: 0 };
     }));
 
     return calculatedItems;
-  }
-
-  private shouldCalculateDistance(sortBy: SortByOption, latitude?: string, longitude?: string): boolean {
-    return (sortBy === SortByOption.Distance || sortBy === SortByOption.DistanceDiscountScore) && !!latitude && !!longitude;
   }
   
   private calculateRecommendationScore(product: ProductView & { distance: number }): number {
@@ -107,7 +95,7 @@ export class SearchProductsHandler implements IQueryHandler<SearchProductsQuery>
           comparison = (a.distance || Infinity) - (b.distance || Infinity);
           break;
         case SortByOption.DistanceDiscountScore:
-          comparison = (b.distanceDiscountScore || -Infinity) - (a.distanceDiscountScore || -Infinity);
+          comparison = (b.distanceDiscountScore || 0) - (a.distanceDiscountScore || 0);
           break;
       }
       return order === 'desc' ? comparison : -comparison;
