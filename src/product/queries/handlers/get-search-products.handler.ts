@@ -51,29 +51,47 @@ export class SearchProductsHandler implements IQueryHandler<SearchProductsQuery>
   }
 
   async calculateDistances(
-    items: ProductView[], 
-    userLatitude: number, 
-    userLongitude: number, 
+    items: ProductView[],
+    userLatitude: number,
+    userLongitude: number,
     sortBy: SortByOption
   ): Promise<ProductView[]> {
-    const calculatedItems = await Promise.all(items.map(async item => {
-      if (item.locationX && item.locationY) {
-        try {
-          const distance = await this.redisGeo.calculateDistance(
-            userLatitude,
-            userLongitude,
-            Number(item.locationY),
-            Number(item.locationX)
-          );
-          const score = this.calculateRecommendationScore({ ...item, distance });
-          return { ...item, distance, distanceDiscountScore: score };
-        } catch (error) {
-          this.logger.error(`Error calculating distance for item ${item.productId}: ${error.message}`);
-          return { ...item, distance: Infinity, distanceDiscountScore: 0 };
+    const batchSize = 50;
+    const calculatedItems: ProductView[] = [];
+  
+    for (let i = 0; i < items.length; i += batchSize) {
+      const batch = items.slice(i, i + batchSize);
+      
+      const locations = batch
+        .filter(item => item.locationX && item.locationY)
+        .map(item => ({
+          id: item.productId,
+          latitude: Number(item.locationY),
+          longitude: Number(item.locationX)
+        }));
+  
+      const distanceResults = await this.redisGeo.calculateDistance(
+        userLatitude,
+        userLongitude,
+        locations
+      );
+  
+      for (const item of batch) {
+        if (item.locationX && item.locationY) {
+          const distanceResult = distanceResults.find(r => r.id === item.productId);
+          if (distanceResult) {
+            const distanceInKm = parseFloat(distanceResult.distance) / 10; // 여기서 10으로 나눔
+            const score = this.calculateRecommendationScore({ ...item, distance: distanceInKm });
+            calculatedItems.push({ ...item, distance: distanceInKm, distanceDiscountScore: score });
+          } else {
+            this.logger.warn(`No distance result for item ${item.productId}`);
+            calculatedItems.push({ ...item, distance: Infinity, distanceDiscountScore: 0 });
+          }
+        } else {
+          calculatedItems.push({ ...item, distance: Infinity, distanceDiscountScore: 0 });
         }
       }
-      return { ...item, distance: Infinity, distanceDiscountScore: 0 };
-    }));
+    }
   
     return calculatedItems;
   }
