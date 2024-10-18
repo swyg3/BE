@@ -3,6 +3,7 @@ import { NotFoundException } from "@nestjs/common";
 import { GetProductByIdQuery } from "../impl/get-prouct-by-id.query";
 import { ProductViewRepository } from "../../repositories/product-view.repository";
 import { SellerViewRepository } from "src/sellers/repositories/seller-view.repository";
+import { GetProductByIdResponseDto } from "src/product/dtos/get-product-id.dto";
 
 @QueryHandler(GetProductByIdQuery)
 export class GetProductByIdHandler
@@ -12,7 +13,7 @@ export class GetProductByIdHandler
     private readonly sellerViewRepository: SellerViewRepository,
   ) { }
 
-  async execute(query: GetProductByIdQuery): Promise<any> {
+  async execute(query: GetProductByIdQuery): Promise<GetProductByIdResponseDto> {
     const product = await this.ProductViewRepository.findByProductId(
       query.productId,
     );
@@ -32,6 +33,9 @@ export class GetProductByIdHandler
         `판매자 ID ${product.sellerId}를 찾을 수 없습니다.`,
       );
     }
+     // 여기서 storeAddress 확인
+     console.log('Seller Address before sanitization:', seller.storeAddress);
+    
     return {
 
       ...product,
