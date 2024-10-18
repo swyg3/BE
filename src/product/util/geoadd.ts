@@ -27,7 +27,7 @@ export class RedisGeo {
       
       const distance = await this.redis.geodist(tempKey, 'point1', 'point2');
       // this.logger.log(`Raw distance: ${distance}`);
-      const distanceInKm = parseFloat(distance); // m를 km로 변환
+      const distanceInKm = parseFloat(distance)/10; 
       return distanceInKm;
   
     } catch (error) {
