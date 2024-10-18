@@ -164,6 +164,7 @@ export class OrderController {
         items,
         memo
         } = createOrderDto;
+        this.logger.log('user.pickupTime ', JSON.stringify(pickupTime));
 
     try {
         const id = uuidv4();

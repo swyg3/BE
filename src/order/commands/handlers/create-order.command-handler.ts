@@ -21,31 +21,35 @@ export class CreateOrderCommandHandler implements ICommandHandler<CreateOrderCom
         @InjectRepository(OrderItems)
         private readonly orderItemsRepository: Repository<OrderItems>,
         private readonly eventBusService: EventBusService,
-    ) {}
+    ) { }
 
     async execute(command: CreateOrderCommand): Promise<any> {
         const { id, userId, totalAmount, totalPrice, pickupTime, items, paymentMethod, status, memo } = command;
-    
+
         try {
             return await this.orderRepository.manager.transaction(async (transactionalEntityManager) => {
                 const mergedItems = items.reduce((acc, currentItem) => {
                     const existingItem = acc.find(item => item.productId === currentItem.productId);
-                    
+
                     if (existingItem) {
                         existingItem.quantity += currentItem.quantity;
                     } else {
                         acc.push(currentItem);
                     }
-                    
+
                     return acc;
                 }, []);
-    
+
+                // pickupTime에서 9시간을 뺍니다.
+                const adjustedPickupTime = new Date(pickupTime);
+                adjustedPickupTime.setHours(adjustedPickupTime.getHours() - 9);
+
                 const newOrder = this.orderRepository.create({
                     id,
                     userId,
                     totalAmount,
                     totalPrice,
-                    pickupTime,
+                    pickupTime: adjustedPickupTime,//pickupTime을 UTC로 변환하여 저장
                     paymentMethod,
                     status,
                     createdAt: new Date(),
@@ -53,7 +57,7 @@ export class CreateOrderCommandHandler implements ICommandHandler<CreateOrderCom
                 });
                 const savedOrder = await transactionalEntityManager.save(newOrder);
                 this.logger.log(`Saved Order: ${JSON.stringify(savedOrder)}`);
-    
+
                 const orderItems = mergedItems.map(item => {
                     return this.orderItemsRepository.create({
                         orderId: savedOrder.id,
@@ -62,16 +66,18 @@ export class CreateOrderCommandHandler implements ICommandHandler<CreateOrderCom
                         price: item.price,
                     });
                 });
+                this.logger.log(`Saving order with pickupTime: ${newOrder.pickupTime}`);
                 const savedItems = await transactionalEntityManager.save(orderItems);
                 this.logger.log(`Saved Order Items: ${JSON.stringify(savedItems)}`);
-    
+
+
                 for (const item of mergedItems) {
                     const inventory = await transactionalEntityManager.findOne(Inventory, { where: { productId: item.productId } });
-    
+
                     if (!inventory) {
                         throw new ConflictException(`해당 상품의 재고가 없습니다: ${item.productId}`);
                     }
-    
+
                     if (inventory.quantity < item.quantity) {
                         throw new ConflictException(`재고가 부족합니다: ${item.productId}`);
                     }
@@ -79,7 +85,7 @@ export class CreateOrderCommandHandler implements ICommandHandler<CreateOrderCom
 
                     const updatedInventory = await transactionalEntityManager.save(inventory);
                     this.logger.log(`Updated Inventory for product: ${item.productId}, remaining quantity: ${inventory.quantity}`);
-    
+
                     const inventoryUpdatedEvent = new InventoryUpdatedEvent(
                         updatedInventory.id,
                         {
@@ -90,11 +96,11 @@ export class CreateOrderCommandHandler implements ICommandHandler<CreateOrderCom
                         },
                         1
                     );
-    
+
                     await this.eventBusService.publishAndSave(inventoryUpdatedEvent);
                     this.logger.log(`Inventory event published: ${JSON.stringify(inventoryUpdatedEvent)}`);
                 }
-    
+
                 const event = new CreateOrderEvent(
                     savedOrder.id,
                     {
@@ -110,25 +116,25 @@ export class CreateOrderCommandHandler implements ICommandHandler<CreateOrderCom
                             quantity: item.quantity,
                             price: item.price,
                         })),
-                        pickupTime,
+                        pickupTime: adjustedPickupTime.toISOString(),
                         createdAt: newOrder.createdAt,
                         updatedAt: new Date(),
                         memo,
                     },
                     1
                 );
-    
+
                 await this.eventBusService.publishAndSave(event);
                 this.logger.log(`Order event published: ${JSON.stringify(event)}`);
-    
-                // 주문 정보 반환
-                return {
+
+                // 응답 객체 생성
+                const response = {
                     success: true,
                     data: {
                         orderId: savedOrder.id,
                         totalAmount: savedOrder.totalAmount,
                         totalPrice: savedOrder.totalPrice,
-                        pickupTime: savedOrder.pickupTime,
+                        pickupTime: savedOrder.pickupTime.toISOString(),
                         paymentMethod: savedOrder.paymentMethod,
                         status: savedOrder.status,
                         items: savedItems.map(item => ({
@@ -139,10 +145,16 @@ export class CreateOrderCommandHandler implements ICommandHandler<CreateOrderCom
                         memo,
                     },
                 };
+
+                // 응답 로깅
+                this.logger.log(`Response before return: ${JSON.stringify(response)}`);
+
+                // 응답 반환
+                return response;
             });
         } catch (error) {
             this.logger.error(`Failed to create order: ${error.message}`);
             throw error;
         }
-    }    
+    }
 }
