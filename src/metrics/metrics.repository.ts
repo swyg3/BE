@@ -8,7 +8,7 @@ export class MetricsRepository {
   constructor(
     @InjectRepository(Event)
     private eventRepository: Repository<Event>,
-  ) { }
+  ) {}
 
   async getDailyActiveUsers(date: string) {
     const startDate = new Date(date);
@@ -36,11 +36,10 @@ export class MetricsRepository {
         createdAt: Between(new Date(start), new Date(end)),
       },
     });
-    // 조회수에서 7을 뺍니다. 단, 음수가 되지 않도록 합니다.
-    const adjustedViews = Math.max(views - 6, 0);
+
     return {
       productId,
-      adjustedViews,
+      views,
       startDate: start,
       endDate: end
     };
