@@ -5,6 +5,7 @@
 ## 📋 목차
 - [프로젝트 소개](#-프로젝트-소개)
 - [프로젝트 문서](#-프로젝트-문서)
+- [프로젝트 시연영상](#-프로젝트-시연영상)
 - [기술 스택](#-기술-스택)
 - [시스템 아키텍처](#-시스템-아키텍처)
 - [데이터베이스 구조](#-데이터베이스-구조)
@@ -16,9 +17,11 @@ MOONCO는 두 가지 문제를 해결합니다:
 - 고객: 품질 좋은 음식을 저렴하게 구매할 기회 제공
 
 ## 📚 프로젝트 문서
-
 - [프로젝트 소개 슬라이드](https://www.miricanvas.com/ko/v/13r3bod)
 - [팀 노션 페이지](https://plucky-gear-406.notion.site/Moonco-ca4ff5ccc8004f3da53925e62f8d61ad)
+
+## 🎥 프로젝트 시연영상
+[프로젝트 시연영상](https://youtube.com/shorts/Qsyc0onf6pM)
 
 ## 🛠 기술 스택
 
@@ -49,8 +52,6 @@ MOONCO는 두 가지 문제를 해결합니다:
 - ![Grafana](https://img.shields.io/badge/Grafana-F46800?style=flat-square&logo=Grafana&logoColor=white)
 - Node-Exporter
   
-## 📌 팀 노션 
-https://plucky-gear-406.notion.site/Moonco-ca4ff5ccc8004f3da53925e62f8d61ad
 
 ## 🏗 서비스 아키텍처
 주요 특징:
